@@ -57,6 +57,8 @@ Run tests, typecheck, lint and expo-doctor before calling app work done.
 - npm has a `react-dom` peer conflict with React Native 0.86. Use `--legacy-peer-deps` for installs (`npx expo install x -- --legacy-peer-deps`).
 - Expo Router 57 exports its own `Stack`. The app uses a single stack (no tabs). `router.dismissTo('/')` exists.
 - The app needs a development build (native modules), not Expo Go.
+- After adding a native package, the phone's old build crashes on the new JavaScript (e.g. "Cannot read property 'code' of undefined" at the import) until it's rebuilt and reinstalled. Check a fresh load by restarting Metro with `--clear` and relaunching the app.
+- Use Reanimated + Gesture Handler based libraries for gestures (drag to reorder uses `react-native-reorderable-list`); a hand-rolled PanResponder version felt wrong.
 - **iOS 27 requires the UIScene life cycle.** Without it the app crashes at launch in `_UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption`. Expo SDK 57's template doesn't adopt it yet, so `withSceneLifecycle` in `app/app.config.ts` adds the scene manifest (delegate `EXExpoAppSceneDelegate`) and patches `AppDelegate.swift` on every prebuild. Don't remove it. It throws if the template changes shape; once Expo's template adopts scenes, drop the plugin.
 - When the app crashes on the phone, pull reports with `xcrun devicectl device copy from --device <udid> --domain-type systemCrashLogs --source / --destination <dir>` and read the `.ips` JSON (faulting thread frames).
 

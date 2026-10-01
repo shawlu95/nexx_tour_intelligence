@@ -72,3 +72,31 @@ export function shortLabel(r: RankedHome): string {
 export function formatScore(r: RankedHome): string | null {
   return typeof r.score === 'number' && Number.isFinite(r.score) ? r.score.toFixed(1) : null;
 }
+
+/**
+ * NORA's ranking reordered by the buyer's saved order. Homes the buyer hasn't
+ * placed (for example, recorded later) keep NORA's relative order at the end.
+ * Ranks are renumbered by position; scores and labels stay NORA's.
+ */
+export function applyOverride(ranking: RankedHome[], order: string[] | null): RankedHome[] {
+  if (!order?.length) return ranking;
+  const byId = new Map(ranking.map((r) => [r.property_id, r]));
+  const placed = order.filter((id) => byId.has(id)).map((id) => byId.get(id)!);
+  const placedIds = new Set(placed.map((r) => r.property_id));
+  const rest = ranking.filter((r) => !placedIds.has(r.property_id));
+  return [...placed, ...rest].map((r, i) => ({ ...r, rank: i + 1 }));
+}
+
+/** True when an order differs from NORA's (so there's something to revert). */
+export function differsFrom(ranking: RankedHome[], order: string[] | null): boolean {
+  if (!order?.length) return false;
+  return applyOverride(ranking, order).some((r, i) => r.property_id !== ranking[i]?.property_id);
+}
+
+/** The list with the item at `from` moved to `to`. */
+export function moveItem<T>(list: T[], from: number, to: number): T[] {
+  const next = [...list];
+  const [item] = next.splice(from, 1);
+  next.splice(Math.max(0, Math.min(to, next.length)), 0, item);
+  return next;
+}

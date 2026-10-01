@@ -129,11 +129,18 @@ Deno.serve(async (req) => {
 
   const { data: pri } = await db.from('buyer_priorities').select('priorities').eq('user_id', userId).maybeSingle();
   const known = (pri?.priorities ?? []) as Priority[];
-  const prioritiesText = known.length
-    ? known.map((p) => `- ${p.label} (${p.importance}): ${p.evidence}`).join('\n')
-    : 'Nothing yet.';
-
   const labels = new Map(homes.map((h) => [h.id, h.label]));
+
+  // The buyer's own drag-and-drop order, if they set one: a strong signal of what they prefer.
+  const { data: override } = await db.from('ranking_overrides').select('property_ids').eq('user_id', userId).maybeSingle();
+  const manualOrder = ((override?.property_ids ?? []) as string[]).filter((id) => labels.has(id));
+  const prioritiesText =
+    (known.length ? known.map((p) => `- ${p.label} (${p.importance}): ${p.evidence}`).join('\n') : 'Nothing yet.') +
+    (manualOrder.length
+      ? `\n\nThe buyer manually reordered their ranking to: ${manualOrder.map((id, i) => `${i + 1}. ${labels.get(id)}`).join(', ')}. ` +
+        'Treat this as a strong statement of preference: respect it in the next ranking unless they have since said otherwise, and infer the priorities behind it.'
+      : '');
+
   const turns: RankingTurn[] = past.map((m) =>
     m.role === 'assistant'
       ? { role: 'assistant', content: replayAssistantTurn(m.content, m.ranking, m.question, labels) }
@@ -179,6 +186,12 @@ Deno.serve(async (req) => {
   }
   const { data: saved, error: sError } = await db.from('ranking_messages').insert(rows).select('*');
   if (sError) return json({ error: sError.message }, 500);
+
+  // A fresh ranking has taken the manual order into account, so it replaces it.
+  if (mode === 'rank' && manualOrder.length) {
+    const { error: oError } = await db.from('ranking_overrides').delete().eq('user_id', userId);
+    if (oError) console.error('clearing manual order failed', userId, oError);
+  }
 
   const { error: prError } = await db
     .from('buyer_priorities')

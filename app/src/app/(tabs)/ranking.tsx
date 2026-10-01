@@ -1,16 +1,23 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { NestedReorderableList, reorderItems, ScrollViewContainer, useReorderableDrag } from 'react-native-reorderable-list';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { SymbolView } from 'expo-symbols';
 import { HomeThumb } from '../../components/HomeThumb';
-import { Banner, Body, Button, colors, Eyebrow, Screen, TabHeader } from '../../components/ui';
+import { Banner, Body, Button, colors, Eyebrow, TabHeader } from '../../components/ui';
 import { displayAddress } from '../../lib/address';
 import type { PropertyCard } from '../../lib/api';
 import {
+  applyOverride,
+  clearOverride,
+  differsFrom,
   discussedSinceRanking,
   fetchRankingState,
   formatScore,
   latestRanking,
   newHomesSince,
+  saveOverride,
   sendRankingTurn,
   shortLabel,
   type Fit,
@@ -66,11 +73,43 @@ export default function Ranking() {
   const fresh = state && latest ? newHomesSince(latest, state.rankableIds) : [];
   const discussed = state ? discussedSinceRanking(state.messages) : false;
   const enoughHomes = (state?.rankableIds.length ?? 0) >= 2;
-  const list = latest?.ranking ?? [];
+  const noraList = latest?.ranking ?? [];
+  // The buyer's dragged order wins over NORA's until they revert or re-rank.
+  const override = state?.override ?? null;
+  const list = applyOverride(noraList, override);
+  const reordered = differsFrom(noraList, override);
   const expanded = open ?? list[0]?.property_id ?? null;
 
+  async function reorder(next: RankedHome[]) {
+    const ids = next.map((r) => r.property_id);
+    const previous = state?.override ?? null;
+    setState((st) => (st ? { ...st, override: ids } : st));
+    setError('');
+    try {
+      await saveOverride(ids);
+    } catch {
+      setState((st) => (st ? { ...st, override: previous } : st));
+      setError("Couldn't save your order. Check your connection.");
+    }
+  }
+
+  async function revert() {
+    const previous = state?.override ?? null;
+    setState((st) => (st ? { ...st, override: null } : st));
+    try {
+      await clearOverride();
+    } catch {
+      setState((st) => (st ? { ...st, override: previous } : st));
+      setError("Couldn't restore NORA's ranking. Check your connection.");
+    }
+  }
+
+  const topHome = list[0] ? state?.homes.get(list[0].property_id) : undefined;
+
   return (
-    <Screen tab style={s.screen}>
+    // ScrollViewContainer lets the nested ranking list take over vertical drags.
+    <SafeAreaView style={s.root} edges={['top', 'left', 'right']}>
+      <ScrollViewContainer contentContainerStyle={s.screen} keyboardShouldPersistTaps="handled">
       <TabHeader />
 
       {loadError ? <Banner tone="error">{loadError}</Banner> : null}
@@ -104,15 +143,21 @@ export default function Ranking() {
         <>
           <View style={s.heading}>
             <View style={s.headingRow}>
-              <Eyebrow>Your ranking</Eyebrow>
+              <Eyebrow>{reordered ? 'Your order' : 'Your ranking'}</Eyebrow>
               <View style={s.count}>
                 <Text style={s.countText}>{list.length} homes</Text>
               </View>
             </View>
             <Text style={s.headline} accessibilityRole="header">
-              {latest.content || 'Your homes, best fit first'}
+              {reordered && topHome ? `${topHome.address_line} is your #1` : latest.content || 'Your homes, best fit first'}
             </Text>
-            <Text style={s.helper}>Scores are out of 10: close scores mean a close call. Tap a home for details.</Text>
+            <Text style={s.helper}>{"Scores are NORA's, out of 10. Tap a home for details; drag ≡ to reorder."}</Text>
+            {reordered ? (
+              <Pressable accessibilityRole="button" onPress={revert} hitSlop={8} style={s.revert}>
+                <SymbolView name="arrow.uturn.backward" tintColor={colors.ink3} size={12} type="monochrome" />
+                <Text style={s.revertText}>Revert to NORA&apos;s ranking</Text>
+              </Pressable>
+            ) : null}
           </View>
 
           {fresh.length > 0 || discussed ? (
@@ -129,16 +174,20 @@ export default function Ranking() {
           ) : null}
 
           <View style={[s.list, ranking && { opacity: 0.5 }]}>
-            {list.map((r, i) => (
-              <RankRow
-                key={r.property_id}
-                item={r}
-                home={state.homes.get(r.property_id)}
-                first={i === 0}
-                expanded={expanded === r.property_id}
-                onToggle={() => setOpen(expanded === r.property_id ? '' : r.property_id)}
-              />
-            ))}
+            <NestedReorderableList
+              data={list}
+              keyExtractor={(r) => r.property_id}
+              onReorder={({ from, to }) => reorder(reorderItems(list, from, to))}
+              renderItem={({ item: r, index }) => (
+                <RankRow
+                  item={r}
+                  home={state.homes.get(r.property_id)}
+                  first={index === 0}
+                  expanded={expanded === r.property_id}
+                  onToggle={() => setOpen(expanded === r.property_id ? '' : r.property_id)}
+                />
+              )}
+            />
           </View>
 
           <View style={s.actions}>
@@ -149,7 +198,8 @@ export default function Ranking() {
       ) : null}
 
       {error ? <Banner tone="error">{error}</Banner> : null}
-    </Screen>
+      </ScrollViewContainer>
+    </SafeAreaView>
   );
 }
 
@@ -172,6 +222,8 @@ function RankRow({
   expanded: boolean;
   onToggle: () => void;
 }) {
+  // Starts a drag of this row: right away from the grip, or with a long press anywhere.
+  const drag = useReorderableDrag();
   const label = shortLabel(item);
   const pros = item.pros ?? [];
   const cons = item.cons ?? [];
@@ -180,11 +232,13 @@ function RankRow({
   const hasDetail = pros.length > 0 || cons.length > 0 || !!home;
   return (
     <View style={[s.row, !first && s.rowDivider]}>
+      <View style={s.rowTop}>
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded }}
         accessibilityLabel={`Number ${item.rank}, ${address}${label ? `, ${label}` : ''}, ${score ? `score ${score} out of 10` : `${FIT[item.fit].label} fit`}`}
         onPress={onToggle}
+        onLongPress={drag}
         style={({ pressed }) => [s.rowMain, pressed && { opacity: 0.7 }]}
       >
         <View style={[s.badge, item.rank === 1 && s.badgeFirst]}>
@@ -207,6 +261,10 @@ function RankRow({
           <Text style={[s.fit, { color: FIT[item.fit].color }]}>{FIT[item.fit].label}</Text>
         )}
       </Pressable>
+      <Pressable onPressIn={drag} style={s.grip} accessibilityRole="button" accessibilityLabel={`Drag to move ${address}`}>
+        <SymbolView name="line.3.horizontal" tintColor={colors.ink3} size={16} type="monochrome" />
+      </Pressable>
+      </View>
 
       {expanded && hasDetail ? (
         <View style={s.detail}>
@@ -236,7 +294,8 @@ function RankRow({
 }
 
 const s = StyleSheet.create({
-  screen: { gap: 18 },
+  root: { flex: 1, backgroundColor: colors.bg },
+  screen: { padding: 20, gap: 18, flexGrow: 1 },
   flex: { flex: 1 },
   empty: { gap: 14, backgroundColor: colors.surface, borderRadius: 20, borderWidth: 1, borderColor: colors.line, padding: 20 },
   thinking: { alignItems: 'center', gap: 12, paddingVertical: 12 },
@@ -250,9 +309,13 @@ const s = StyleSheet.create({
   update: { gap: 10, backgroundColor: colors.accentSoft, borderRadius: 16, padding: 16 },
   updateText: { fontSize: 15, color: colors.accent, fontWeight: '600' },
   list: { backgroundColor: colors.surface, borderRadius: 20, borderWidth: 1, borderColor: colors.line, overflow: 'hidden' },
-  row: { paddingHorizontal: 16 },
+  row: { paddingHorizontal: 16, backgroundColor: colors.surface },
   rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
-  rowMain: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
+  rowTop: { flexDirection: 'row', alignItems: 'center' },
+  rowMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
+  grip: { width: 36, height: 48, marginRight: -8, alignItems: 'center', justifyContent: 'center' },
+  revert: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', marginTop: 2 },
+  revertText: { fontSize: 13, color: colors.ink3, fontWeight: '600' },
   badge: { width: 24, height: 24, borderRadius: 7, backgroundColor: colors.sunk, alignItems: 'center', justifyContent: 'center' },
   badgeFirst: { backgroundColor: colors.ink },
   badgeText: { fontSize: 13, fontWeight: '800', color: colors.ink2, fontVariant: ['tabular-nums'] },

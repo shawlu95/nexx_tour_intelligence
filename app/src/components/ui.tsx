@@ -49,6 +49,7 @@ export function Screen({
   dark = false,
   tab = false,
   refreshControl,
+  scrollEnabled = true,
 }: {
   children: ReactNode;
   scroll?: boolean;
@@ -56,6 +57,8 @@ export function Screen({
   dark?: boolean;
   tab?: boolean;
   refreshControl?: ReactElement<RefreshControlProps>;
+  /** Turn off while something inside handles vertical drags. */
+  scrollEnabled?: boolean;
 }) {
   const bg = { backgroundColor: dark ? colors.stage : colors.bg };
   const edges: Edge[] = tab ? ['top', 'left', 'right'] : ['bottom', 'left', 'right'];
@@ -66,6 +69,7 @@ export function Screen({
           contentContainerStyle={[styles.screen, style]}
           keyboardShouldPersistTaps="handled"
           refreshControl={refreshControl}
+          scrollEnabled={scrollEnabled}
         >
           {children}
         </ScrollView>

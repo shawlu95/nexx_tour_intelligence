@@ -12,7 +12,17 @@ import {
   uniqueStreetAddresses,
 } from './address';
 import { retryDelayMs } from './backoff';
-import { discussedSinceRanking, formatScore, latestRanking, newHomesSince, shortLabel, type RankingMessage } from './rankingLogic';
+import {
+  applyOverride,
+  differsFrom,
+  discussedSinceRanking,
+  formatScore,
+  latestRanking,
+  moveItem,
+  newHomesSince,
+  shortLabel,
+  type RankingMessage,
+} from './rankingLogic';
 import { cueIndex, factTiles, formatClock, formatFacts, formatHomeLine, formatMoney, formatPrice, formatWhen } from './format';
 
 describe('normalizedKey', () => {
@@ -225,5 +235,36 @@ describe('address lookup helpers', () => {
         (x) => x.addressLine,
       ),
     ).toEqual(['812 Pastoria Avenue', '790 Pastoria Ave']);
+  });
+});
+
+describe('manual ranking order', () => {
+  const nora = ['a', 'b', 'c', 'd'].map((id, i) => ({ property_id: id, rank: i + 1, fit: 'good' as const, score: 9 - i }));
+
+  it('applies the buyer order, keeps NORA scores, appends unplaced homes, renumbers', () => {
+    const out = applyOverride(nora, ['c', 'a', 'zzz']);
+    expect(out.map((r) => [r.property_id, r.rank, r.score])).toEqual([
+      ['c', 1, 7],
+      ['a', 2, 9],
+      ['b', 3, 8],
+      ['d', 4, 6],
+    ]);
+  });
+
+  it('leaves NORA’s ranking alone without an override', () => {
+    expect(applyOverride(nora, null)).toBe(nora);
+    expect(applyOverride(nora, [])).toBe(nora);
+  });
+
+  it('knows when the buyer order differs from NORA’s', () => {
+    expect(differsFrom(nora, ['a', 'b', 'c', 'd'])).toBe(false);
+    expect(differsFrom(nora, ['b', 'a'])).toBe(true);
+    expect(differsFrom(nora, null)).toBe(false);
+  });
+
+  it('moves an item up or down', () => {
+    expect(moveItem(['a', 'b', 'c', 'd'], 0, 2)).toEqual(['b', 'c', 'a', 'd']);
+    expect(moveItem(['a', 'b', 'c', 'd'], 3, 0)).toEqual(['d', 'a', 'b', 'c']);
+    expect(moveItem(['a', 'b', 'c'], 1, 9)).toEqual(['a', 'c', 'b']);
   });
 });

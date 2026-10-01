@@ -24,6 +24,8 @@ Last updated: 2026-10-01. Update this file at the end of each work session: move
 
 15. **Ranking scores (2026-10-01).** Each ranked home gets a 0–10 score (one decimal), meant for relative comparison; the server clamps scores and keeps them non-increasing down the list, and derives the old fit value from them. Rows show rank · thumbnail · address with a smaller two-line label · score; tapping a row expands the pro/con tags. The tab re-ranks once automatically if the saved ranking has no scores yet.
 
+16. **Drag to reorder (2026-10-01).** Ranking rows reorder with `react-native-reorderable-list` (`NestedReorderableList` inside `ScrollViewContainer`), on Reanimated 4 + react-native-worklets + Gesture Handler (`GestureHandlerRootView` wraps the app in `_layout.tsx`). Drag starts immediately from the ≡ grip or with a long press on the row. A first hand-rolled PanResponder version looked wrong and was replaced. The order is saved in `ranking_overrides` (migration `20261002040000`, owner-only RLS), applied over NORA's ranking (`applyOverride`), shown as "Your order" with a "Revert to NORA's ranking" link, and given to NORA as a strong preference; a successful re-rank or Start over clears it. Native rebuild done; clean app load verified on the iPhone.
+
 ## Done and verified
 
 | Area | Verified how |

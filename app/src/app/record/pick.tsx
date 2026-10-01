@@ -1,7 +1,8 @@
 import * as Location from 'expo-location';
 import { router, Stack } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HomeThumb } from '../../components/HomeThumb';
 import { Banner, Body, Button, colors, Eyebrow, Field, Screen } from '../../components/ui';
 import {
@@ -49,6 +50,8 @@ export default function PickHome() {
   const [typing, setTyping] = useState(false);
   const [draft, setDraft] = useState<AddressDraft>(EMPTY_DRAFT);
   const [now] = useState(() => new Date());
+  // Height of what sits above this screen: status bar / Dynamic Island + the standard 44 pt nav bar.
+  const headerHeight = useSafeAreaInsets().top + 44;
 
   useEffect(() => {
     let cancelled = false;
@@ -154,81 +157,102 @@ export default function PickHome() {
 
   const time = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
-  return (
-    <Screen style={s.screen}>
-      <Stack.Screen options={{ title: '' }} />
-      <View style={s.heading}>
-        <Eyebrow>New reaction · {time}</Eyebrow>
-        <Text style={s.title} accessibilityRole="header">
-          Which home was this?
-        </Text>
+  const addressForm = (
+    <View style={s.form}>
+      <Field
+        label="Street address"
+        value={draft.addressLine}
+        onChangeText={set('addressLine')}
+        placeholder="812 Pastoria Avenue"
+        autoCapitalize="words"
+        autoFocus
+        returnKeyType="next"
+      />
+      <View style={s.row}>
+        <View style={s.unit}>
+          <Field label="Unit" value={draft.unit} onChangeText={set('unit')} placeholder="Optional" />
+        </View>
+        <View style={s.city}>
+          <Field label="City" value={draft.city} onChangeText={set('city')} placeholder="Sunnyvale" autoCapitalize="words" />
+        </View>
       </View>
-
-      {chosen ? <ChosenCard option={chosen} /> : null}
-      {effective?.kind === 'typed' && typedMatch ? (
+      {typedMatch ? (
         <Banner tone="success">{"You've visited this home before. This reaction will be added to it."}</Banner>
       ) : null}
-
-      {locating ? (
-        <View style={s.locating}>
-          <ActivityIndicator color={colors.accent} />
-          <Text style={s.locatingText}>Finding homes near you…</Text>
-        </View>
-      ) : null}
-      {locationNote ? <Banner>{locationNote}</Banner> : null}
-
       {options.length > 0 ? (
-        <View style={s.options} accessibilityRole="radiogroup">
-          {options.map((o) => (
-            <OptionRow
-              key={o.key}
-              option={o}
-              selected={effective?.kind === 'option' && effective.key === o.key}
-              onPress={() => {
-                setTyping(false);
-                setSelection({ kind: 'option', key: o.key });
-              }}
-            />
-          ))}
-        </View>
-      ) : !locating && !typing ? (
-        <Body muted>No addresses found nearby.</Body>
-      ) : null}
-
-      {typing ? (
-        <View style={s.form}>
-          <Field
-            label="Street address"
-            value={draft.addressLine}
-            onChangeText={set('addressLine')}
-            placeholder="812 Pastoria Avenue"
-            autoCapitalize="words"
-            autoFocus={!locationNote}
-          />
-          <View style={s.row}>
-            <View style={s.unit}>
-              <Field label="Unit" value={draft.unit} onChangeText={set('unit')} placeholder="Optional" />
-            </View>
-            <View style={s.city}>
-              <Field label="City" value={draft.city} onChangeText={set('city')} placeholder="Sunnyvale" autoCapitalize="words" />
-            </View>
-          </View>
-        </View>
-      ) : (
         <Pressable
           accessibilityRole="button"
           onPress={() => {
-            setTyping(true);
-            setSelection({ kind: 'typed' });
+            setTyping(false);
+            setSelection(null);
           }}
           hitSlop={8}
         >
-          <Text style={s.typeLink}>Not listed? Type the address</Text>
+          <Text style={s.typeLink}>Pick from nearby homes instead</Text>
         </Pressable>
-      )}
+      ) : null}
+    </View>
+  );
 
-      <Button title="Start recording" disabled={!canStart} onPress={start} style={s.start} />
-    </Screen>
+  return (
+    // The page moves up with the keyboard, so the address fields and Start stay in view.
+    <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={headerHeight}>
+      <Screen style={s.screen}>
+        <Stack.Screen options={{ title: '' }} />
+        <View style={s.heading}>
+          <Eyebrow>New reaction · {time}</Eyebrow>
+          <Text style={s.title} accessibilityRole="header">
+            Which home was this?
+          </Text>
+        </View>
+
+        {locationNote ? <Banner>{locationNote}</Banner> : null}
+
+        {typing ? (
+          // Typing: the form takes the top of the page; the nearby list is hidden.
+          addressForm
+        ) : (
+          <>
+            {chosen ? <ChosenCard option={chosen} /> : null}
+
+            {locating ? (
+              <View style={s.locating}>
+                <ActivityIndicator color={colors.accent} />
+                <Text style={s.locatingText}>Finding homes near you…</Text>
+              </View>
+            ) : null}
+
+            {options.length > 0 ? (
+              <View style={s.options} accessibilityRole="radiogroup">
+                {options.map((o) => (
+                  <OptionRow
+                    key={o.key}
+                    option={o}
+                    selected={effective?.kind === 'option' && effective.key === o.key}
+                    onPress={() => setSelection({ kind: 'option', key: o.key })}
+                  />
+                ))}
+              </View>
+            ) : !locating ? (
+              <Body muted>No addresses found nearby.</Body>
+            ) : null}
+
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                setTyping(true);
+                setSelection({ kind: 'typed' });
+              }}
+              hitSlop={8}
+            >
+              <Text style={s.typeLink}>Not listed? Type the address</Text>
+            </Pressable>
+          </>
+        )}
+
+        <Button title="Start recording" disabled={!canStart} onPress={start} style={s.start} />
+      </Screen>
+    </KeyboardAvoidingView>
   );
 }
 
