@@ -77,7 +77,7 @@ npx expo start                  # then open the installed development build on t
 
 For the cloud build, also add the three `EXPO_PUBLIC_*` values as EAS environment variables (`npx eas-cli@latest env:create`), because `.env.local` is not uploaded.
 
-The app uses native modules (microphone, Apple sign-in, secure storage, SQLite), so it does not run in Expo Go; it needs the development build above. Building locally instead (`npx expo run:ios`) requires Xcode.
+The app uses native modules (microphone, Apple sign-in, secure storage, SQLite), so it does not run in Expo Go; it needs the development build above. To build on your Mac instead, without the paid Apple account, see the [Xcode dev guide](#5-xcode-dev-guide).
 
 The bundle identifier (iOS) and package name (Android) are `com.nexx.tour.intelligence`, set in `app/app.json`.
 
@@ -88,6 +88,87 @@ cp share-web/config.example.js share-web/config.js   # fill in the Supabase URL 
 ```
 
 Deploy the `share-web/` folder to a static host and set `EXPO_PUBLIC_SHARE_BASE_URL` in the app to its address. The anon key is safe in this page: the only thing it can do is call `get_shared_note`.
+
+## 5. Xcode dev guide
+
+Without Xcode, the only way to run the app is an EAS cloud build, which needs the $99/year Apple Developer Program before anything can be installed. With Xcode you can build and test on your Mac for free.
+
+### What Xcode gives you
+
+1. **The iOS Simulator.** `npx expo run:ios` builds the app and opens it on a simulated iPhone. No Apple account and no fee. Most of the MVP can be tested there:
+   - Email-code sign-in.
+   - The "Which home?" screen. The Simulator can fake a GPS location, so you can pretend to be outside a house.
+   - Recording, which uses the Mac's microphone.
+   - Upload, the note, editing, playback, the transcript, and the share sheet.
+   - The offline queue: turn off the Mac's Wi-Fi, record, then turn it back on and watch the upload catch up.
+2. **Your own iPhone over a cable, also free.** With a free Apple ID, Xcode can install the app on your phone. It stops working after 7 days and has to be installed again. This is the real test for recording quality outdoors and GPS at actual open houses (see the signing limits below).
+3. **Faster changes.** Local builds take minutes instead of waiting in the EAS queue, and JavaScript edits appear instantly without rebuilding.
+4. **Screenshots for review.** Claude can boot the Simulator, open a screen directly by link, and take screenshots to check layouts. It can't tap through the app, so hands-on testing is still yours.
+
+### What still needs the paid Apple Developer Program
+
+| Feature | Why |
+|---|---|
+| Push notifications | The app skips push registration in the Simulator (`app/src/lib/push.ts`), and Apple only allows push on paid accounts. Without it, the note still appears; the buyer just isn't notified while away from the screen. |
+| Sign in with Apple | Needs the paid account's signing setup. Use email sign-in until then. |
+| TestFlight and the App Store | Giving the app to other people. |
+
+Apple doesn't let free accounts sign apps that use push notifications or Sign in with Apple, and this app declares both. So installing on a physical iPhone with a free account needs a build with those two turned off. Ask Claude to add a switch for this when you get there. The Simulator is not affected.
+
+### One-time setup
+
+1. Install Xcode from the Mac App Store (about 10 GB, more with simulators).
+2. Point the command-line tools at it and accept the license:
+   ```bash
+   sudo xcode-select -s /Applications/Xcode.app
+   sudo xcodebuild -license accept
+   ```
+3. Open Xcode once. When asked, install the iOS platform (the Simulator runtime). You can also do this later in **Xcode → Settings → Components**.
+4. Check it worked:
+   ```bash
+   xcodebuild -version
+   xcrun simctl list devices available | grep iPhone
+   ```
+
+The app also needs the Supabase back end running (step 2) before you can sign in.
+
+### Run in the Simulator
+
+```bash
+cd app
+cp .env.example .env.local      # if you haven't already; fill in the Supabase URL and anon key
+npx expo run:ios                # first build takes several minutes; later ones are faster
+```
+
+This generates the native `ios/` project, builds it, installs it on a simulator, and starts the development server. After that, `npx expo start` and pressing `i` is enough, unless you change native settings in `app.json` or add a native package.
+
+Useful Simulator controls:
+
+| To test | Do this |
+|---|---|
+| A specific iPhone model | `npx expo run:ios --device "iPhone 17"` (pick from `xcrun simctl list devices available`) |
+| Being outside a house | **Features → Location → Custom Location…** and enter its latitude and longitude, then open "Which home?" |
+| Recording | Allow microphone access when asked; the Simulator uses the Mac's microphone |
+| No signal | Turn off the Mac's Wi-Fi, record and save, turn it back on, and watch the note appear |
+| Opening a screen directly | `xcrun simctl openurl booted "nora://visit/<visit-id>"` |
+| A screenshot | `xcrun simctl io booted screenshot ~/Desktop/nora.png` |
+| Starting fresh | **Device → Erase All Content and Settings** |
+
+### Run on your iPhone with a free Apple ID
+
+1. In Xcode, open **Settings → Accounts** and add your Apple ID. This creates a free "Personal Team".
+2. On the iPhone, turn on **Settings → Privacy & Security → Developer Mode** and restart when asked.
+3. Connect the iPhone by cable and trust the Mac when prompted.
+4. Build and install:
+   ```bash
+   cd app
+   npx expo run:ios --device
+   ```
+   Pick your iPhone from the list. If asked for a signing team, choose your Personal Team.
+5. The first time, the iPhone blocks the app until you trust it: **Settings → General → VPN & Device Management**, select your Apple ID, and tap **Trust**.
+6. The install expires after 7 days. Run step 4 again to reinstall; your data on the phone is kept.
+
+Remember the signing limit above: with a free account, push notifications and Sign in with Apple must be turned off for this build.
 
 ## How a recording becomes a note
 
