@@ -13,7 +13,7 @@ Voice note-taking app for home buyers. After leaving an open house, the buyer re
 |---|---|
 | `app/` | Expo SDK 57 / React Native 0.86 / TypeScript / Expo Router. Routes in `app/src/app/`, logic in `app/src/lib/`, UI in `app/src/components/`. |
 | `supabase/migrations/` | Schema, row-level security, storage bucket, `get_shared_note` RPC, `run_sweep` + pg_cron schedule |
-| `supabase/functions/` | Deno Edge Functions: `process-visit`, `sweep`, `delete-account`; shared code in `_shared/` |
+| `supabase/functions/` | Deno Edge Functions: `process-visit`, `sweep`, `delete-account`, `rank-homes`; shared code in `_shared/` |
 | `share-web/` | Static page agents open from a share link (`index.html`, `config.js` is git-ignored) |
 | `app/modules/look-around/` | Local Expo native module (iOS, Swift) that makes home thumbnails with Apple Look Around or a map snapshot. Native changes need a rebuild. |
 

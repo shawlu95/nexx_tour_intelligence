@@ -8,7 +8,7 @@ The design is in [README.md](README.md). This file covers running and deploying 
 |---|---|
 | `app/` | iOS and Android app (Expo SDK 57, React Native, TypeScript, Expo Router). Screens are in `app/src/app/`, shared code in `app/src/lib/` and `app/src/components/`. |
 | `supabase/migrations/` | Database schema, row-level security, storage bucket, the `get_shared_note` function, and the 5-minute schedule for `sweep` |
-| `supabase/functions/` | Edge Functions: `process-visit` (transcribe and summarize), `sweep` (retries), `delete-account`. Shared code is in `_shared/`. |
+| `supabase/functions/` | Edge Functions: `process-visit` (transcribe and summarize), `sweep` (retries, missing facts), `delete-account`, `rank-homes` (the Ranking conversation). Shared code is in `_shared/`. |
 | `share-web/` | Static page agents open from a share link |
 
 ## Checks
@@ -49,11 +49,12 @@ supabase link --project-ref YOUR-PROJECT-REF
 supabase db push                               # applies supabase/migrations
 
 supabase secrets set DEEPGRAM_API_KEY=... ANTHROPIC_API_KEY=...
-# Optional: supabase secrets set SUMMARY_MODEL=claude-sonnet-5   (default is claude-opus-5)
+# Optional: supabase secrets set SUMMARY_MODEL=claude-sonnet-5   (note writer; default claude-opus-5)
+# Optional: supabase secrets set RANKING_MODEL=claude-sonnet-5   (ranking chat; default claude-opus-5)
 supabase secrets set RENTCAST_API_KEY=...
 # Optional: supabase secrets set RENTCAST_MONTHLY_LIMIT=45     (hard cap on RentCast calls per month; default 45)
 
-supabase functions deploy process-visit sweep delete-account --use-api   # --use-api bundles on Supabase's side, so Docker isn't needed
+supabase functions deploy process-visit sweep delete-account rank-homes --use-api   # --use-api bundles on Supabase's side, so Docker isn't needed
 ```
 
 **Home facts.** See [RentCast (home facts)](#rentcast-home-facts) below.

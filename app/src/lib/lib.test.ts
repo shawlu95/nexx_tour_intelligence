@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { displayAddress, distanceMeters, draftFromGeocode, formatDistance, normalizedKey } from './address';
 import { retryDelayMs } from './backoff';
+import { latestRanking, newHomesSince, type RankingMessage } from './rankingLogic';
 import { cueIndex, factTiles, formatClock, formatFacts, formatHomeLine, formatMoney, formatPrice, formatWhen } from './format';
 
 describe('normalizedKey', () => {
@@ -141,5 +142,31 @@ describe('factTiles', () => {
     expect(factTiles({ price: 899000, price_kind: 'list', listing_status: 'Active' })).toEqual([{ label: 'Listed', value: '$899K' }]);
     expect(factTiles({ price: 1200000, price_kind: 'last_sale', price_date: '2019-05-02' })).toEqual([{ label: 'Sold 2019', value: '$1.2M' }]);
     expect(factTiles({})).toEqual([]);
+  });
+});
+
+describe('ranking helpers', () => {
+  const msg = (over: Partial<RankingMessage>): RankingMessage => ({
+    id: 'm',
+    role: 'assistant',
+    content: '',
+    ranking: null,
+    question: null,
+    based_on: null,
+    created_at: '2026-10-01T00:00:00Z',
+    ...over,
+  });
+
+  it('finds the most recent ranking', () => {
+    const first = msg({ id: '1', ranking: [{ property_id: 'a', rank: 1, fit: 'good', reason: '' }] });
+    const second = msg({ id: '2', ranking: [{ property_id: 'b', rank: 1, fit: 'good', reason: '' }] });
+    expect(latestRanking([first, msg({ id: 'u', role: 'user' }), second, msg({ id: 'x' })])?.id).toBe('2');
+    expect(latestRanking([msg({ role: 'user' })])).toBeNull();
+  });
+
+  it('lists homes recorded since the latest ranking', () => {
+    const latest = msg({ based_on: ['a', 'b'], ranking: [{ property_id: 'a', rank: 1, fit: 'good', reason: '' }] });
+    expect(newHomesSince(latest, ['a', 'b', 'c'])).toEqual(['c']);
+    expect(newHomesSince(null, ['a'])).toEqual([]);
   });
 });

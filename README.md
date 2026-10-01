@@ -36,7 +36,6 @@ The full product vision draws on the front-end mockup (nexx-tour-intelligence.fr
 
 These come from the mockup and the review, and are planned for later phases:
 
-- **Ranking and fit score** across all toured homes, reorderable by the buyer.
 - **A clarifying question** after recording, about something the buyer raised but left unclear (for example, "How much do the power lines concern you?").
 - **A reminder to record**, sent when the buyer leaves an open house without recording (geofence), so no visit is forgotten.
 - **Agent workspace:** an agent account with ongoing access to the buyer's tours, where the agent can add professional notes alongside the buyer's.
@@ -67,18 +66,18 @@ Something belongs in the MVP only if leaving it out would break that job. Everyt
 | 9 | **Share a note with the agent** | Creates a private, read-only web link and opens the phone's share sheet (text, email, WhatsApp). The buyer chooses whether to include the transcript and can revoke the link at any time. The agent doesn't need an account. |
 | 10 | **Delete data** | Delete a visit, a property, or the whole account, including the audio. This is required by the App Store and expected by users. |
 | 11 | **Home facts and thumbnail** | Each home shows beds, baths, square feet and the listing (or last sale) price, looked up once from RentCast's public-record and listing data. A small street-level thumbnail is made on the phone with Apple Look Around (a map snapshot where there's no coverage), so homes in lists are easy to tell apart. |
+| 12 | **Ranking conversation** | A Ranking tab where NORA ranks all the buyer's homes from their notes and the home facts, explains why the top homes lead, and asks one question at a time to learn what matters (yard vs. size, commute, budget). Each answer updates the ranking and a visible list of learned priorities. The buyer can start over at any time. |
 
 ### Left out of the MVP
 
 | Feature | Why it's left out | When |
 |---|---|---|
-| Ranking and fit score | Needs several notes per buyer and a defined set of priorities to mean anything. An unexplained score hurts trust. | Phase 2 |
+| Numeric fit score | A number with a decimal point suggests precision a few one-minute reactions can't support. The ranking uses plain strong / good / weak fit with written reasons instead (feature 12). | Not planned |
 | Clarifying question after recording | Adds a step and a second AI call. The note already includes "Questions for my agent." | Phase 2 |
 | Reminder to record when leaving a home | Needs background location permission, which many buyers decline and app review scrutinizes. | Phase 2 |
 | Agent accounts, invitations, agent notes | A second user type, permissions, and onboarding. A share link covers the core need with none of that. | Phase 3 |
 | Listing photos | Copyrighted and only available through licensed MLS feeds. The MVP shows a street-level thumbnail made on the phone instead (see feature 11). | Phase 3 |
 | Photos in notes | Valuable, but it adds storage, upload, and interface work. Buyers already have photos in their camera roll. | Phase 2 |
-| Buyer priorities profile | Only needed once there are clarifying questions and scores. | Phase 2 |
 | Co-buyers and shared searches | Sharing between two buyers is a larger permissions problem. | Phase 3 |
 | Android app | The code is shared, so Android follows the iOS launch with mostly testing and store work. | Phase 1.5 |
 | Languages other than English | Keeps prompts and quality testing focused. The transcription service supports more languages later. | Phase 3 |
@@ -296,6 +295,18 @@ Share links are created and revoked by the app directly in the database, under t
 
 The model choice should be made with a small quality test: 30–50 real or realistic reactions, scored for missed points and invented points. If Sonnet 5 holds up on that test, switching halves the AI cost. At these amounts either choice is cheap.
 
+### Cost per ranking turn
+
+Each message in the Ranking conversation is one Claude call. Claude reads the instructions, a summary of every home (about 300 tokens each), what it has learned, and the recent conversation, then writes a reply, the full ranking with reasons, and the updated priorities.
+
+| Item | Calculation (10 homes, Claude Opus 5, medium effort) | Cost per turn |
+|---|---|---|
+| Input | ~7,000 tokens; instructions and home summaries are cached after the first turn (cache reads cost a tenth) | ~$0.01–0.035 |
+| Output | ~1,500 tokens (reply, ranking, priorities, reasoning) × $25/M | ~$0.04 |
+| **Total** | | **≈ $0.05–0.075** |
+
+A buyer who has 10 ranking exchanges a month costs about **$0.50–0.75 a month**. The function allows 60 turns per buyer per day to stop runaway cost. Setting `RANKING_MODEL=claude-sonnet-5` would cut this by more than half.
+
 ### Cost per new home (facts)
 
 Home facts (beds, baths, size, price) come from RentCast, billed per API call. Thumbnails are made on the phone with Apple Look Around and cost nothing.
@@ -333,14 +344,14 @@ Facts are looked up per buyer, so two buyers who visit the same open house cost 
 
 ### Monthly running cost by scale
 
-| Scale | Visits (≈ new homes) per month | AI cost (Claude Opus 5 + Deepgram) | Home facts (RentCast) | Fixed services | **Total per month** |
-|---|---|---|---|---|---|
-| Development: you and a few testers | < 30 | < $1 | $0 (Developer plan) | ~$0–25 | **≈ $0–25** |
-| Pilot: 50 buyers | 400 | ~$14 | ~$74 (Foundation; 400–800 calls) | ~$25–45 | **≈ $115–135** |
-| Launch: 500 buyers | 4,000 | ~$140 | ~$199–290 (Growth; 4,000–8,000 calls) | ~$45–65 | **≈ $385–495** |
-| Growth: 5,000 buyers | 40,000 | ~$1,400 | ~$675–1,275 (Scale; 40,000–80,000 calls) | ~$150–300 (Supabase usage, Resend, Sentry and PostHog paid tiers) | **≈ $2,225–2,975** |
+| Scale | Visits (≈ new homes) per month | Notes (Claude Opus 5 + Deepgram) | Ranking chat (~10 turns per buyer) | Home facts (RentCast) | Fixed services | **Total per month** |
+|---|---|---|---|---|---|---|
+| Development: you and a few testers | < 30 | < $1 | < $5 | $0 (Developer plan) | ~$0–25 | **≈ $0–30** |
+| Pilot: 50 buyers | 400 | ~$14 | ~$25–40 | ~$74 (Foundation; 400–800 calls) | ~$25–45 | **≈ $140–175** |
+| Launch: 500 buyers | 4,000 | ~$140 | ~$250–375 | ~$199–290 (Growth; 4,000–8,000 calls) | ~$45–65 | **≈ $635–870** |
+| Growth: 5,000 buyers | 40,000 | ~$1,400 | ~$2,500–3,750 | ~$675–1,275 (Scale; 40,000–80,000 calls) | ~$150–300 (Supabase usage, Resend, Sentry and PostHog paid tiers) | **≈ $4,725–6,725** |
 
-At about $0.035 per visit for the note, plus $0.04–0.08 per new home for facts on the Growth plan, a buyer who tours 8 homes a month costs about **$0.60–0.90 a month** to serve. Facts are the largest variable cost from the pilot onward. Sharing lookups across buyers, or limiting facts to homes a buyer visits twice, would bring that down.
+Per buyer who tours 8 homes and has about 10 ranking exchanges a month: notes about $0.28, ranking chat $0.50–0.75, facts $0.32–0.64 (Growth plan), so about **$1.10–1.70 a month**. The ranking chat is the largest variable cost; switching it to Claude Sonnet 5 (`RANKING_MODEL`) is the first lever. Sharing RentCast lookups across buyers is the second.
 
 ### One-time costs
 

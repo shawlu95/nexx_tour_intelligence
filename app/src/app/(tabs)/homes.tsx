@@ -33,7 +33,7 @@ export default function Properties() {
 
   return (
     <Screen tab>
-      <TabHeader title="Your homes" />
+      <TabHeader title="Tour history" />
       <Field label="Search" value={query} onChangeText={setQuery} placeholder="Street, city or ZIP" autoCorrect={false} />
       {offline ? <Banner>{"You're offline. Showing your last saved list."}</Banner> : null}
       {error ? <Banner tone="error">{error}</Banner> : null}

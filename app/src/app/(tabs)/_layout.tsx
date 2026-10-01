@@ -12,6 +12,7 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.ink3,
         tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.line },
@@ -26,11 +27,18 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="ranking"
+        options={{
+          title: 'Ranking',
+          tabBarIcon: ({ color, size }) => <TabIcon name="list.number" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
         name="homes"
         options={{
-          title: 'Homes',
+          title: 'History',
           tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon name={focused ? 'building.2.fill' : 'building.2'} color={color} size={size} />
+            <TabIcon name={focused ? 'clock.fill' : 'clock'} color={color} size={size} />
           ),
         }}
       />
