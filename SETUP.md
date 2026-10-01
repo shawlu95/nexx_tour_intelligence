@@ -34,6 +34,7 @@ npx expo-doctor                # dependency and config checks
 | Supabase | Database, sign-in, storage, functions | Free plan is enough for development |
 | Deepgram | Speech-to-text | Starts with free credit |
 | Anthropic | Writing the note (Claude) | API key from console.anthropic.com |
+| RentCast | Beds, baths, square feet and price for each home | Free Developer plan (50 calls a month) is enough for development; a pilot needs Foundation ($74/month). See [RentCast setup](#rentcast-home-facts) below. |
 | Expo (EAS) | Cloud builds of the app | Free plan is enough to start |
 | Apple Developer Program | Installing on iPhones, TestFlight, App Store | $99/year. Also needed for Sign in with Apple. |
 | Static hosting for `share-web/` | Share links | Cloudflare Pages, Netlify, Vercel or any static host |
@@ -49,9 +50,13 @@ supabase db push                               # applies supabase/migrations
 
 supabase secrets set DEEPGRAM_API_KEY=... ANTHROPIC_API_KEY=...
 # Optional: supabase secrets set SUMMARY_MODEL=claude-sonnet-5   (default is claude-opus-5)
+supabase secrets set RENTCAST_API_KEY=...
+# Optional: supabase secrets set RENTCAST_MONTHLY_LIMIT=45     (hard cap on RentCast calls per month; default 45)
 
 supabase functions deploy process-visit sweep delete-account --use-api   # --use-api bundles on Supabase's side, so Docker isn't needed
 ```
+
+**Home facts.** See [RentCast (home facts)](#rentcast-home-facts) below.
 
 **Scheduled retries.** A migration schedules `sweep` every 5 minutes with `pg_cron`. The job authenticates with its own key, so the project's service-role key never leaves Supabase. Create that key once per project; it is generated in a shell variable and never printed:
 
@@ -70,6 +75,49 @@ Then, in the Supabase dashboard:
 2. **Authentication → Emails → Magic link or OTP:** add the code to the template so the app's code sign-in works, for example `Your NORA code is {{ .Token }}`. The default template contains only a link.
 3. **Authentication → URL Configuration:** add `nora://auth-callback` to the redirect URLs (needed for Google sign-in).
 4. **Authentication → Providers:** turn on Google (OAuth client from Google Cloud) and Apple (bundle id `com.nexx.tour.intelligence` as the client id) when you're ready. Email works without either.
+
+### RentCast (home facts)
+
+NORA looks up each home's beds, baths, square feet and price once, after its first note is written. The lookup tries an active listing first, then falls back to the public record if anything is missing. That's 1–2 calls per new home. Thumbnails don't use RentCast; they're made on the phone.
+
+**Set up**
+1. Create an account at rentcast.io.
+2. **Subscribe to an API plan** in the RentCast dashboard, even the free Developer plan. A key that isn't attached to a plan is refused with `403 billing/subscription-inactive: The provided API key is not associated with an active API subscription`.
+3. Copy the API key from the dashboard and set it yourself (never paste it into chat):
+   ```bash
+   supabase secrets set RENTCAST_API_KEY=your-key
+   ```
+   No redeploy is needed; functions read secrets on each run.
+4. Homes created before the key was set are filled in by `sweep` within 5 minutes (up to 3 per run). To do it now: `supabase db query --linked "select public.run_sweep()"`.
+
+**Plans and the monthly cap**
+
+| Plan | Price | Calls included | Each extra call | Set `RENTCAST_MONTHLY_LIMIT` to |
+|---|---|---|---|---|
+| Developer | $0/month | 50 | $0.20 | 45 (the default) |
+| Foundation | $74/month | 1,000 | $0.06 | about 950 |
+| Growth | $199/month | 5,000 | $0.03 | about 4,900 |
+| Scale | $449/month | 25,000 | $0.015 | about 24,500 |
+
+Every call is counted in the `api_usage` table and checked against `RENTCAST_MONTHLY_LIMIT` before it's made. When the cap is reached, new homes stay `pending` and are looked up the next month, so NORA never pays per-call overage by accident. **After changing plans, raise the cap**:
+```bash
+supabase secrets set RENTCAST_MONTHLY_LIMIT=950
+```
+
+**Check it's working**
+```bash
+supabase db query --linked "select * from api_usage"
+supabase db query --linked "select address_line, beds, baths, sqft, price, price_kind, price_date, listing_status, facts_status from properties"
+```
+`facts_status` is `found`, `not_found` (RentCast has no record), `pending` (waiting for the key or the next month), or `error` (retried after 24 hours). Errors are logged by the function: Supabase dashboard → Edge Functions → `process-visit` or `sweep` → Logs, then search for "facts lookup failed".
+
+To look a home up again (for example, after its listing changes):
+```bash
+supabase db query --linked "update properties set facts_status = 'pending', facts_fetched_at = null where address_line = '18631 Laredo Rd'"
+supabase db query --linked "select public.run_sweep()"
+```
+
+**What the app shows:** "Listed $X" only for an active listing; "Last listed $X (year)" for an old one; "Sold $X (year)" for a past sale from the public record.
 
 ## 3. App
 

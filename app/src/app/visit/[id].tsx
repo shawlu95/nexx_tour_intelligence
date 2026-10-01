@@ -2,7 +2,8 @@ import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-au
 import { File } from 'expo-file-system';
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TextInput, View } from 'react-native';
+import { HomeHero } from '../../components/HomeHero';
 import { NoteSections } from '../../components/NoteSections';
 import { Banner, Body, Button, Card, colors, Eyebrow, Loading, Screen, Title } from '../../components/ui';
 import { displayAddress } from '../../lib/address';
@@ -65,20 +66,21 @@ export default function VisitScreen() {
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: detail?.property.address_line ?? 'Note' }} />
-      <View style={s.header}>
-        <Eyebrow>
-          {formatWhen(recordedAt)} · {formatClock(duration)} reaction
-        </Eyebrow>
-        {detail ? (
-          <Pressable accessibilityRole="link" onPress={() => router.push(`/properties/${detail.property.id}`)}>
-            <Title>{address}</Title>
-            <Text style={s.link}>All visits to this home</Text>
-          </Pressable>
-        ) : (
+      <Stack.Screen options={{ title: '' }} />
+      {detail ? (
+        <HomeHero
+          home={detail.property}
+          eyebrow={`${formatWhen(recordedAt)} · ${formatClock(duration)} reaction`}
+          onPress={() => router.push(`/properties/${detail.property.id}`)}
+        />
+      ) : (
+        <View style={s.header}>
+          <Eyebrow>
+            {formatWhen(recordedAt)} · {formatClock(duration)} reaction
+          </Eyebrow>
           <Title>{address}</Title>
-        )}
-      </View>
+        </View>
+      )}
 
       {offline ? <Banner>{"You're offline. Showing the last saved version."}</Banner> : null}
       {error ? <Banner tone="error">{error}</Banner> : null}
@@ -179,13 +181,18 @@ function ReadyNote({
 
   return (
     <View style={s.ready}>
-      {note ? <Text style={s.overall}>{note.overall}</Text> : null}
+      <View style={s.noteCard}>
+        <Eyebrow color={colors.ink3}>Your reaction</Eyebrow>
+        {note ? <Text style={s.overall}>{note.overall}</Text> : null}
 
-      {note ? (
-        <NoteSections noteId={note.id} items={detail.items} editing={editing} onChange={setItems} onError={onError} />
-      ) : null}
+        {note ? (
+          <NoteSections noteId={note.id} items={detail.items} editing={editing} onChange={setItems} onError={onError} />
+        ) : null}
 
-      {note && detail.items.length === 0 && !editing ? <Body muted>No specific points were picked up. Tap Edit to add your own.</Body> : null}
+        {note && detail.items.length === 0 && !editing ? (
+          <Body muted>No specific points were picked up. Tap Edit to add your own.</Body>
+        ) : null}
+      </View>
 
       {note && (editing || personal) ? (
         <View style={s.personal}>
@@ -213,23 +220,26 @@ function ReadyNote({
         </View>
       ) : null}
 
-      <View style={s.actions}>
-        <Button kind={editing ? 'primary' : 'secondary'} title={editing ? 'Done editing' : 'Edit'} onPress={() => setEditing((v) => !v)} />
-        {!editing && <Button title="Share with your agent" onPress={() => router.push(`/share/${detail.visit.id}`)} />}
-      </View>
-
-      {!editing && (
+      {editing ? (
+        <Button title="Done editing" onPress={() => setEditing(false)} />
+      ) : (
         <>
-          <Playback audioPath={detail.visit.audio_path} localUri={pending?.file_uri ?? null} onError={onError} />
-          <Button
-            kind="secondary"
-            title={showTranscript ? 'Hide transcript' : 'Show transcript'}
-            onPress={() => setShowTranscript((v) => !v)}
-          />
+          <Button title="Share with your agent" onPress={() => router.push(`/share/${detail.visit.id}`)} />
+          <View style={s.chips}>
+            <Button kind="secondary" title="Edit" onPress={() => setEditing(true)} style={s.chip} />
+            <Playback audioPath={detail.visit.audio_path} localUri={pending?.file_uri ?? null} onError={onError} />
+            <Button
+              kind="secondary"
+              title={showTranscript ? 'Hide' : 'Transcript'}
+              accessibilityLabel={showTranscript ? 'Hide transcript' : 'Show transcript'}
+              onPress={() => setShowTranscript((v) => !v)}
+              style={s.chip}
+            />
+          </View>
           {showTranscript ? (
-            <Card style={{ backgroundColor: colors.sunk }}>
+            <View style={s.transcript}>
               <Body>{detail.transcript?.trim() ? `“${detail.transcript}”` : 'No speech was picked up.'}</Body>
-            </Card>
+            </View>
           ) : null}
 
           {confirm === null ? (
@@ -316,15 +326,35 @@ function Playback({ audioPath, localUri, onError }: { audioPath: string | null; 
   }
 
   if (!audioPath && !localUri) return null;
-  const label = status.playing ? `Pause  ${formatClock(status.currentTime)}` : 'Play your recording';
-  return <Button kind="secondary" title={label} loading={loading} onPress={toggle} />;
+  const label = status.playing ? `Pause ${formatClock(status.currentTime)}` : 'Play';
+  return (
+    <Button
+      kind="secondary"
+      title={label}
+      accessibilityLabel={status.playing ? 'Pause recording' : 'Play your recording'}
+      loading={loading}
+      onPress={toggle}
+      style={{ flex: 1 }}
+    />
+  );
 }
 
 const s = StyleSheet.create({
   header: { gap: 6 },
   link: { color: colors.accent, fontSize: 14, fontWeight: '600', marginTop: 4 },
-  ready: { gap: 20 },
-  overall: { fontSize: 17, lineHeight: 25, color: colors.ink, backgroundColor: colors.sunk, borderRadius: 12, padding: 14 },
+  ready: { gap: 16 },
+  noteCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: 20,
+    gap: 16,
+  },
+  overall: { fontSize: 18, lineHeight: 27, color: colors.ink },
+  chips: { flexDirection: 'row', gap: 10 },
+  chip: { flex: 1 },
+  transcript: { backgroundColor: colors.sunk, borderRadius: 16, padding: 16 },
   personal: { gap: 8 },
   personalInput: {
     minHeight: 90,

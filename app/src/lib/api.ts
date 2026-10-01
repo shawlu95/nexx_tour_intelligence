@@ -3,8 +3,25 @@ import { cacheGet, cacheSet } from './localdb';
 import { callFunction, supabase } from './supabase';
 import type { ItemKind, Note, NoteItem, Property, ShareLink, Visit } from './types';
 
+export type PropertyCard = Pick<
+  Property,
+  | 'id'
+  | 'address_line'
+  | 'unit'
+  | 'city'
+  | 'latitude'
+  | 'longitude'
+  | 'beds'
+  | 'baths'
+  | 'sqft'
+  | 'price'
+  | 'price_kind'
+  | 'price_date'
+  | 'listing_status'
+>;
+
 export interface VisitSummary extends Visit {
-  properties: Pick<Property, 'address_line' | 'unit' | 'city'> | null;
+  properties: PropertyCard | null;
   notes: Pick<Note, 'overall'> | null;
 }
 
@@ -34,7 +51,8 @@ async function withCache<T>(key: string, load: () => Promise<T>): Promise<Cached
   }
 }
 
-const VISIT_SUMMARY = 'id, property_id, recorded_at, duration_seconds, audio_path, status, error, properties(address_line, unit, city), notes(overall)';
+const PROPERTY_CARD = 'id, address_line, unit, city, latitude, longitude, beds, baths, sqft, price, price_kind, price_date, listing_status';
+const VISIT_SUMMARY = `id, property_id, recorded_at, duration_seconds, audio_path, status, error, properties(${PROPERTY_CARD}), notes(overall)`;
 
 export function fetchRecentVisits(limit = 15): Promise<Cached<VisitSummary[]>> {
   return withCache('recent-visits', async () => {
@@ -52,7 +70,7 @@ export function fetchProperties(): Promise<Cached<Property[]>> {
   return withCache('properties', async () => {
     const { data, error } = await supabase
       .from('properties')
-      .select('id, address_line, unit, city, region, postal_code, latitude, longitude, last_visited_at')
+      .select(`${PROPERTY_CARD}, region, postal_code, last_visited_at, facts_status`)
       .order('last_visited_at', { ascending: false, nullsFirst: false });
     if (error) throw error;
     return data as Property[];

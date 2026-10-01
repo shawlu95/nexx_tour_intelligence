@@ -1,12 +1,16 @@
 // Runs every 5 minutes (pg_cron, see supabase/migrations/*_schedule_sweep.sql).
 // Restarts visits that are stuck, failed with automatic attempts left, or
 // uploaded but never submitted (for example, the app was closed right after the upload).
+// Also fills in home facts that are still missing (for homes created before the
+// RentCast key was set, or held back by the monthly cap), a few per run.
 //
 // The scheduler authenticates with its own key (SWEEP_SECRET, sent as
 // x-sweep-secret), so the project's service-role key never leaves the server.
+import { lookUpFacts } from '../_shared/rentcast.ts';
 import { adminClient, corsHeaders, invokeFunction, json } from '../_shared/runtime.ts';
 
 const BATCH = 20;
+const FACTS_PER_RUN = 3; // each home costs 1–2 RentCast calls
 
 function sameSecret(given: string | null, expected: string | undefined): boolean {
   if (!given || !expected || given.length !== expected.length) return false;
@@ -41,5 +45,23 @@ Deno.serve(async (req) => {
   const results = await Promise.allSettled((data ?? []).map((v) => invokeFunction('process-visit', { visit_id: v.id })));
   const failed = results.filter((r) => r.status === 'rejected').length;
   if (failed > 0) console.error(`sweep: ${failed} of ${results.length} retries could not be started`);
-  return json({ retried: results.length - failed, failed });
+
+  // Homes still waiting for facts. Newly created homes are left to process-visit,
+  // which looks them up right after their first note.
+  let factsChecked = 0;
+  if (Deno.env.get('RENTCAST_API_KEY')) {
+    const { data: homes } = await db
+      .from('properties')
+      .select('id')
+      .in('facts_status', ['pending', 'error'])
+      .lt('created_at', minutesAgo(10))
+      .order('created_at')
+      .limit(FACTS_PER_RUN);
+    for (const h of homes ?? []) {
+      await lookUpFacts(db, h.id); // checks the retry rules and the monthly cap itself
+      factsChecked++;
+    }
+  }
+
+  return json({ retried: results.length - failed, failed, factsChecked });
 });

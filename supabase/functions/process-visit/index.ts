@@ -12,6 +12,7 @@ import { writeNote } from '../_shared/claude.ts';
 import { STT_MODEL, STT_PROVIDER, transcribeUrl } from '../_shared/deepgram.ts';
 import { checkItems, planRegeneration, PROMPT_VERSION, type ExistingItem, type NoteItem } from '../_shared/note.ts';
 import { sendPush } from '../_shared/push.ts';
+import { lookUpFacts } from '../_shared/rentcast.ts';
 import {
   adminClient,
   corsHeaders,
@@ -151,6 +152,9 @@ Deno.serve(async (req) => {
             visitId,
           });
         }
+
+        // Beds, baths, size and price for the home, once per property. Best effort.
+        await lookUpFacts(db, visit.property_id);
       } catch (e) {
         console.error('process-visit failed', visitId, e);
         await setStatus(db, visitId, 'failed', { error: friendlyError(e) });

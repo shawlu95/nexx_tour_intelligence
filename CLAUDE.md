@@ -15,6 +15,7 @@ Voice note-taking app for home buyers. After leaving an open house, the buyer re
 | `supabase/migrations/` | Schema, row-level security, storage bucket, `get_shared_note` RPC, `run_sweep` + pg_cron schedule |
 | `supabase/functions/` | Deno Edge Functions: `process-visit`, `sweep`, `delete-account`; shared code in `_shared/` |
 | `share-web/` | Static page agents open from a share link (`index.html`, `config.js` is git-ignored) |
+| `app/modules/look-around/` | Local Expo native module (iOS, Swift) that makes home thumbnails with Apple Look Around or a map snapshot. Native changes need a rebuild. |
 
 ## Commands
 
@@ -40,7 +41,7 @@ Run tests, typecheck, lint and expo-doctor before calling app work done.
 
 - Org **Nexx**, project **nexx-tour-intelligence**, ref `amhonfefejwrgttxfkrl`, region us-west-1, Free plan. URL `https://amhonfefejwrgttxfkrl.supabase.co`.
 - CLI is logged in and linked from the repository root. `supabase db push` works without the database password.
-- Function secrets set: `DEEPGRAM_API_KEY`, `ANTHROPIC_API_KEY` (set by the user), `SWEEP_SECRET` (generated). Optional `SUMMARY_MODEL` (default `claude-opus-5`).
+- Function secrets set: `DEEPGRAM_API_KEY`, `ANTHROPIC_API_KEY` (set by the user), `SWEEP_SECRET` (generated). Optional: `SUMMARY_MODEL` (default `claude-opus-5`), `RENTCAST_API_KEY` (not set yet), `RENTCAST_MONTHLY_LIMIT` (default 45; the RentCast free plan charges $0.20 per call over 50 a month, so keep the cap).
 - Vault: `nora_project_url`, `nora_sweep_secret`.
 - App identifier (iOS bundle id and Android package): `com.nexx.tour.intelligence`. URL scheme: `nora`.
 

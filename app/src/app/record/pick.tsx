@@ -2,6 +2,7 @@ import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { HomeThumb } from '../../components/HomeThumb';
 import { Banner, Body, Button, colors, Eyebrow, Field, Screen } from '../../components/ui';
 import {
   displayAddress,
@@ -130,6 +131,7 @@ export default function PickHome() {
             return (
               <Option
                 key={property.id}
+                home={property}
                 selected={selected}
                 title={displayAddress(property)}
                 detail={`Visited before · ${formatDistance(meters)}`}
@@ -168,16 +170,31 @@ export default function PickHome() {
   );
 }
 
-function Option({ title, detail, selected, onPress }: { title: string; detail: string; selected: boolean; onPress: () => void }) {
+function Option({
+  title,
+  detail,
+  selected,
+  onPress,
+  home,
+}: {
+  title: string;
+  detail: string;
+  selected: boolean;
+  onPress: () => void;
+  home?: Property;
+}) {
   return (
     <Pressable
       accessibilityRole="radio"
       accessibilityState={{ selected }}
       onPress={onPress}
-      style={[s.option, selected && s.optionSelected]}
+      style={[s.option, s.optionRow, selected && s.optionSelected]}
     >
-      <Text style={s.optionTitle}>{title}</Text>
-      <Text style={s.optionDetail}>{detail}</Text>
+      {home ? <HomeThumb home={home} size={44} /> : null}
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text style={s.optionTitle}>{title}</Text>
+        <Text style={s.optionDetail}>{detail}</Text>
+      </View>
     </Pressable>
   );
 }
@@ -190,6 +207,7 @@ const s = StyleSheet.create({
   unit: { flex: 1 },
   city: { flex: 2 },
   option: { borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, borderRadius: 12, padding: 14, gap: 2 },
+  optionRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   optionSelected: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
   optionTitle: { fontSize: 16, fontWeight: '600', color: colors.ink },
   optionDetail: { fontSize: 13, color: colors.ink3 },

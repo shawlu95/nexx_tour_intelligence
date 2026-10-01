@@ -13,6 +13,15 @@ export interface Property {
   latitude: number | null;
   longitude: number | null;
   last_visited_at: string | null;
+  // Public facts (RentCast), filled in after the first note is processed.
+  beds: number | null;
+  baths: number | null;
+  sqft: number | null;
+  price: number | null;
+  price_kind: 'list' | 'last_sale' | null;
+  price_date: string | null;
+  listing_status: string | null;
+  facts_status: 'pending' | 'found' | 'not_found' | 'error';
 }
 
 export interface Visit {

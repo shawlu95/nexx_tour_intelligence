@@ -1,7 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { displayAddress } from '../lib/address';
-import { formatWhen } from '../lib/format';
+import type { PropertyCard } from '../lib/api';
+import { formatHomeLine, formatWhen } from '../lib/format';
 import type { VisitStatus } from '../lib/types';
+import { HomeThumb } from './HomeThumb';
 import { Card, colors, StatusPill } from './ui';
 
 export type RowState = VisitStatus | 'waiting';
@@ -14,6 +16,11 @@ const STATE_LABEL: Record<RowState, { label: string; tone: 'good' | 'warn' | 'ba
   ready: null,
 };
 
+/**
+ * One visit in a list. Pass the property as `address` to show its thumbnail and
+ * facts; pass a plain string for recordings not yet on the server.
+ * On a home's own page (`showAddress={false}`) the date is the title instead.
+ */
 export function VisitRow({
   address,
   recordedAt,
@@ -22,7 +29,7 @@ export function VisitRow({
   showAddress = true,
   onPress,
 }: {
-  address: { address_line: string; unit?: string | null } | string;
+  address: PropertyCard | string;
   recordedAt: string;
   state: RowState;
   summary?: string | null;
@@ -30,16 +37,27 @@ export function VisitRow({
   onPress: () => void;
 }) {
   const pill = STATE_LABEL[state];
-  const title = typeof address === 'string' ? address : displayAddress(address);
+  const home = typeof address === 'string' ? null : address;
+  const title = home ? displayAddress(home) : (address as string);
+  const facts = home ? formatHomeLine(home) : '';
   return (
     <Card onPress={onPress}>
-      <View style={s.top}>
-        <Text style={s.title} numberOfLines={1}>
-          {showAddress ? title : formatWhen(recordedAt)}
-        </Text>
-        {pill ? <StatusPill label={pill.label} tone={pill.tone} /> : null}
+      <View style={s.row}>
+        {showAddress ? <HomeThumb home={home} /> : null}
+        <View style={s.body}>
+          <View style={s.top}>
+            <Text style={s.title} numberOfLines={1}>
+              {showAddress ? title : formatWhen(recordedAt)}
+            </Text>
+            {pill ? <StatusPill label={pill.label} tone={pill.tone} /> : null}
+          </View>
+          {showAddress ? (
+            <Text style={s.meta} numberOfLines={1}>
+              {[formatWhen(recordedAt), facts].filter(Boolean).join(' · ')}
+            </Text>
+          ) : null}
+        </View>
       </View>
-      {showAddress ? <Text style={s.when}>{formatWhen(recordedAt)}</Text> : null}
       {summary ? (
         <Text style={s.summary} numberOfLines={2}>
           {summary}
@@ -50,8 +68,10 @@ export function VisitRow({
 }
 
 const s = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  body: { flex: 1, gap: 3 },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   title: { flex: 1, fontSize: 16, fontWeight: '700', color: colors.ink },
-  when: { fontSize: 13, color: colors.ink3 },
-  summary: { fontSize: 14, lineHeight: 20, color: colors.ink2 },
+  meta: { fontSize: 13, color: colors.ink3 },
+  summary: { fontSize: 14, lineHeight: 20, color: colors.ink2, marginTop: 4 },
 });

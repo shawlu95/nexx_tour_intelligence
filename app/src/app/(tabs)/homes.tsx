@@ -1,10 +1,11 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { HomeThumb } from '../../components/HomeThumb';
 import { Banner, Body, Card, colors, Field, Screen, TabHeader } from '../../components/ui';
 import { displayAddress } from '../../lib/address';
 import { fetchProperties } from '../../lib/api';
-import { formatWhen } from '../../lib/format';
+import { formatHomeLine, formatWhen } from '../../lib/format';
 import type { Property } from '../../lib/types';
 
 export default function Properties() {
@@ -41,10 +42,22 @@ export default function Properties() {
       ) : null}
       {shown.map((p) => (
         <Card key={p.id} onPress={() => router.push(`/properties/${p.id}`)}>
-          <Text style={s.title}>{displayAddress(p)}</Text>
-          <Text style={s.meta}>
-            {[p.city, p.last_visited_at ? `last visit ${formatWhen(p.last_visited_at)}` : null].filter(Boolean).join(' · ')}
-          </Text>
+          <View style={s.row}>
+            <HomeThumb home={p} />
+            <View style={s.body}>
+              <Text style={s.title} numberOfLines={1}>
+                {displayAddress(p)}
+              </Text>
+              {formatHomeLine(p) ? (
+                <Text style={s.meta} numberOfLines={1}>
+                  {formatHomeLine(p)}
+                </Text>
+              ) : null}
+              <Text style={s.meta} numberOfLines={1}>
+                {[p.city, p.last_visited_at ? `last visit ${formatWhen(p.last_visited_at)}` : null].filter(Boolean).join(' · ')}
+              </Text>
+            </View>
+          </View>
         </Card>
       ))}
     </Screen>
@@ -52,6 +65,8 @@ export default function Properties() {
 }
 
 const s = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  body: { flex: 1, gap: 3 },
   title: { fontSize: 16, fontWeight: '700', color: colors.ink },
   meta: { fontSize: 13, color: colors.ink3 },
 });

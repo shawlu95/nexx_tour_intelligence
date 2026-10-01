@@ -40,7 +40,7 @@ These come from the mockup and the review, and are planned for later phases:
 - **A clarifying question** after recording, about something the buyer raised but left unclear (for example, "How much do the power lines concern you?").
 - **A reminder to record**, sent when the buyer leaves an open house without recording (geofence), so no visit is forgotten.
 - **Agent workspace:** an agent account with ongoing access to the buyer's tours, where the agent can add professional notes alongside the buyer's.
-- **Property facts and photos** (beds, baths, square feet, listing photos) from a listing data provider, plus the buyer's own photos attached to a visit.
+- **Listing photos and more property detail** from a licensed listing data provider, plus the buyer's own photos attached to a visit.
 - **Buyer priorities** (budget, commute, schools, must-haves) used to check notes and explain scores.
 - **Co-buyers** recording reactions to the same home and comparing them.
 
@@ -66,6 +66,7 @@ Something belongs in the MVP only if leaving it out would break that job. Everyt
 | 8 | **Property list and property page** | Homes listed by most recent visit, with search by address. Each property page shows all its visits, newest first. |
 | 9 | **Share a note with the agent** | Creates a private, read-only web link and opens the phone's share sheet (text, email, WhatsApp). The buyer chooses whether to include the transcript and can revoke the link at any time. The agent doesn't need an account. |
 | 10 | **Delete data** | Delete a visit, a property, or the whole account, including the audio. This is required by the App Store and expected by users. |
+| 11 | **Home facts and thumbnail** | Each home shows beds, baths, square feet and the listing (or last sale) price, looked up once from RentCast's public-record and listing data. A small street-level thumbnail is made on the phone with Apple Look Around (a map snapshot where there's no coverage), so homes in lists are easy to tell apart. |
 
 ### Left out of the MVP
 
@@ -75,7 +76,7 @@ Something belongs in the MVP only if leaving it out would break that job. Everyt
 | Clarifying question after recording | Adds a step and a second AI call. The note already includes "Questions for my agent." | Phase 2 |
 | Reminder to record when leaving a home | Needs background location permission, which many buyers decline and app review scrutinizes. | Phase 2 |
 | Agent accounts, invitations, agent notes | A second user type, permissions, and onboarding. A share link covers the core need with none of that. | Phase 3 |
-| Listing data and photos (beds, baths, price) | Paid data providers, licensing questions, and address-matching work. The buyer's own words matter more for memory. | Phase 2–3 |
+| Listing photos | Copyrighted and only available through licensed MLS feeds. The MVP shows a street-level thumbnail made on the phone instead (see feature 11). | Phase 3 |
 | Photos in notes | Valuable, but it adds storage, upload, and interface work. Buyers already have photos in their camera roll. | Phase 2 |
 | Buyer priorities profile | Only needed once there are clarifying questions and scores. | Phase 2 |
 | Co-buyers and shared searches | Sharing between two buyers is a larger permissions problem. | Phase 3 |
@@ -165,7 +166,8 @@ User 1 ──── * Property 1 ──── * Visit 1 ──── 1 Transcrip
 | Entity | Key contents |
 |---|---|
 | **User** | Name, email, sign-in method, created date, notification token |
-| **Property** | Owner (user), normalized address and unit, latitude/longitude, created date, last-visited date. Unique per user and address, so repeat visits group together. |
+| **Property** | Owner (user), normalized address and unit, latitude/longitude, created date, last-visited date. Facts from RentCast: beds, baths, square feet, price (active listing, past listing, or last sale) with its date, and the lookup status. Unique per user and address, so repeat visits group together. |
+| **API usage** | Calls made to metered APIs (RentCast) per calendar month, used to enforce a hard monthly cap. Server only. |
 | **Visit** | Property, recorded time, audio file path, duration, status (*uploading → processing → ready*, or *failed*), error message, retry count |
 | **Transcript** | Visit, full text, phrases with start and end times, provider and model used |
 | **Note** | Visit, overall impression, buyer's free-text personal note, AI model and prompt version |
@@ -242,8 +244,8 @@ A one-minute clip transcribes in a few seconds and the note takes 10–30 second
 
 | Function | Triggered by | What it does |
 |---|---|---|
-| `process-visit` | App (after upload), sweeper, or the buyer tapping **Try again** | Transcribes the clip, writes the note, sends the push notification. With `regenerate`, it skips transcription and rewrites the note while keeping the buyer's edits. |
-| `sweep` | Scheduled every 5 minutes | Finds visits stuck in processing for more than 5 minutes, or failed with fewer than 3 attempts, and runs them again |
+| `process-visit` | App (after upload), sweeper, or the buyer tapping **Try again** | Transcribes the clip, writes the note, sends the push notification, then looks up the home's facts with RentCast if it doesn't have them yet. With `regenerate`, it skips transcription and rewrites the note while keeping the buyer's edits. |
+| `sweep` | Scheduled every 5 minutes | Finds visits stuck in processing for more than 5 minutes, or failed with fewer than 3 attempts, and runs them again. Also looks up facts for up to 3 homes still waiting (created before the RentCast key was set, held back by the monthly cap, or retried a day after an error). |
 | `delete-account` | App | Deletes the user's audio files, database rows, and sign-in record |
 | `get_shared_note` (database function) | Share page | Looks up the token, checks expiry and revocation, returns only the allowed fields, counts the view |
 
@@ -280,6 +282,7 @@ Share links are created and revoked by the app directly in the database, under t
 - An average reaction lasts **1 minute** (about 150 words).
 - An active buyer records **8 visits a month** while searching.
 - Claude reads about **1,000 input tokens** per visit (instructions plus transcript) and writes about **1,000 output tokens** (the note plus reasoning).
+- Almost every visit is to a **new home** (second visits are rare), and each new home costs **1–2 RentCast calls, once**. It's 1 call when an active listing has beds, baths, size and price; otherwise a second call fetches the public record. The first real home took 1 call.
 
 ### Cost per visit
 
@@ -292,6 +295,21 @@ Share links are created and revoked by the app directly in the database, under t
 | *Alternative: summarize with Claude Sonnet 5 ($2 / $10 per million)* | 1k × $2/M + 1k × $10/M | *~$0.012, for a total of ≈ $0.017 per visit* |
 
 The model choice should be made with a small quality test: 30–50 real or realistic reactions, scored for missed points and invented points. If Sonnet 5 holds up on that test, switching halves the AI cost. At these amounts either choice is cheap.
+
+### Cost per new home (facts)
+
+Home facts (beds, baths, size, price) come from RentCast, billed per API call. Thumbnails are made on the phone with Apple Look Around and cost nothing.
+
+| RentCast plan | Monthly price | Calls included | Each extra call | Effective cost per new home (1–2 calls) |
+|---|---|---|---|---|
+| Developer | $0 | 50 | $0.20 | Free for the first ~25–50 homes a month |
+| Foundation | $74 | 1,000 | $0.06 | ~$0.07–0.15 |
+| Growth | $199 | 5,000 | $0.03 | ~$0.04–0.08 |
+| Scale | $449 | 25,000 | $0.015 | ~$0.02–0.04 |
+
+NORA enforces its own monthly call cap (`RENTCAST_MONTHLY_LIMIT`, default 45), so a plan's allowance is never exceeded by accident. When the cap is reached, new homes wait for the next month and still show their thumbnail. **Raise the cap when you change plans** (see SETUP.md).
+
+Facts are looked up per buyer, so two buyers who visit the same open house cost two lookups. Sharing lookups across buyers by address would cut this, and is the first optimization to make if RentCast becomes the largest cost.
 
 ### Services
 
@@ -307,19 +325,22 @@ The model choice should be made with a small quality test: 30–50 real or reali
 | **PostHog** | Product analytics | Free up to 1M events/month | $0 |
 | **Resend** (or Supabase's built-in email for testing) | Sign-in code emails | Free up to 3k emails/month, then $20/month | $0 |
 | **Device geocoding** (Apple and Google built-in) | Turning GPS coordinates into an address | Free on the device | $0 |
+| **RentCast** | Beds, baths, square feet, price per home (1–2 calls per new home, once) | Per call, by plan: Developer $0 (50 calls), Foundation $74 (1,000), Growth $199 (5,000), Scale $449 (25,000), plus a per-call fee beyond the allowance. The app enforces its own monthly cap. | $0 in development; $74/month for a pilot |
+| **Apple Look Around / Maps snapshots** | Home thumbnails, generated on the phone | Free, no key | $0 |
 | **Apple Developer Program** | App Store distribution | $99/year | $99/year |
 | **Google Play Console** | Play Store distribution (Phase 1.5) | $25 one-time | $25 one-time |
 | **Domain** | Share links (for example, `share.<domain>`) | ~$12–20/year | ~$15/year |
 
 ### Monthly running cost by scale
 
-| Scale | Visits per month | AI cost (Claude Opus 5 + Deepgram) | Fixed services | **Total per month** |
-|---|---|---|---|---|
-| Pilot: 50 buyers | 400 | ~$14 | ~$25–45 | **≈ $40–60** |
-| Launch: 500 buyers | 4,000 | ~$140 | ~$45–65 | **≈ $185–205** |
-| Growth: 5,000 buyers | 40,000 | ~$1,400 | ~$150–300 (Supabase usage, Resend, Sentry and PostHog paid tiers) | **≈ $1,550–1,700** |
+| Scale | Visits (≈ new homes) per month | AI cost (Claude Opus 5 + Deepgram) | Home facts (RentCast) | Fixed services | **Total per month** |
+|---|---|---|---|---|---|
+| Development: you and a few testers | < 30 | < $1 | $0 (Developer plan) | ~$0–25 | **≈ $0–25** |
+| Pilot: 50 buyers | 400 | ~$14 | ~$74 (Foundation; 400–800 calls) | ~$25–45 | **≈ $115–135** |
+| Launch: 500 buyers | 4,000 | ~$140 | ~$199–290 (Growth; 4,000–8,000 calls) | ~$45–65 | **≈ $385–495** |
+| Growth: 5,000 buyers | 40,000 | ~$1,400 | ~$675–1,275 (Scale; 40,000–80,000 calls) | ~$150–300 (Supabase usage, Resend, Sentry and PostHog paid tiers) | **≈ $2,225–2,975** |
 
-At about $0.035 per visit, a buyer who tours 8 homes a month costs about **$0.30 a month** to serve. Fixed services dominate until a few thousand buyers.
+At about $0.035 per visit for the note, plus $0.04–0.08 per new home for facts on the Growth plan, a buyer who tours 8 homes a month costs about **$0.60–0.90 a month** to serve. Facts are the largest variable cost from the pilot onward. Sharing lookups across buyers, or limiting facts to homes a buyer visits twice, would bring that down.
 
 ### One-time costs
 

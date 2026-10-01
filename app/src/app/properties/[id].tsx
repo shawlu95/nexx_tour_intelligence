@@ -1,7 +1,8 @@
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Banner, Body, Button, Card, colors, Eyebrow, Loading, Screen, Title } from '../../components/ui';
+import { HomeHero } from '../../components/HomeHero';
+import { Banner, Body, Button, Card, colors, Eyebrow, Loading, Screen } from '../../components/ui';
 import { VisitRow } from '../../components/VisitRow';
 import { displayAddress } from '../../lib/address';
 import { deleteProperty, fetchProperty, type VisitSummary } from '../../lib/api';
@@ -32,11 +33,8 @@ export default function PropertyScreen() {
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: property.address_line }} />
-      <View style={s.header}>
-        <Title>{label}</Title>
-        <Text style={s.meta}>{[property.city, property.region].filter(Boolean).join(', ')}</Text>
-      </View>
+      <Stack.Screen options={{ title: '' }} />
+      <HomeHero home={property} />
       {offline ? <Banner>{"You're offline. Showing the last saved version."}</Banner> : null}
       {error ? <Banner tone="error">{error}</Banner> : null}
 
@@ -95,7 +93,6 @@ export default function PropertyScreen() {
 }
 
 const s = StyleSheet.create({
-  header: { gap: 4 },
   meta: { fontSize: 15, color: colors.ink3 },
   list: { gap: 10 },
   cardTitle: { fontSize: 17, fontWeight: '700', color: colors.ink },

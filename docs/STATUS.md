@@ -13,6 +13,8 @@ Last updated: 2026-10-01. Update this file at the end of each work session: move
 7. **Set up Supabase** (org Nexx, project `amhonfefejwrgttxfkrl`): pushed both migrations, deployed all three functions, the user set the Deepgram and Anthropic keys, and the retry schedule was set up with its own key.
 8. **Dashboard:** added redirect URL `nora://auth-callback`. Custom SMTP connected through Resend (Resend account `shawlu95@126.com`; the user created the API key and pasted it in). Sender `onboarding@resend.dev` / "NORA", host `smtp.resend.com:465`, username `resend`. The "Magic link or OTP" and "Confirm sign up" templates now send the `{{ .Token }}` code (this project issues 8-digit codes; the app accepts 6–10 digits) (subject "Your NORA sign-in code"). Email rate limit is 30 per hour.
 9. **Docs:** SETUP.md (setup, deployment, Xcode dev guide), this file, CLAUDE.md.
+10. **Bottom tab bar** (Tour, Homes, Profile) as in the mockup, with SF Symbol icons (`expo-symbols`).
+11. **Home facts and thumbnails** (plan: `~/.claude/plans/sharded-frolicking-eclipse.md`). Migration `20261002000000_property_facts.sql` adds facts columns on `properties`, an `api_usage` table and `claim_api_call()` (hard monthly cap, tested: true, true, false at limit 2). `process-visit` calls `_shared/rentcast.ts` after a note is ready; this is skipped until `RENTCAST_API_KEY` is set. Thumbnails come from the local native module `app/modules/look-around` (Swift: `MKLookAroundSnapshotter`, falling back to `MKMapSnapshotter` with a pin), cached in `Paths.cache/thumbs`, never uploaded. They're shown in Tour rows, the Homes list, the home page and "Your homes nearby".
 
 ## Done and verified
 
@@ -40,6 +42,8 @@ These are written and type-checked but have not been exercised end to end. Expec
 - The share page with a real token; `delete-account`.
 
 ## Not done yet (next steps, in order)
+
+0. **RentCast key.** The user creates a free RentCast account and runs `supabase secrets set RENTCAST_API_KEY=...`. Until then, homes stay `facts_status = pending` and show only the thumbnail.
 
 1. **Sending domain.** Resend's test sender `onboarding@resend.dev` only delivers to the Resend account owner (`shawlu95@126.com`), so sign-in by email currently works for that address only. To open sign-in to anyone: verify a domain the user owns in Resend (DNS records), then change the sender email in Supabase → Authentication → Emails → SMTP Settings. The Resend "Connect to Supabase" wizard requires an owned domain, which is why SMTP was configured by hand.
 2. **First Simulator run.** The app builds and launches on the iPhone 15 Pro simulator (via `xcodebuild`, because a connected iPhone makes `expo run:ios` try to sign). Next: sign in as `shawlu95@126.com`, record a test reaction, and check the whole path: upload, Deepgram, Claude, note.
