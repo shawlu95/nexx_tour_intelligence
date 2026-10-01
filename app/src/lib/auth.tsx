@@ -89,3 +89,16 @@ export async function signOut() {
   await clearLocalData();
   await supabase.auth.signOut();
 }
+
+/** The name to show for the signed-in buyer: their full name, else a tidy version of their email. */
+export function displayNameOf(user: Session['user'] | null | undefined): string {
+  const meta = (user?.user_metadata ?? {}) as { full_name?: string; name?: string };
+  const name = (meta.full_name ?? meta.name ?? '').trim();
+  if (name) return name;
+  const local = (user?.email ?? '').split('@')[0];
+  return local
+    .split(/[._-]+/)
+    .filter(Boolean)
+    .map((w) => w[0].toUpperCase() + w.slice(1))
+    .join(' ') || 'You';
+}

@@ -43,11 +43,18 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="sharing"
+        options={{
+          title: 'Sharing',
+          tabBarIcon: ({ color, size, focused }) => <TabIcon name={focused ? 'person.2.fill' : 'person.2'} color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
           tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon name={focused ? 'person.crop.circle.fill' : 'person.crop.circle'} color={color} size={size} />
+            <TabIcon name={focused ? 'person.fill' : 'person'} color={color} size={size} />
           ),
         }}
       />

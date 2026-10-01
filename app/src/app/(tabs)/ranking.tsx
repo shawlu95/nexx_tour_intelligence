@@ -175,6 +175,9 @@ export default function Ranking() {
 
           <View style={[s.list, ranking && { opacity: 0.5 }]}>
             <NestedReorderableList
+              // The page scrolls, not the list. Without this React Native warns about a
+              // scrollable list nested in a ScrollView.
+              scrollEnabled={false}
               data={list}
               keyExtractor={(r) => r.property_id}
               onReorder={({ from, to }) => reorder(reorderItems(list, from, to))}

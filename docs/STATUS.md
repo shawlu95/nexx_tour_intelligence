@@ -26,6 +26,8 @@ Last updated: 2026-10-01. Update this file at the end of each work session: move
 
 16. **Drag to reorder (2026-10-01).** Ranking rows reorder with `react-native-reorderable-list` (`NestedReorderableList` inside `ScrollViewContainer`), on Reanimated 4 + react-native-worklets + Gesture Handler (`GestureHandlerRootView` wraps the app in `_layout.tsx`). Drag starts immediately from the ≡ grip or with a long press on the row. A first hand-rolled PanResponder version looked wrong and was replaced. The order is saved in `ranking_overrides` (migration `20261002040000`, owner-only RLS), applied over NORA's ranking (`applyOverride`), shown as "Your order" with a "Revert to NORA's ranking" link, and given to NORA as a strong preference; a successful re-rank or Start over clears it. Native rebuild done; clean app load verified on the iPhone.
 
+17. **Sharing tab and Profile recreated from the mockup (2026-10-01).** Tabs are now Tour · Ranking · History · Sharing · Profile. Sharing (`app/src/app/(tabs)/sharing/`: index, invite, sent, with its own stack so the tab bar stays visible) and Profile follow the mockup's layout and copy. **Sharing is UI only**: invitations live in memory (`app/src/lib/sharingPreview.ts`) and are never sent or saved; "Preview accepted status" just flips the pill. On Profile, Deactivate/Reactivate is UI only; Sign out and Delete account work (Delete is kept as a quiet link because the App Store requires it). The confirmation names the agent, fixing the mockup's "Francis will receive…" bug. Also fixed: the "VirtualizedLists should never be nested…" warning on Ranking (`scrollEnabled={false}` on `NestedReorderableList`).
+
 ## Done and verified
 
 | Area | Verified how |
@@ -62,6 +64,11 @@ These are written and type-checked but have not been exercised end to end. Expec
 5. **Running on the user's iPhone 15 with a free Apple ID (done 2026-10-01).** Built with `NORA_FREE_SIGNING=1` and the Personal Team "Xiao Lu (Personal Team)", team ID `K7U2974RH8`, via `xcodebuild ... -allowProvisioningUpdates DEVELOPMENT_TEAM=K7U2974RH8`, installed with `xcrun devicectl device install app`. iPhone UDID `00008120-000045A01A63601E`. Metro runs with `NORA_FREE_SIGNING=1`; the phone loads JS from `http://10.0.0.216:8081`. The local `ios/` folder is currently generated in free-signing mode. The install expires after 7 days. The first sign-in attempt found the 8-digit code mismatch, now fixed; the end-to-end recording test is in progress.
 6. **Auth providers:** Google (OAuth client from Google Cloud) and Apple (client id `com.nexx.tour.intelligence`; needs the paid Apple Developer Program).
 7. **Note quality evaluation:** 30–50 sample reactions, scored for missed and invented points. Compare `claude-opus-5` with `claude-sonnet-5` (README §4).
+
+## Built as UI only (not functional yet)
+
+- **Sharing tab** (invite an agent, invitation sent, who has access): no invitations are sent or stored. The real version needs an `agent_invitations` table, an invite email through Resend, an agent sign-in, and read access for agents to the buyer's notes (README §1, "Agent workspace").
+- **Deactivate account** on Profile: switches the screen to a paused state only.
 
 ## Deliberately left out of the MVP
 

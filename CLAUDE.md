@@ -82,6 +82,10 @@ Run tests, typecheck, lint and expo-doctor before calling app work done.
 **Browser work**
 - Don't type passwords, API keys or other credentials into web forms; the user does that. Ask before submitting forms or changing dashboard settings.
 
+## UI-only screens
+
+The Sharing tab and Profile's Deactivate button were built to match the mockup without any back end, at the user's request. `app/src/lib/sharingPreview.ts` holds invitations in memory only. Don't present them as working; see `docs/STATUS.md` → "Built as UI only".
+
 ## Working style the user expects
 
 - Plain, direct writing. The user reviews design docs and the published review page.
