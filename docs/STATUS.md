@@ -1,0 +1,62 @@
+# Status
+
+Last updated: 2026-10-01. Update this file at the end of each work session: move finished items to "Done", and keep "Next steps" ordered.
+
+## History so far
+
+1. **Reviewed the mockup** (nexx-tour-intelligence.franksun0707.chatgpt.site, a front-end-only prototype called NORA) in Chrome and wrote a design critique with a clickable sketch, published as an artifact: https://claude.ai/artifact/DsXy1b9JTmbYjHKLTRQH8Q (version 2).
+2. **Wrote README.md**: product description, MVP scope (in and out), system design, costs, build plan, risks.
+3. **Design change (important):** the first design recorded the whole 10–15 minute tour. The user changed it to a **40–60 second reaction recorded after the visit**. README, the artifact page and all code follow the short-reaction design. Background recording, audio segments, speaker diarization and consent features were removed.
+4. **Built the MVP**: app, Supabase back end and share page. First pushed as commit `357cae7`.
+5. **Changed the app identifier** to `com.nexx.tour.intelligence`.
+6. **Installed tools:** Supabase CLI 2.119.0 (Homebrew). The user installed Xcode and accepted its license; whether the iOS Simulator runtime is installed hasn't been checked.
+7. **Set up Supabase** (org Nexx, project `amhonfefejwrgttxfkrl`): pushed both migrations, deployed all three functions, the user set the Deepgram and Anthropic keys, and the retry schedule was set up with its own key.
+8. **Dashboard:** added redirect URL `nora://auth-callback`. Custom SMTP connected through Resend (Resend account `shawlu95@126.com`; the user created the API key and pasted it in). Sender `onboarding@resend.dev` / "NORA", host `smtp.resend.com:465`, username `resend`. The "Magic link or OTP" and "Confirm sign up" templates now send the six-digit `{{ .Token }}` (subject "Your NORA sign-in code"). Email rate limit is 30 per hour.
+9. **Docs:** SETUP.md (setup, deployment, Xcode dev guide), this file, CLAUDE.md.
+
+## Done and verified
+
+| Area | Verified how |
+|---|---|
+| Unit tests (23) | `npm test` |
+| Edge Functions type-check | `npm run check:functions` |
+| App typecheck, lint, expo-doctor (21/21) | `npx tsc --noEmit`, `npx expo lint`, `npx expo-doctor` |
+| App JavaScript bundles for iOS | `npx expo export --platform ios` |
+| Migrations applied to the project | `supabase db push` |
+| Functions deployed and reject callers without credentials | `curl`: process-visit 401, sweep 403, delete-account 401 |
+| Anonymous key can't read tables; `get_shared_note` returns null for unknown tokens | `curl` against the REST API |
+| pg_cron → `run_sweep` → `sweep` function with `x-sweep-secret` | Manual `select public.run_sweep()`; `net._http_response` showed 200 `{"retried":0,"failed":0}` |
+
+## Built but never run against real services
+
+These are written and type-checked but have not been exercised end to end. Expect bugs here first.
+
+- **The app itself has never been launched** (no Simulator or device run yet).
+- Recording with `expo-audio` (`app/src/app/record/capture.tsx`), and moving the file into `Paths.document/recordings`.
+- Upload: `File.upload` POSTing to `/storage/v1/object/audio/<user>/<visit>.m4a` with the session token (`app/src/lib/sync.ts`). Check headers, the response status, and that the storage RLS policy accepts it.
+- `process-visit` against real Deepgram (response shape in `_shared/deepgram.ts`) and real Claude (the `fallbacks: 'default'` + `output_config.format` combination on `client.beta.messages.create`).
+- Push notifications. `getExpoPushTokenAsync` needs an EAS project id, which doesn't exist yet, so registration is skipped with a warning.
+- Google OAuth (PKCE via `WebBrowser.openAuthSessionAsync`) and Sign in with Apple. Neither provider is enabled in Supabase yet.
+- The share page with a real token; `delete-account`.
+
+## Not done yet (next steps, in order)
+
+1. **Sending domain.** Resend's test sender `onboarding@resend.dev` only delivers to the Resend account owner (`shawlu95@126.com`), so sign-in by email currently works for that address only. To open sign-in to anyone: verify a domain the user owns in Resend (DNS records), then change the sender email in Supabase → Authentication → Emails → SMTP Settings. The Resend "Connect to Supabase" wizard requires an owned domain, which is why SMTP was configured by hand.
+2. **First Simulator run:** `cd app && npx expo run:ios`. Fix runtime issues, then test the whole path with a real recording: upload, Deepgram, Claude, note.
+3. **Share page hosting:** deploy `share-web/` (Cloudflare Pages suggested) and replace `EXPO_PUBLIC_SHARE_BASE_URL` in `app/.env.local` (currently the placeholder `https://share.example.com`).
+4. **EAS:** `npx eas-cli@latest init` (adds the project id, which enables push), and add the `EXPO_PUBLIC_*` variables as EAS environment variables.
+5. **Free-account device build:** to install on a physical iPhone without the paid Apple program, add a build switch (for example, convert `app.json` to `app.config.ts` and check an env flag) that removes `usesAppleSignIn` and the `expo-notifications` plugin. Free Apple accounts can't sign either.
+6. **Auth providers:** Google (OAuth client from Google Cloud) and Apple (client id `com.nexx.tour.intelligence`; needs the paid Apple Developer Program).
+7. **Note quality evaluation:** 30–50 sample reactions, scored for missed and invented points. Compare `claude-opus-5` with `claude-sonnet-5` (README §4).
+
+## Deliberately left out of the MVP
+
+See README §2 "Left out of the MVP" for reasons. In short: ranking and fit score, the clarifying question after recording, reminders when leaving an open house, agent accounts and workspace, listing data and photos, buyer priorities, co-buyers, comparing homes, editing notes offline (reading works offline), languages other than English. Android is planned for Phase 1.5; the code is shared but untested on Android.
+
+Also not set up: Sentry, PostHog, real app icons and splash (Expo defaults), privacy policy, App Store listing, CI.
+
+## Repository state
+
+- Branch `main`. Commits after `357cae7` were made locally. Check `git status -sb` for unpushed work; the user pushes only when asked.
+- The "xcode setup" commit `b62f073` was made by the user.
+- Untracked local-only files (git-ignored): `app/.env.local`, `share-web/config.js`.
