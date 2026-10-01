@@ -1,6 +1,6 @@
 # NORA: Buyer Tour Intelligence
 
-NORA is a voice note-taking app for home buyers visiting open houses. The buyer talks to their phone during a 10–15 minute visit, and NORA turns what they said into an organized note: what they liked, what concerned them, and what to ask their agent. Every visit is saved against the property, so the notes work as a memory aid weeks later, and a note can be sent to the buyer's agent in a couple of taps.
+NORA is a voice note-taking app for home buyers visiting open houses. Right after leaving a home, the buyer records a **40–60 second spoken reaction**: what stood out, what they liked, what worried them. NORA turns it into an organized note with three lists: **Liked**, **Concerns**, and **Questions for my agent**. Every visit is saved against the property, so the notes work as a memory aid weeks later, and a note can be sent to the buyer's agent in a couple of taps.
 
 This document covers:
 
@@ -10,6 +10,8 @@ This document covers:
 4. [Third-party services and cost](#4-third-party-services-and-cost)
 5. [Build plan](#5-build-plan)
 6. [Risks and open questions](#6-risks-and-open-questions)
+
+> **Design assumption:** NORA records one short reaction after each visit, not the whole tour. The buyer records alone, typically in the car or on the sidewalk, while the home is still fresh in their mind. This matches the original mockup ("Talk naturally for 40–60 seconds") and keeps the app quick to use, cheap to run, and free of the consent problems that come with recording other people.
 
 ---
 
@@ -21,10 +23,10 @@ The full product vision draws on the front-end mockup (nexx-tour-intelligence.fr
 
 | Step | What happens |
 |---|---|
-| **Arrive** | The app uses GPS to suggest the property ("812 Pastoria Ave, is this it?"). The buyer confirms with one tap or types the address. |
-| **Tour** | The buyer starts recording and walks through the home, talking naturally. Recording continues with the screen locked or the phone in a pocket. They can pause when they don't want to be recorded (for example, while talking with the listing agent). |
-| **Process** | When the visit ends, the audio is transcribed and summarized. A notification says when the note is ready. |
-| **Review** | The note shows a short overall impression, then **Liked**, **Concerns**, and **Questions for my agent**. Every point links to the moment in the recording where it was said, and the full transcript is available. |
+| **Locate** | The buyer taps "Record a home." GPS suggests the property they just left ("812 Pastoria Ave, is this it?"). They confirm with one tap or type the address. |
+| **Record** | The buyer talks for 40–60 seconds. On-screen prompts help them cover the main things ("What stood out?", "Anything that worried you?", "Would you come back?"). Recording stops on its own at 2 minutes, and they can re-record if they fumble. |
+| **Process** | The clip is transcribed and summarized, usually in under 30 seconds. If the phone has no signal, the clip is saved and processed once it reconnects. |
+| **Review** | The note shows a short overall impression, then **Liked**, **Concerns**, and **Questions for my agent**. Each point shows the words it came from, and the full transcript and original recording are a tap away. |
 | **Remember** | Each property has a page with every visit to it. The buyer can browse past homes and search by address. |
 | **Share** | The buyer sends a note to their agent as a private link and chooses whether the transcript is included. |
 
@@ -33,19 +35,18 @@ The full product vision draws on the front-end mockup (nexx-tour-intelligence.fr
 These come from the mockup and the review, and are planned for later phases:
 
 - **Ranking and fit score** across all toured homes, reorderable by the buyer.
-- **Clarifying questions** at the end of a visit about things the buyer raised but left unresolved, or must-haves they never mentioned.
-- **Live capture** during the tour: points appear on screen as they're heard, the current room is tagged automatically, and the buyer can star a moment.
-- **Lock-screen controls** (an iOS Live Activity) for pause and star.
+- **A clarifying question** after recording, about something the buyer raised but left unclear (for example, "How much do the power lines concern you?").
+- **A reminder to record**, sent when the buyer leaves an open house without recording (geofence), so no visit is forgotten.
 - **Agent workspace:** an agent account with ongoing access to the buyer's tours, where the agent can add professional notes alongside the buyer's.
-- **Property facts and photos** (beds, baths, square feet, listing photos) from a listing data provider, plus the buyer's own photos linked to moments in the visit.
+- **Property facts and photos** (beds, baths, square feet, listing photos) from a listing data provider, plus the buyer's own photos attached to a visit.
 - **Buyer priorities** (budget, commute, schools, must-haves) used to check notes and explain scores.
-- **Co-buyers** touring together and sharing a search.
+- **Co-buyers** recording reactions to the same home and comparing them.
 
 ---
 
 ## 2. MVP scope
 
-**The MVP has one job:** a buyer can record a whole open-house visit hands-free, get back a trustworthy note, find it again later, and send it to their agent.
+**The MVP has one job:** right after a visit, a buyer can record a one-minute reaction, get back a trustworthy note, find it again later, and send it to their agent.
 
 Something belongs in the MVP only if leaving it out would break that job. Everything else waits until real users have recorded real visits.
 
@@ -53,35 +54,33 @@ Something belongs in the MVP only if leaving it out would break that job. Everyt
 
 | # | Feature | Notes |
 |---|---|---|
-| 1 | **Sign in** with Apple, Google, or email link | No passwords. Apple sign-in is required by the App Store whenever Google sign-in is offered. |
-| 2 | **Start a visit at a property** | GPS suggests the nearest address, which the buyer confirms or edits (one line, plus a unit number for condos). If the address matches an existing property, the visit is added to it. |
-| 3 | **Long-form recording** | Up to 30 minutes. Continues with the screen locked or the app in the background. Pause and resume. Survives interruptions such as a phone call. Audio is saved on the phone first, so nothing is lost if there's no signal. |
-| 4 | **Reliable upload and processing** | Uploads queue and retry until they succeed, including after the app is closed. A push notification says when the note is ready (usually within 1–2 minutes). |
-| 5 | **Structured note** | An overall impression plus **Liked**, **Concerns**, and **Questions for my agent**. Each point carries a timestamp. |
-| 6 | **Verify against the source** | Tapping a point plays the audio from that moment and shows the quote. The full transcript is one tap away. |
-| 7 | **Edit the note** | Change, add, or delete points, and add free-text personal notes. Edits are marked as the buyer's own and are never overwritten by reprocessing. |
+| 1 | **Sign in** with Apple, Google, or email code | No passwords. Apple sign-in is required by the App Store whenever Google sign-in is offered. |
+| 2 | **Pick the property** | GPS suggests the nearest address, which the buyer confirms or edits (one line, plus a unit number for condos). The buyer's own properties nearby are offered first. If the address matches an existing property, the visit is added to it. |
+| 3 | **Record a short reaction** | Prompts on screen and a timer that turns green at 40 seconds. Stops on its own at 2 minutes. Re-record before saving. The clip is saved on the phone first. |
+| 4 | **Reliable upload and processing** | Uploads queue and retry until they succeed, so a clip recorded with no signal is processed later. The note usually appears within 30 seconds, and a push notification arrives if the buyer has left the screen. |
+| 5 | **Structured note** | An overall impression plus **Liked**, **Concerns**, and **Questions for my agent**. |
+| 6 | **Check against the source** | Each point shows the quote it came from. The full transcript and the original recording are one tap away. |
+| 7 | **Edit the note** | Change, add, or delete points, and add free-text personal notes. Edits are marked as the buyer's own and are never overwritten by regenerating the note. |
 | 8 | **Property list and property page** | Homes listed by most recent visit, with search by address. Each property page shows all its visits, newest first. |
 | 9 | **Share a note with the agent** | Creates a private, read-only web link and opens the phone's share sheet (text, email, WhatsApp). The buyer chooses whether to include the transcript and can revoke the link at any time. The agent doesn't need an account. |
 | 10 | **Delete data** | Delete a visit, a property, or the whole account, including the audio. This is required by the App Store and expected by users. |
-| 11 | **Recording notice** | A one-time explanation of recording etiquette and consent, plus a clear recording indicator. Pause doubles as "off the record." |
 
 ### Left out of the MVP
 
 | Feature | Why it's left out | When |
 |---|---|---|
 | Ranking and fit score | Needs several notes per buyer and a defined set of priorities to mean anything. An unexplained score hurts trust. | Phase 2 |
-| Clarifying and wrap-up questions | Adds an extra step and a second AI call. The structured note already includes "Questions for my agent." | Phase 2 |
-| Live on-screen capture, room tagging, starred moments | Needs streaming speech-to-text, which costs more and is more fragile. The buyer's phone is in their pocket most of the time anyway. | Phase 2 |
-| Lock-screen Live Activity | Needs a separate native iOS extension. The system's standard recording indicator is enough for launch. | Phase 2 |
+| Clarifying question after recording | Adds a step and a second AI call. The note already includes "Questions for my agent." | Phase 2 |
+| Reminder to record when leaving a home | Needs background location permission, which many buyers decline and app review scrutinizes. | Phase 2 |
 | Agent accounts, invitations, agent notes | A second user type, permissions, and onboarding. A share link covers the core need with none of that. | Phase 3 |
 | Listing data and photos (beds, baths, price) | Paid data providers, licensing questions, and address-matching work. The buyer's own words matter more for memory. | Phase 2–3 |
 | Photos in notes | Valuable, but it adds storage, upload, and interface work. Buyers already have photos in their camera roll. | Phase 2 |
-| Buyer priorities profile | Only needed once there are wrap-up checks and scores. | Phase 2 |
+| Buyer priorities profile | Only needed once there are clarifying questions and scores. | Phase 2 |
 | Co-buyers and shared searches | Sharing between two buyers is a larger permissions problem. | Phase 3 |
 | Android app | The code is shared, so Android follows the iOS launch with mostly testing and store work. | Phase 1.5 |
-| Buyer web app | The phone is where recording happens. | Not planned |
 | Languages other than English | Keeps prompts and quality testing focused. The transcription service supports more languages later. | Phase 3 |
 | Comparing homes, searching by feature ("homes with a big kitchen") | Needs enough data per user to be useful. | Phase 2 |
+| Editing notes offline | Recording and reading work offline. Edits need a connection, which keeps sync simple. | Phase 2 |
 
 ---
 
@@ -93,12 +92,12 @@ Something belongs in the MVP only if leaving it out would break that job. Everyt
 
 | Option | Verdict | Reason |
 |---|---|---|
-| **Web app / PWA** | ❌ | Recording is the core feature, and the browser can't reliably keep recording for 15 minutes with the screen locked. iOS Safari suspends audio capture when a web page goes to the background. Background upload retries and push notifications are also limited. |
-| **Native iOS (Swift) + native Android (Kotlin)** | ⚠️ | Best possible control over audio, but it means two codebases and twice the work. That's not justified for an MVP. |
-| **React Native + Expo** | ✅ | One codebase for iOS and Android. Expo's audio library supports background recording (iOS background audio mode, Android foreground service). Push notifications, location, secure storage, and over-the-air updates come built in. Expo's cloud build service removes the need for a Mac build server. The language (TypeScript) is the same as the back end and the share page. |
+| **Web app / PWA** | ⚠️ Viable alternative | A one-minute recording made with the screen on works in a mobile browser, so a web app is now possible: it needs no app store, costs nothing to distribute, and updates instantly. It loses out on three things the MVP relies on. iOS only delivers push notifications to web apps added to the home screen. Browser storage for clips recorded offline can be cleared by the system. And "add to home screen" is real friction for buyers. |
+| **Native iOS (Swift) + native Android (Kotlin)** | ❌ | Two codebases and twice the work for an app whose native needs (microphone, GPS, notifications, local storage) are standard. |
+| **React Native + Expo** | ✅ | One codebase for iOS and Android. Reliable microphone, location, push notifications, and on-device storage. App Store presence, which also builds trust when a buyer's agent recommends the app. Expo's cloud build service removes the need for a Mac build server, and over-the-air updates allow quick fixes. The language (TypeScript) is the same as the back end and the share page. |
 | **Flutter** | ⚠️ | Technically equivalent. Choose it only if the team already knows Dart. |
 
-**iOS first** because US home buyers skew toward iPhone, there are fewer device and audio variations to test, and iOS background audio behaviour is predictable. **Android follows in Phase 1.5**: the code is shared, and the remaining work is testing the foreground-service recorder on a few devices and the Play Store listing.
+**iOS first** because US home buyers skew toward iPhone and there are fewer device variations to test. **Android follows in Phase 1.5**: the code is shared, and the remaining work is device testing and the Play Store listing.
 
 ### 3.2 Architecture overview
 
@@ -115,7 +114,7 @@ flowchart LR
     AUTH[Auth]
     DB[(Postgres<br/>with row-level security)]
     ST[(Storage<br/>audio bucket)]
-    FN[Edge Functions<br/>processing pipeline]
+    FN[Edge Functions<br/>processing]
     CRON[Scheduled job<br/>retry sweeper]
   end
 
@@ -126,18 +125,16 @@ flowchart LR
   AGENT((Agent's<br/>browser))
 
   UI --> REC --> LDB --> Q
-  Q -- resumable upload --> ST
-  Q -- "visit complete" --> FN
+  Q -- upload clip --> ST
+  Q -- "process visit" --> FN
   UI <--> AUTH
   UI <--> DB
-  FN -- audio URL --> STT
-  STT -- callback with transcript --> FN
+  FN -- signed audio URL --> STT
   FN -- transcript --> LLM
-  LLM -- structured note --> FN
   FN --> DB
   FN --> PUSH --> UI
   CRON --> FN
-  AGENT --> WEB -- share token --> FN
+  AGENT --> WEB -- share token --> DB
 ```
 
 **Why Supabase:** a single managed service provides authentication, a relational database with per-user access rules, file storage, and serverless functions. That means no servers to run for the MVP. The data is relational (users → properties → visits → notes), so Postgres fits better than a document store such as Firebase. And because it's standard Postgres, it can move to any other Postgres host later.
@@ -150,72 +147,66 @@ flowchart LR
 |---|---|---|
 | Account and profile | Supabase Auth + Postgres | Managed sign-in and session tokens |
 | Properties, visits, notes, share links | Postgres | Relational, queryable, protected by per-user access rules |
-| Transcript (with word timings and speaker labels) | Postgres, as a JSON document on the visit | Read only alongside its own visit. Typically 20–60 KB. |
-| Audio recordings | Supabase Storage, in a private bucket organized by user and visit | Large binary files. Served only through short-lived signed URLs. |
-| In-progress recordings, upload queue, offline cache | On the phone: local SQLite plus the app's private file folder | Recording must work with no signal, and nothing is deleted until the server confirms it has the file. |
+| Transcript (with phrase timings) | Postgres, on its own table keyed by visit | Small (1–2 KB), read alongside its visit |
+| Audio recordings | Supabase Storage, in a private bucket at `<user>/<visit>.m4a` | Binary files. Served only through short-lived signed URLs. |
+| Recordings not yet uploaded, the upload queue, offline cache | On the phone: local SQLite plus the app's private file folder | Recording must work with no signal, and nothing is deleted until the server confirms it has the file. |
 | Login tokens | Phone's secure storage (iOS Keychain or Android Keystore) | Standard practice for credentials |
 
 #### Data model (conceptual)
 
 ```
-User 1 ──── * Property 1 ──── * Visit 1 ──── 1 Note
-                                 │              └── * Note item (liked / concern / question)
-                                 ├── * Audio segment
-                                 └── 1 Transcript
-Note 1 ──── * Share link
+User 1 ──── * Property 1 ──── * Visit 1 ──── 1 Transcript
+                                 └──── 1 Note 1 ──── * Note item (liked / concern / question)
+                                              └──── * Share link
 ```
 
 | Entity | Key contents |
 |---|---|
-| **User** | Name, email, sign-in method, created date, notification token, consent-notice-seen flag |
-| **Property** | Owner (user), normalized address and unit, latitude/longitude, display name, created date, last-visited date. Unique per user and address, so repeat visits group together. |
-| **Visit** | Property, start time, duration, status (*recording → uploading → transcribing → summarizing → ready*, or *failed*), error details, retry count, processing version |
-| **Audio segment** | Visit, order number, file path in storage, duration, start offset within the visit, upload status. A visit is split into several segments when recording is paused or interrupted. |
-| **Transcript** | Visit, full text, a list of utterances (each with start time, end time, speaker, and text), language, provider, model used |
-| **Note** | Visit, overall impression, buyer's free-text personal note, AI model and prompt version, "edited by buyer" flag, last updated |
-| **Note item** | Note, type (liked, concern, or question), text, timestamp in the recording, source quote, origin (AI or buyer), sort order, deleted flag (so reprocessing never brings back items the buyer removed) |
+| **User** | Name, email, sign-in method, created date, notification token |
+| **Property** | Owner (user), normalized address and unit, latitude/longitude, created date, last-visited date. Unique per user and address, so repeat visits group together. |
+| **Visit** | Property, recorded time, audio file path, duration, status (*uploading → processing → ready*, or *failed*), error message, retry count |
+| **Transcript** | Visit, full text, phrases with start and end times, provider and model used |
+| **Note** | Visit, overall impression, buyer's free-text personal note, AI model and prompt version |
+| **Note item** | Note, type (liked, concern, or question), text, source quote, origin (AI or buyer), edited flag, deleted flag (so regenerating never brings back items the buyer removed), sort order |
 | **Share link** | Note, random unguessable token, include-transcript flag, created, expires (default 90 days), revoked date, view count |
 
-**Access rules:** Postgres row-level security limits every row to its owner. The share page never queries the database directly. It calls one function that looks up the token and returns only the fields that particular link allows.
+**Access rules:** Postgres row-level security limits every row to its owner. Phones can't write transcripts or AI-written note items, and can't move a visit's status past "uploading"; only the server can. The share page never queries tables directly. It calls one database function that looks up the token and returns only the fields that particular link allows.
 
-**Storage sizing:** voice audio is recorded as mono AAC at about 32 kbps, which is roughly 0.25 MB per minute, or about 3–4 MB for a 15-minute visit. A buyer making 20 visits uses about 70 MB. The database footprint per visit is under 100 KB.
+**Storage sizing:** voice audio is recorded as mono AAC at about 48 kbps, so a one-minute clip is about **0.35 MB**. A buyer recording 30 visits uses about 10 MB. The database footprint per visit is under 10 KB.
 
-**Retention:** audio and transcripts are kept until the buyer deletes them. Deleting a visit removes its audio from storage immediately. Phase 2 can add an optional setting to delete audio automatically after 90 days while keeping the note and transcript.
+**Retention:** audio and transcripts are kept until the buyer deletes them. Deleting a visit removes its audio from storage immediately.
 
 ### 3.4 Front end (mobile app)
 
-**Stack:** React Native with Expo and TypeScript, file-based navigation, Expo's audio, location, notification, secure-storage, and SQLite libraries, and the Supabase client library.
+**Stack:** React Native with Expo and TypeScript, file-based navigation (Expo Router), Expo's audio, location, notification, secure-storage, SQLite, and file-system libraries, and the Supabase client library.
 
 **Screens**
 
 | Screen | Purpose |
 |---|---|
-| Sign in | Apple, Google, or email link |
-| Home | "Start a visit" button, recent visits, and any notes still processing |
-| Confirm property | GPS-suggested address, editable, with recent nearby properties as shortcuts |
-| Recording | Large timer, pause/resume, end visit. A plain screen that is readable at a glance. |
-| Processing | "Your note will be ready in about a minute. You can leave the app." |
-| Note | Overall impression, liked, concerns, questions. Tap a point to hear and see its source. Edit mode. Share. |
-| Transcript | Utterances with timestamps. Tap one to play from there. |
+| Sign in | Apple, Google, or a six-digit email code |
+| Home | "Record a home" button, notes still processing, recent visits |
+| Confirm property | GPS-suggested address, editable, with the buyer's nearby properties as shortcuts |
+| Record | Rotating prompts, a timer that turns green at 40 seconds, stop, re-record, save |
+| Note | Status while processing, then overall impression, liked, concerns, questions with quotes. Edit mode, play recording, transcript, regenerate, share. |
 | Properties | List and search by address, opening to a property page with all its visits |
 | Share | Include-transcript toggle, then the phone's share sheet. Existing links with a revoke option. |
-| Settings | Account, delete data, privacy and recording notice, sign out |
+| Settings | Account, delete account, sign out |
 
 **How recording works**
 
-- The app records in the background (iOS background audio mode, Android foreground service with a persistent notification). It keeps the screen awake while open but works fine when the screen is locked.
-- Audio is written directly to a file on the phone. Pausing, an interruption (phone call, Siri), or an app restart closes the current segment, and resuming starts a new one. The visit is the ordered list of segments, so a crash costs a few seconds at most.
-- A soft limit warns the buyer at 25 minutes and stops at 30. Long silences are normal during a tour and are ignored.
-- The phone's microphone and recording indicator are always visible to the buyer.
+- The recording is made in the foreground with the screen on. Its length is guided toward 40–60 seconds and capped at 2 minutes.
+- Audio is written directly to a file. On save, the file is moved into the app's private documents folder and logged in the local database before anything touches the network.
+- If the clip is shorter than 5 seconds, the app asks the buyer to try again instead of saving it.
 
 **How upload works**
 
-- When the visit ends, each segment is added to a persistent upload queue in SQLite.
-- Uploads are resumable and retry with increasing delays, whenever the app is open and has a connection, and also through the operating system's background upload support.
-- A local audio file is deleted only after the server confirms it received the file and the note is ready.
-- After all segments are uploaded, the app tells the back end the visit is complete.
+- Each saved visit goes into a persistent upload queue in SQLite with its property details, file path, and duration.
+- The queue runs when a visit is saved, when the app comes to the foreground, and when the network comes back. Each item retries with increasing delays.
+- Steps per visit: find or create the property, create the visit, upload the clip, ask the server to process it. Each step is safe to repeat, so a retry after a failure never creates duplicates.
+- The local audio file is deleted once the server has the file and the note is ready.
 
-**Offline behaviour:** recording, browsing past notes (cached locally), and editing notes all work offline. Edits sync when the phone reconnects, and if the same note was changed elsewhere, the latest edit wins.
+**Offline behaviour:** recording and saving work offline. Notes and properties the buyer has already seen are cached for reading. Editing needs a connection.
 
 ### 3.5 Back end
 
@@ -226,48 +217,46 @@ All server logic runs as Supabase Edge Functions (serverless TypeScript). There 
 ```mermaid
 sequenceDiagram
   participant App
-  participant Fn as Edge Functions
+  participant Fn as process-visit
   participant DB as Postgres
   participant STT as Deepgram
   participant AI as Claude API
-  App->>Fn: Visit complete (visit ID)
-  Fn->>DB: Status = transcribing
-  Fn->>STT: Transcribe each segment (signed audio URL, callback URL)
-  STT-->>Fn: Callback with transcript (word timings, speakers)
-  Fn->>DB: Save transcript, merge segments with time offsets
-  Fn->>DB: Status = summarizing
-  Fn->>AI: Transcript with [mm:ss] markers, structured-output schema
-  AI-->>Fn: Note as JSON (impression, items with timestamps and quotes)
-  Fn->>Fn: Validate: timestamps in range, quotes found in transcript
+  App->>Fn: Process visit (visit ID)
+  Fn->>DB: Status = processing
+  Fn-->>App: 202 Accepted
+  Fn->>STT: Transcribe (signed audio URL)
+  STT-->>Fn: Transcript with phrase timings
+  Fn->>DB: Save transcript
+  Fn->>AI: Transcript + structured-output schema
+  AI-->>Fn: Note as JSON (overall, items with quotes)
+  Fn->>Fn: Check each quote appears in the transcript
   Fn->>DB: Save note and items, status = ready
   Fn->>App: Push notification "Your note for 812 Pastoria Ave is ready"
 ```
+
+A one-minute clip transcribes in a few seconds and the note takes 10–30 seconds to write, so one function handles both steps, working in the background after it has replied to the app. The app shows progress by reading the visit's status.
 
 **Back-end functions**
 
 | Function | Triggered by | What it does |
 |---|---|---|
-| Complete visit | App | Checks that all segments exist, sets the status, sends the segments to transcription |
-| Transcription callback | Deepgram | Saves each segment's transcript. When all segments are in, merges them and starts summarization. |
-| Summarize | Internal | Calls Claude, validates the result, saves the note, sends the push notification |
-| Reprocess | App (buyer taps "Regenerate") | Re-runs summarization while keeping items the buyer added, edited, or deleted |
-| Create or revoke share link | App | Generates or revokes a token for a note |
-| Get shared note | Share page | Looks up the token, checks expiry and revocation, returns only the allowed fields, counts the view |
-| Retry sweeper | Scheduled every 5 minutes | Finds visits stuck in a processing state longer than 10 minutes and retries them up to 3 times, then marks them failed with a reason the app can show |
-| Delete account | App | Deletes the user's audio files, database rows, and sign-in record |
+| `process-visit` | App (after upload), sweeper, or the buyer tapping **Try again** | Transcribes the clip, writes the note, sends the push notification. With `regenerate`, it skips transcription and rewrites the note while keeping the buyer's edits. |
+| `sweep` | Scheduled every 5 minutes | Finds visits stuck in processing for more than 5 minutes, or failed with fewer than 3 attempts, and runs them again |
+| `delete-account` | App | Deletes the user's audio files, database rows, and sign-in record |
+| `get_shared_note` (database function) | Share page | Looks up the token, checks expiry and revocation, returns only the allowed fields, counts the view |
 
-**Why this design:** transcription runs asynchronously with a callback, so no function waits on a 15-minute audio file. That keeps every function well within Edge Function time limits. Each step updates the visit's status, so the pipeline can always resume from the last completed step, and the app always knows what's happening.
+Share links are created and revoked by the app directly in the database, under the same per-user access rules.
 
 **Summarization design**
 
-- **Model:** Claude Opus 5 (`claude-opus-5`). It is the strongest model for pulling a faithful, well-organized note out of a long, rambling, multi-speaker transcript. Claude Sonnet 5 (`claude-sonnet-5`) costs about 60% less and can be evaluated as an option once there is a quality test set (see §4).
-- **Input:** the transcript as utterances, each marked with `[mm:ss]` and a speaker label, plus instructions. The instructions are fixed and placed first so prompt caching applies.
-- **Output:** structured JSON enforced by the API's structured-output feature. It contains an overall impression of two or three sentences, plus lists of liked, concern, and question items. Each item has text, a timestamp, and a short verbatim quote.
-- **Speakers:** speaker labels from transcription let the model treat the buyer's opinions as opinions and the listing agent's statements as facts (for example, "Listing agent: offers due Tuesday"). The buyer is usually the speaker with the most talk time and is confirmed by context.
-- **Faithfulness checks:** after the response arrives, the server checks that each quote actually appears in the transcript and that each timestamp falls within the recording. Items that fail are dropped or snapped to the nearest matching utterance. This is the safeguard against invented points.
-- **Pause respected:** paused periods are never recorded, so they can never appear in a note.
+- **Model:** Claude Opus 5 (`claude-opus-5`), set through a server setting (`SUMMARY_MODEL`). Claude Sonnet 5 (`claude-sonnet-5`) is a cheaper option once there is a quality test set (see §4).
+- **Input:** the transcript and the property address, after a fixed set of instructions. The instructions come first so prompt caching applies.
+- **Output:** structured JSON enforced by the API's structured-output feature. It contains an overall impression of one or two sentences, plus a list of items, each with a type (liked, concern, question), short text, and a verbatim quote.
+- **Faithfulness checks:** after the response arrives, the server checks that each item's quote actually appears in the transcript. Items whose quote can't be found are dropped. This is the safeguard against invented points.
+- **Refusals:** requests use the API's server-side fallback, so a rare safety-classifier refusal is retried on another model automatically. A remaining refusal marks the visit as failed with a message the buyer can act on.
+- **Regenerating:** AI items the buyer hasn't touched are replaced. Items the buyer added, edited, or deleted are kept, and a new AI item that repeats one of them is skipped.
 
-**Share page:** a small static web page on Cloudflare Pages. It reads the token from the URL, calls the get-shared-note function, and shows the note, plus the transcript if the buyer included it. It is marked not to be indexed by search engines, and it never exposes audio in the MVP.
+**Share page:** a small static web page on Cloudflare Pages. It reads the token from the URL, calls the `get_shared_note` database function, and shows the note, plus the transcript if the buyer included it. It is marked not to be indexed by search engines, and it never exposes audio in the MVP.
 
 **Security and privacy**
 
@@ -286,35 +275,35 @@ sequenceDiagram
 
 ### Assumptions
 
-- An average visit lasts **12 minutes**.
+- An average reaction lasts **1 minute** (about 150 words).
 - An active buyer records **8 visits a month** while searching.
-- The transcript of a 12-minute visit is about 2,000 words, roughly **3,000 tokens**. With instructions, Claude reads about **5,000 input tokens** per visit and writes about **2,000 output tokens** (the note plus reasoning).
+- Claude reads about **1,000 input tokens** per visit (instructions plus transcript) and writes about **1,000 output tokens** (the note plus reasoning).
 
 ### Cost per visit
 
 | Item | Calculation | Cost per visit |
 |---|---|---|
-| Transcription (Deepgram Nova-3, pre-recorded audio, with speaker labels) | 12 min × ~$0.0045/min | ~$0.055 |
-| Summarization, Claude Opus 5 ($5 per million input tokens, $25 per million output) | 5k × $5/M + 2k × $25/M | ~$0.075 |
-| Storage and data transfer | ~3 MB stored, played back a few times | <$0.005 |
-| **Total with Claude Opus 5** | | **≈ $0.13** |
-| *Alternative: summarize with Claude Sonnet 5 ($2 / $10 per million)* | 5k × $2/M + 2k × $10/M | *~$0.03, for a total of ≈ $0.09 per visit* |
+| Transcription (Deepgram Nova-3, pre-recorded audio) | 1 min × ~$0.0045/min | ~$0.005 |
+| Summarization, Claude Opus 5 ($5 per million input tokens, $25 per million output) | 1k × $5/M + 1k × $25/M | ~$0.03 |
+| Storage and data transfer | ~0.35 MB stored, played back a few times | <$0.001 |
+| **Total with Claude Opus 5** | | **≈ $0.035** |
+| *Alternative: summarize with Claude Sonnet 5 ($2 / $10 per million)* | 1k × $2/M + 1k × $10/M | *~$0.012, for a total of ≈ $0.017 per visit* |
 
-The model choice should be made with a small quality test: 30–50 real or realistic visit transcripts, scored for missed points, invented points, and correct timestamps. If Sonnet 5 holds up on that test, switching cuts the AI cost by about a third.
+The model choice should be made with a small quality test: 30–50 real or realistic reactions, scored for missed points and invented points. If Sonnet 5 holds up on that test, switching halves the AI cost. At these amounts either choice is cheap.
 
 ### Services
 
 | Service | Used for | Pricing model | MVP cost |
 |---|---|---|---|
-| **Supabase** (Pro plan) | Sign-in, Postgres, storage, Edge Functions, scheduled jobs | $25/month, including 8 GB database, 100 GB storage, 250 GB transfer, 100k monthly active users, plus usage beyond that | $25/month |
-| **Deepgram** | Speech-to-text with word timings and speaker labels | Pay per audio minute (~$0.0043–0.0045/min). Includes a starting credit of ~$200. | Usage-based |
-| **Anthropic Claude API** | Summarizing transcripts into notes | Per token. Claude Opus 5: $5 / $25 per million input/output tokens. | Usage-based |
+| **Supabase** (Pro plan) | Sign-in, Postgres, storage, Edge Functions, scheduled jobs | $25/month, including 8 GB database, 100 GB storage, 250 GB transfer, 100k monthly active users, plus usage beyond that. The free plan works for development. | $25/month |
+| **Deepgram** | Speech-to-text | Pay per audio minute (~$0.0043–0.0045/min). Includes a starting credit of ~$200. | Usage-based |
+| **Anthropic Claude API** | Summarizing reactions into notes | Per token. Claude Opus 5: $5 / $25 per million input/output tokens. | Usage-based |
 | **Expo EAS** | Cloud builds, app store submission, over-the-air updates | Free tier to start. ~$19/month Starter plan once builds are frequent. | $0–19/month |
 | **Expo Push** | Push notifications | Free | $0 |
 | **Cloudflare Pages** | Share page hosting | Free tier | $0 |
 | **Sentry** | Crash and error reporting | Free developer tier | $0 |
 | **PostHog** | Product analytics | Free up to 1M events/month | $0 |
-| **Resend** (or Supabase's built-in email for testing) | Sign-in link emails | Free up to 3k emails/month, then $20/month | $0 |
+| **Resend** (or Supabase's built-in email for testing) | Sign-in code emails | Free up to 3k emails/month, then $20/month | $0 |
 | **Device geocoding** (Apple and Google built-in) | Turning GPS coordinates into an address | Free on the device | $0 |
 | **Apple Developer Program** | App Store distribution | $99/year | $99/year |
 | **Google Play Console** | Play Store distribution (Phase 1.5) | $25 one-time | $25 one-time |
@@ -324,26 +313,20 @@ The model choice should be made with a small quality test: 30–50 real or reali
 
 | Scale | Visits per month | AI cost (Claude Opus 5 + Deepgram) | Fixed services | **Total per month** |
 |---|---|---|---|---|
-| Pilot: 50 buyers | 400 | ~$52 | ~$25–45 | **≈ $80–100** |
-| Launch: 500 buyers | 4,000 | ~$520 | ~$45–65 | **≈ $570–600** |
-| Growth: 5,000 buyers | 40,000 | ~$5,200 | ~$150–300 (Supabase usage, Resend, Sentry and PostHog paid tiers) | **≈ $5,400–5,500** |
+| Pilot: 50 buyers | 400 | ~$14 | ~$25–45 | **≈ $40–60** |
+| Launch: 500 buyers | 4,000 | ~$140 | ~$45–65 | **≈ $185–205** |
+| Growth: 5,000 buyers | 40,000 | ~$1,400 | ~$150–300 (Supabase usage, Resend, Sentry and PostHog paid tiers) | **≈ $1,550–1,700** |
 
-At about $0.13 per visit, a buyer who tours 8 homes a month costs about **$1.05 a month** to serve. That leaves room for a subscription in the $5–10/month range, or for agents or brokerages paying on their clients' behalf.
-
-**Ways to lower cost later:**
-- Switch summarization to Claude Sonnet 5 if it passes the quality test (≈30% lower total cost).
-- Use prompt caching for the fixed instructions.
-- Use Anthropic's Batch API (50% off) for regenerating notes, where speed doesn't matter.
-- Negotiate volume pricing with the transcription vendor.
+At about $0.035 per visit, a buyer who tours 8 homes a month costs about **$0.30 a month** to serve. Fixed services dominate until a few thousand buyers.
 
 ### One-time costs
 
 | Item | Estimate |
 |---|---|
 | Apple Developer account (first year) and Google Play registration | $124 |
-| Legal review: privacy policy, terms, recording-consent notice (see §6) | $1,500–5,000 |
+| Legal review: privacy policy and terms | $1,000–3,000 |
 | App icon, store screenshots, basic brand assets (if outsourced) | $500–2,000 |
-| Engineering effort | See §5. About 10 weeks for 1–2 engineers plus part-time design. This is the largest cost, and it depends on whether the team is in-house or contracted. |
+| Engineering effort | See §5. About 7 weeks for 1–2 engineers plus part-time design. This is the largest cost, and it depends on whether the team is in-house or contracted. |
 
 ---
 
@@ -353,23 +336,21 @@ Two full-stack engineers (React Native and TypeScript) plus a part-time product 
 
 | Week | Milestone | Done when |
 |---|---|---|
-| 1 | **Foundations** | Expo project, Supabase project, sign-in with Apple, Google, and email link, database schema with access rules, CI and cloud builds to TestFlight |
-| 2–3 | **Recording (highest risk first)** | 30-minute background recording with the screen locked, pause/resume, interruption handling, segmented files, persistent upload queue. Tested on several iPhones in real houses with weak signal. |
-| 3–4 | **Processing pipeline** | Complete-visit, Deepgram callback, merging, status tracking, retry sweeper, push notifications |
-| 4–5 | **Summarization** | Prompt and output schema, faithfulness checks, quality test set of 30–50 transcripts, Opus 5 vs Sonnet 5 comparison |
-| 5–6 | **Note and transcript screens** | Note view, tap-to-hear source, transcript, editing with protected buyer edits, regenerate |
-| 6–7 | **Properties and history** | GPS address suggestion and confirmation, grouping visits by property, list, search, property page, offline cache |
-| 7–8 | **Sharing** | Share links, share page, revocation and expiry, phone share sheet |
-| 8–9 | **Trust and compliance** | Recording notice, account and data deletion, privacy policy, App Store privacy labels, monitoring and analytics without content |
-| 9–10 | **Beta and launch** | TestFlight beta with 20–50 buyers and a few agents during real open houses, fixes, App Store submission |
-| +3–4 weeks | **Phase 1.5: Android** | Foreground-service recorder tested on 5–8 devices, Play Store listing |
+| 1 | **Foundations** | Expo project, Supabase project, sign-in with Apple, Google, and email code, database schema with access rules, CI and cloud builds to TestFlight |
+| 2 | **Record and queue** | Property confirmation with GPS, recording screen with prompts, local save, upload queue that survives no signal and app restarts |
+| 3 | **Processing** | `process-visit` function, Deepgram, Claude with quote checks, status tracking, retry sweeper, push notifications |
+| 3–4 | **Note quality** | Quality test set of 30–50 reactions, prompt tuning, Opus 5 vs Sonnet 5 comparison |
+| 4–5 | **Note, history, editing** | Note screen with quotes, transcript and playback, editing that survives regeneration, property list and pages, offline cache |
+| 5–6 | **Sharing and data controls** | Share links, share page, revocation and expiry, account and data deletion, privacy policy, App Store privacy labels |
+| 6–7 | **Beta and launch** | TestFlight beta with 20–50 buyers and a few agents during real open-house weekends, fixes, App Store submission |
+| +2–3 weeks | **Phase 1.5: Android** | Device testing, Play Store listing |
 
 **What to measure in the beta:**
-- At least 98% of visits produce a note with no lost audio.
-- Median time from ending a visit to the note being ready is under 2 minutes.
+- At least 99% of saved clips produce a note.
+- Median time from saving a clip to the note being ready is under 30 seconds.
 - Buyers edit fewer than 15% of items, and invented points are almost never reported.
 - The share rate per note.
-- Repeat use: buyers who record a second home.
+- Repeat use: buyers who record a second and a fifth home.
 
 ---
 
@@ -377,16 +358,15 @@ Two full-stack engineers (React Native and TypeScript) plus a part-time product 
 
 | Risk | Mitigation |
 |---|---|
-| **Recording consent laws.** Some US states, including California, require everyone's consent to record a confidential conversation. A buyer may record the listing agent. | Get a legal review before launch. Add a recording notice at onboarding and an easy pause ("off the record"). Treat the app as the buyer's personal memo tool. Phase 2 could add a quick script for asking permission. |
-| **Background recording stops on some devices** (iOS edge cases, Android battery optimization) | Build and test recording first (weeks 2–3). Use segmented files so any loss is small. Use a foreground-service notification on Android. Warn the buyer in the app if recording stops. |
-| **Note quality: missed or invented points** | Timestamps and quotes on every item, server-side quote checking, a one-tap source check, a quality test set run on every prompt change. |
-| **Poor connection inside houses** | Recording happens entirely on the phone. The upload queue retries later. No part of a visit needs a connection. |
-| **Address matching** (condo units, new builds, GPS drift) | Suggest an address but always let the buyer confirm or edit. Record a unit number. Match on normalized address plus distance. |
-| **Vendor dependence** | Transcription and summarization sit behind a single back-end step each, so Deepgram can be swapped (for example, for AssemblyAI) and Claude models can change without touching the app. |
+| **Buyers forget to record after leaving** | A large "Record a home" button on the home screen and a quick flow (two taps to start). A reminder when leaving an open house is planned for Phase 2. |
+| **Short reactions miss things the buyer would want to remember** | Rotating prompts during recording. Buyers can add points and personal notes by typing. A clarifying question after recording is planned for Phase 2. |
+| **Note quality: missed or invented points** | A quote with every item, server-side quote checking, the transcript and recording one tap away, and a quality test set run on every prompt change. |
+| **Poor connection outside the home** | The clip is saved on the phone first, and the upload queue retries until it succeeds. |
+| **Address matching** (condo units, new builds, GPS drift) | Suggest an address but always let the buyer confirm or edit. Record a unit number. Offer the buyer's own nearby properties first. |
+| **Vendor dependence** | Transcription and summarization each sit behind one back-end module, so Deepgram can be swapped (for example, for AssemblyAI) and Claude models can change without touching the app. |
 
 **Open questions for the team**
 
 1. **Business model:** will buyers pay, or agents and brokerages? This decides whether agent features move up from Phase 3.
-2. **Audio retention:** is "keep until deleted" the right default, or should audio be deleted automatically after 90 days while the note and transcript are kept?
-3. **Agent pilot:** is there an agent or brokerage partner who can recruit beta buyers and give feedback on the share page?
-4. **Branding and domain** for share links.
+2. **Agent pilot:** is there an agent or brokerage partner who can recruit beta buyers and give feedback on the share page?
+3. **Branding and domain** for share links.
