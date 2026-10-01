@@ -55,21 +55,48 @@ describe('buildDossier', () => {
 });
 
 describe('normalizeRanking', () => {
+  const r = (property_id: string, rank: number, label: string, score?: number) => ({ property_id, rank, score, label, pros: [], cons: [] });
+
   it('drops unknown and repeated homes, appends missing ones, renumbers', () => {
     const out = normalizeRanking(
-      [
-        { property_id: 'b', rank: 2, fit: 'good', reason: ' Big yard ' },
-        { property_id: 'x', rank: 1, fit: 'strong', reason: 'Not a real home' },
-        { property_id: 'a', rank: 3, fit: 'strong', reason: 'Great light' },
-        { property_id: 'b', rank: 4, fit: 'weak', reason: 'Duplicate' },
-      ],
+      [r('b', 2, ' Big yard. ', 8.1), r('x', 1, 'Not a real home', 9), r('a', 3, 'Great light', 6.4), r('b', 4, 'Duplicate', 1)],
       ['a', 'b', 'c'],
     );
-    expect(out).toEqual([
-      { property_id: 'b', rank: 1, fit: 'good', reason: 'Big yard' },
-      { property_id: 'a', rank: 2, fit: 'strong', reason: 'Great light' },
-      { property_id: 'c', rank: 3, fit: 'weak', reason: '' },
+    expect(out.map((h) => [h.property_id, h.rank, h.label, h.score])).toEqual([
+      ['b', 1, 'Big yard', 8.1],
+      ['a', 2, 'Great light', 6.4],
+      ['c', 3, '', 5.9],
     ]);
+  });
+
+  it('clamps scores to 0–10, rounds to one decimal, and never lets them rise down the list', () => {
+    const out = normalizeRanking([r('a', 1, '', 11.26), r('b', 2, '', 9.4), r('c', 3, '', -2), r('d', 4, '', 3)], ['a', 'b', 'c', 'd']);
+    expect(out.map((h) => h.score)).toEqual([10, 9.4, 0, 0]);
+  });
+
+  it('derives fit from the score for older app builds', () => {
+    const out = normalizeRanking([r('a', 1, '', 8.2), r('b', 2, '', 6), r('c', 3, '', 3.1)], ['a', 'b', 'c']);
+    expect(out.map((h) => h.fit)).toEqual(['strong', 'good', 'weak']);
+  });
+
+  it('keeps labels and tags short and distinct', () => {
+    const [h] = normalizeRanking(
+      [
+        {
+          property_id: 'a',
+          rank: 1,
+          score: 9,
+          label: 'The best overall fit for everything you said you wanted',
+          pros: ['Big yard', 'big yard', '  Bright kitchen ', 'Quiet street', 'Fourth tag'],
+          cons: ['Dated bathrooms and a roof that will need replacing soon'],
+        },
+      ],
+      ['a'],
+    );
+    expect(h.label.length).toBeLessThanOrEqual(32);
+    expect(h.label.endsWith('…')).toBe(true);
+    expect(h.pros).toEqual(['Big yard', 'Bright kitchen', 'Quiet street']);
+    expect(h.cons[0].length).toBeLessThanOrEqual(24);
   });
 });
 
@@ -91,14 +118,27 @@ describe('normalizePriorities', () => {
 });
 
 describe('replayAssistantTurn', () => {
-  it('replays the reply, ranking by address, and question', () => {
-    const text = replayAssistantTurn(
-      'Here is my ranking.',
-      [{ property_id: 'a', rank: 1, fit: 'strong', reason: '' }],
-      'How long a commute is OK?',
-      new Map([['a', '18631 Laredo Rd']]),
+  const labels = new Map([['a', '18631 Laredo Rd']]);
+
+  it('replays a ranking turn by address and label', () => {
+    expect(
+      replayAssistantTurn(
+        'Laredo is your best fit',
+        [{ property_id: 'a', rank: 1, score: 9.1, fit: 'strong', label: 'Best overall fit', pros: [], cons: [] }],
+        null,
+        labels,
+      ),
+    ).toBe('Laredo is your best fit\nRanking given: #1 18631 Laredo Rd (9.1/10, Best overall fit)');
+  });
+
+  it('replays older ranking rows that have no label', () => {
+    expect(replayAssistantTurn('', [{ property_id: 'a', rank: 1, fit: 'good', reason: 'old' }], null, labels)).toBe(
+      'Ranking given: #1 18631 Laredo Rd (good)',
     );
-    expect(text).toBe('Here is my ranking.\nRanking given: #1 18631 Laredo Rd (strong)\nQuestion asked: How long a commute is OK?');
+  });
+
+  it('replays a chat turn with its question', () => {
+    expect(replayAssistantTurn('Got it.', null, 'How long a commute is OK?', labels)).toBe('Got it.\nQuestion asked: How long a commute is OK?');
   });
 });
 

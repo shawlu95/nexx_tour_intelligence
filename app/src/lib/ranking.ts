@@ -45,8 +45,9 @@ export async function fetchRankingState(): Promise<RankingState> {
   }
 }
 
+/** 'rank' re-ranks every home with the current preferences; 'chat' is a Discuss turn (no re-rank). */
 export async function sendRankingTurn(
-  action: 'start' | 'send' | 'refresh',
+  action: 'rank' | 'chat',
   message?: string,
 ): Promise<{ messages: RankingMessage[]; priorities: Priority[] }> {
   return callFunction('rank-homes', { action, message });

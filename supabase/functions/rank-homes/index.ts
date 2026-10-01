@@ -1,12 +1,13 @@
-// The ranking conversation. The buyer talks with NORA about their homes; every
-// turn returns a full ranking, the priorities learned so far, and one question.
+// Ranking and Discuss.
 //
-// POST { action: 'start' }                 first ranking (only when there's no conversation yet)
-// POST { action: 'send', message: string } the buyer's reply
-// POST { action: 'refresh' }               re-rank after new homes were recorded
+// POST { action: 'rank' }                  rank every home with concise labels and pro/con tags,
+//                                          using the priorities and the Discuss conversation so far
+// POST { action: 'chat', message: string } a Discuss turn: NORA replies and refines the priorities,
+//                                          without re-ranking
+// Older app builds send 'start' / 'refresh' (= rank) and 'send' (= chat).
 //
-// Answers synchronously (usually 10–30 seconds) with the saved assistant turn.
-import { rankHomes, type RankingTurn } from '../_shared/claude.ts';
+// Answers synchronously (usually 10–30 seconds) with the saved turn(s).
+import { discussHomes, rankHomes, type RankingTurn } from '../_shared/claude.ts';
 import {
   buildDossier,
   normalizePriorities,
@@ -15,20 +16,21 @@ import {
   replayAssistantTurn,
   type DossierHome,
   type Priority,
-  type RankedHome,
+  type StoredRankedHome,
 } from '../_shared/ranking.ts';
 import { adminClient, corsHeaders, json, userIdFrom } from '../_shared/runtime.ts';
 
 const MAX_MESSAGE_CHARS = 2000;
 const HISTORY_TURNS = 30;
 const DAILY_TURN_LIMIT = 60; // protects against runaway API cost
-const START_PROMPT = 'Please give me your recommended ranking of my homes, and ask me what you need to know.';
-const REFRESH_PROMPT = "I've recorded new homes since your last ranking. Please update it.";
+// Not stored: the request a ranking turn answers.
+const RANK_PROMPT = 'Rank all of my homes now, using everything you know about what matters to me.';
+const ACTIONS: Record<string, 'rank' | 'chat'> = { rank: 'rank', start: 'rank', refresh: 'rank', chat: 'chat', send: 'chat' };
 
 interface StoredMessage {
   role: 'user' | 'assistant';
   content: string;
-  ranking: RankedHome[] | null;
+  ranking: StoredRankedHome[] | null;
   question: string | null;
 }
 
@@ -38,10 +40,10 @@ Deno.serve(async (req) => {
   if (!userId) return json({ error: 'Sign in again to continue.' }, 401);
 
   const body = (await req.json().catch(() => ({}))) as { action?: string; message?: string };
-  const action = body.action ?? 'send';
+  const mode = ACTIONS[body.action ?? 'chat'];
   const message = (body.message ?? '').trim();
-  if (!['start', 'send', 'refresh'].includes(action)) return json({ error: 'Unknown action' }, 400);
-  if (action === 'send' && !message) return json({ error: 'Type a message first.' }, 400);
+  if (!mode) return json({ error: 'Unknown action' }, 400);
+  if (mode === 'chat' && !message) return json({ error: 'Type a message first.' }, 400);
   if (message.length > MAX_MESSAGE_CHARS) return json({ error: 'That message is too long.' }, 400);
 
   const db = adminClient();
@@ -124,7 +126,6 @@ Deno.serve(async (req) => {
     .order('created_at', { ascending: false })
     .limit(HISTORY_TURNS);
   const past = ((history ?? []) as StoredMessage[]).reverse();
-  if (action === 'start' && past.length > 0) return json({ error: 'The conversation has already started.' }, 409);
 
   const { data: pri } = await db.from('buyer_priorities').select('priorities').eq('user_id', userId).maybeSingle();
   const known = (pri?.priorities ?? []) as Priority[];
@@ -138,34 +139,44 @@ Deno.serve(async (req) => {
       ? { role: 'assistant', content: replayAssistantTurn(m.content, m.ranking, m.question, labels) }
       : { role: 'user', content: m.content },
   );
-  if (turns.length === 0 || turns[0].role !== 'user') turns.unshift({ role: 'user', content: START_PROMPT });
-  const userText = action === 'send' ? message : action === 'refresh' ? REFRESH_PROMPT : null;
-  if (userText) turns.push({ role: 'user', content: userText });
-
-  let result;
-  try {
-    result = await rankHomes({ dossier: buildDossier(homes), priorities: prioritiesText, history: turns });
-  } catch (e) {
-    console.error('rank-homes failed', userId, e);
-    return json({ error: "NORA couldn't answer just now. Try again in a moment." }, 502);
-  }
-
-  const ranking = normalizeRanking(result.output.ranking, homes.map((h) => h.id));
-  const priorities = normalizePriorities(result.output.priorities);
+  if (turns.length === 0 || turns[0].role !== 'user') turns.unshift({ role: 'user', content: RANK_PROMPT });
+  // The model answers the last user turn: the buyer's message, or the (unstored) ranking request.
+  turns.push({ role: 'user', content: mode === 'chat' ? message : RANK_PROMPT });
+  const context = { dossier: buildDossier(homes), priorities: prioritiesText, history: turns };
 
   // Save the buyer's message and NORA's answer together, so a failed call leaves no half turn.
-  const rows = [];
-  if (userText) rows.push({ user_id: userId, role: 'user', content: userText });
-  rows.push({
-    user_id: userId,
-    role: 'assistant',
-    content: result.output.reply.trim(),
-    ranking,
-    question: result.output.question.trim() || null,
-    suggestions: normalizeSuggestions(result.output.suggestions),
-    based_on: homes.map((h) => h.id),
-    model: result.model,
-  });
+  const rows: Record<string, unknown>[] = [];
+  let priorities: Priority[];
+  try {
+    if (mode === 'rank') {
+      const result = await rankHomes(context);
+      priorities = normalizePriorities(result.output.priorities);
+      rows.push({
+        user_id: userId,
+        role: 'assistant',
+        content: result.output.headline.trim(),
+        ranking: normalizeRanking(result.output.ranking, homes.map((h) => h.id)),
+        based_on: homes.map((h) => h.id),
+        model: result.model,
+      });
+    } else {
+      const result = await discussHomes(context);
+      priorities = normalizePriorities(result.output.priorities);
+      rows.push({ user_id: userId, role: 'user', content: message });
+      rows.push({
+        user_id: userId,
+        role: 'assistant',
+        content: result.output.reply.trim(),
+        question: result.output.question.trim() || null,
+        suggestions: normalizeSuggestions(result.output.suggestions),
+        based_on: homes.map((h) => h.id),
+        model: result.model,
+      });
+    }
+  } catch (e) {
+    console.error('rank-homes failed', userId, mode, e);
+    return json({ error: "NORA couldn't answer just now. Try again in a moment." }, 502);
+  }
   const { data: saved, error: sError } = await db.from('ranking_messages').insert(rows).select('*');
   if (sError) return json({ error: sError.message }, 500);
 

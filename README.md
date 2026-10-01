@@ -67,13 +67,12 @@ Something belongs in the MVP only if leaving it out would break that job. Everyt
 | 9 | **Share a note with the agent** | Creates a private, read-only web link and opens the phone's share sheet (text, email, WhatsApp). The buyer chooses whether to include the transcript and can revoke the link at any time. The agent doesn't need an account. |
 | 10 | **Delete data** | Delete a visit, a property, or the whole account, including the audio. This is required by the App Store and expected by users. |
 | 11 | **Home facts and thumbnail** | Each home shows beds, baths, square feet and the listing (or last sale) price, looked up once from RentCast's public-record and listing data. A small street-level thumbnail is made on the phone with Apple Look Around (a map snapshot where there's no coverage), so homes in lists are easy to tell apart. |
-| 12 | **Ranking conversation** | A Ranking tab where NORA ranks all the buyer's homes from their notes and the home facts, explains why the top homes lead, and asks one question at a time to learn what matters (yard vs. size, commute, budget). Each answer updates the ranking and a visible list of learned priorities. The buyer can start over at any time. |
+| 12 | **Ranking and Discuss** | A Ranking tab (laid out like the mockup) lists all the buyer's homes best fit first, each with a thumbnail, a rough 0–10 score (meant for relative comparison: close scores are a close call, a big gap is a clear difference), a 2–4 word label ("Best overall fit", "Too much renovation") and, when tapped, short pro and con tags, built from their notes and the home facts. **Discuss** opens a chat where the buyer asks why a home ranks where it does and says what matters (yard vs. size, commute, budget); NORA refines a visible list of priorities and offers one-tap replies. **Update ranking** then re-ranks once with the new preferences. |
 
 ### Left out of the MVP
 
 | Feature | Why it's left out | When |
 |---|---|---|
-| Numeric fit score | A number with a decimal point suggests precision a few one-minute reactions can't support. The ranking uses plain strong / good / weak fit with written reasons instead (feature 12). | Not planned |
 | Clarifying question after recording | Adds a step and a second AI call. The note already includes "Questions for my agent." | Phase 2 |
 | Reminder to record when leaving a home | Needs background location permission, which many buyers decline and app review scrutinizes. | Phase 2 |
 | Agent accounts, invitations, agent notes | A second user type, permissions, and onboarding. A share link covers the core need with none of that. | Phase 3 |
@@ -298,7 +297,7 @@ The model choice should be made with a small quality test: 30–50 real or reali
 
 ### Cost per ranking turn
 
-Each message in the Ranking conversation is one Claude call. Claude reads the instructions, a summary of every home (about 300 tokens each), what it has learned, and the recent conversation, then writes a reply, the full ranking with reasons, and the updated priorities.
+Each Discuss message and each re-rank is one Claude call. Claude reads the instructions, a summary of every home (about 300 tokens each), what it has learned, and the recent conversation, then writes a reply, the full ranking with reasons, and the updated priorities.
 
 | Item | Calculation (10 homes, Claude Opus 5, medium effort) | Cost per turn |
 |---|---|---|

@@ -12,7 +12,7 @@ import {
   uniqueStreetAddresses,
 } from './address';
 import { retryDelayMs } from './backoff';
-import { latestRanking, newHomesSince, type RankingMessage } from './rankingLogic';
+import { discussedSinceRanking, formatScore, latestRanking, newHomesSince, shortLabel, type RankingMessage } from './rankingLogic';
 import { cueIndex, factTiles, formatClock, formatFacts, formatHomeLine, formatMoney, formatPrice, formatWhen } from './format';
 
 describe('normalizedKey', () => {
@@ -173,6 +173,25 @@ describe('ranking helpers', () => {
     const second = msg({ id: '2', ranking: [{ property_id: 'b', rank: 1, fit: 'good', reason: '' }] });
     expect(latestRanking([first, msg({ id: 'u', role: 'user' }), second, msg({ id: 'x' })])?.id).toBe('2');
     expect(latestRanking([msg({ role: 'user' })])).toBeNull();
+  });
+
+  it('knows when the buyer discussed after the latest ranking', () => {
+    const rank = msg({ id: 'r', ranking: [{ property_id: 'a', rank: 1, fit: 'good' }] });
+    expect(discussedSinceRanking([rank])).toBe(false);
+    expect(discussedSinceRanking([rank, msg({ id: 'u', role: 'user' }), msg({ id: 'c' })])).toBe(true);
+    expect(discussedSinceRanking([msg({ id: 'u', role: 'user' }), rank])).toBe(false);
+  });
+
+  it('uses the label, or shortens an older reason', () => {
+    expect(shortLabel({ property_id: 'a', rank: 1, fit: 'good', label: ' Best overall fit ' })).toBe('Best overall fit');
+    expect(shortLabel({ property_id: 'a', rank: 1, fit: 'good', reason: 'Great light and a big yard you loved' })).toBe('Great light and a…');
+    expect(shortLabel({ property_id: 'a', rank: 1, fit: 'good' })).toBe('');
+  });
+
+  it('formats scores with one decimal, null when missing', () => {
+    expect(formatScore({ property_id: 'a', rank: 1, fit: 'good', score: 8 })).toBe('8.0');
+    expect(formatScore({ property_id: 'a', rank: 1, fit: 'good', score: 9.14 })).toBe('9.1');
+    expect(formatScore({ property_id: 'a', rank: 1, fit: 'good' })).toBeNull();
   });
 
   it('lists homes recorded since the latest ranking', () => {

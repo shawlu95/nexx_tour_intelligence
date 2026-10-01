@@ -20,6 +20,10 @@ Last updated: 2026-10-01. Update this file at the end of each work session: move
 
 13. **iOS 27 launch crash fixed (2026-10-01).** After the phone updated to iOS 27.0.1, NORA crashed at launch because iOS 27 requires the UIScene life cycle. Fixed with the `withSceneLifecycle` config plugin in `app/app.config.ts` (scene manifest with `EXExpoAppSceneDelegate`; AppDelegate conforms to `ExpoReactNativeFactoryProvider` and no longer creates the window). Verified on the iPhone: still running 15 seconds after launch, no new crash reports.
 
+14. **Ranking redesign + Discuss (2026-10-01).** Ranking tab follows the mockup: headline, compact numbered list with 2–4 word labels and fit, tap to expand pro/con tags and Open home; Discuss and Record the next home buttons; Update ranking banner when new homes or discussion since the last ranking. Discuss screen (`app/src/app/ranking/discuss.tsx`): priorities chips, chat with starters and one-tap replies, Update ranking (re-ranks once, then returns), Start over. `rank-homes` now has two modes: `rank` (RANK_SCHEMA: headline, ranking with label/pros/cons, priorities) and `chat` (CHAT_SCHEMA: reply, priorities, question, suggestions); the old action names still work. The tab re-ranks once automatically when the saved ranking predates labels.
+
+15. **Ranking scores (2026-10-01).** Each ranked home gets a 0–10 score (one decimal), meant for relative comparison; the server clamps scores and keeps them non-increasing down the list, and derives the old fit value from them. Rows show rank · thumbnail · address with a smaller two-line label · score; tapping a row expands the pro/con tags. The tab re-ranks once automatically if the saved ranking has no scores yet.
+
 ## Done and verified
 
 | Area | Verified how |

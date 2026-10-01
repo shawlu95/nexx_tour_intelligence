@@ -1,4 +1,9 @@
-// Pure helpers for the ranking conversation. No runtime imports, so they can be unit-tested.
+// Pure helpers for the ranking feature. No runtime imports, so they can be unit-tested.
+//
+// Two kinds of model turns:
+// - rank: a full ranking with concise labels and pro/con tags, plus the learned priorities.
+// - chat: a conversational reply in the Discuss screen that refines the priorities
+//   (no re-ranking until the buyer asks for it).
 
 export type Fit = 'strong' | 'good' | 'weak';
 export type Importance = 'must' | 'high' | 'medium' | 'low';
@@ -6,8 +11,15 @@ export type Importance = 'must' | 'high' | 'medium' | 'low';
 export interface RankedHome {
   property_id: string;
   rank: number;
+  /** 0–10, one decimal. Rough, for relative comparison: close scores = close call. */
+  score: number;
+  /** Derived from the score (kept for older app builds). */
   fit: Fit;
-  reason: string;
+  /** 2–4 words, e.g. "Best overall fit". */
+  label: string;
+  /** Short tags, 1–3 words each, at most 3. */
+  pros: string[];
+  cons: string[];
 }
 
 export interface Priority {
@@ -16,48 +28,68 @@ export interface Priority {
   evidence: string;
 }
 
-export interface RankingOutput {
-  reply: string;
+export interface RankOutput {
+  headline: string;
   ranking: RankedHome[];
+  priorities: Priority[];
+}
+
+export interface ChatOutput {
+  reply: string;
   priorities: Priority[];
   question: string;
   suggestions: string[];
 }
 
-/** JSON schema passed to the API as a structured-output format. */
-export const RANKING_SCHEMA = {
+const PRIORITIES_SCHEMA = {
+  type: 'array',
+  items: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['label', 'importance', 'evidence'],
+    properties: {
+      label: { type: 'string' },
+      importance: { type: 'string', enum: ['must', 'high', 'medium', 'low'] },
+      evidence: { type: 'string' },
+    },
+  },
+} as const;
+
+/** Structured output for a ranking turn. */
+export const RANK_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['reply', 'ranking', 'priorities', 'question', 'suggestions'],
+  required: ['headline', 'ranking', 'priorities'],
   properties: {
-    reply: { type: 'string' },
+    headline: { type: 'string' },
     ranking: {
       type: 'array',
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['property_id', 'rank', 'fit', 'reason'],
+        required: ['property_id', 'rank', 'score', 'label', 'pros', 'cons'],
         properties: {
           property_id: { type: 'string' },
           rank: { type: 'integer' },
-          fit: { type: 'string', enum: ['strong', 'good', 'weak'] },
-          reason: { type: 'string' },
-        },
-      },
-    },
-    priorities: {
-      type: 'array',
-      items: {
-        type: 'object',
-        additionalProperties: false,
-        required: ['label', 'importance', 'evidence'],
-        properties: {
+          score: { type: 'number' },
           label: { type: 'string' },
-          importance: { type: 'string', enum: ['must', 'high', 'medium', 'low'] },
-          evidence: { type: 'string' },
+          pros: { type: 'array', items: { type: 'string' } },
+          cons: { type: 'array', items: { type: 'string' } },
         },
       },
     },
+    priorities: PRIORITIES_SCHEMA,
+  },
+} as const;
+
+/** Structured output for a Discuss turn. */
+export const CHAT_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['reply', 'priorities', 'question', 'suggestions'],
+  properties: {
+    reply: { type: 'string' },
+    priorities: PRIORITIES_SCHEMA,
     question: { type: 'string' },
     suggestions: { type: 'array', items: { type: 'string' } },
   },
@@ -125,38 +157,77 @@ export function buildDossier(homes: DossierHome[]): string {
     .join('\n\n');
 }
 
-const FITS: readonly Fit[] = ['strong', 'good', 'weak'];
 const IMPORTANCE: readonly Importance[] = ['must', 'high', 'medium', 'low'];
 
+function shortText(s: unknown, maxChars: number): string {
+  if (typeof s !== 'string') return '';
+  const t = s.trim().replace(/\s+/g, ' ').replace(/[.。]+$/, '');
+  return t.length > maxChars ? `${t.slice(0, maxChars - 1).trimEnd()}…` : t;
+}
+
+function tags(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const r of raw) {
+    const t = shortText(r, 24);
+    if (!t || seen.has(t.toLowerCase())) continue;
+    seen.add(t.toLowerCase());
+    out.push(t);
+    if (out.length === 3) break;
+  }
+  return out;
+}
+
+export function fitFromScore(score: number): Fit {
+  return score >= 7.5 ? 'strong' : score >= 5 ? 'good' : 'weak';
+}
+
+function cleanScore(v: unknown): number | null {
+  const n = typeof v === 'number' ? v : typeof v === 'string' ? Number(v) : NaN;
+  if (!Number.isFinite(n)) return null;
+  return Math.round(Math.min(10, Math.max(0, n)) * 10) / 10;
+}
+
 /**
- * Makes the model's ranking safe to show: drops unknown or repeated homes, appends
- * any home it left out (as a weak fit at the end), and renumbers 1..n.
+ * Makes the model's ranking safe to show: drops unknown or repeated homes, keeps
+ * labels and tags short, clamps scores to 0–10 and keeps them in rank order (a
+ * lower-ranked home never scores higher), appends any home it left out at the end,
+ * and renumbers 1..n.
  */
-export function normalizeRanking(raw: RankedHome[], homeIds: string[]): RankedHome[] {
+export function normalizeRanking(raw: (Partial<RankedHome> & { property_id: string; rank: number })[], homeIds: string[]): RankedHome[] {
   const known = new Set(homeIds);
   const seen = new Set<string>();
-  const kept: RankedHome[] = [];
+  const kept: (Omit<RankedHome, 'score' | 'fit'> & { score: number | null })[] = [];
   for (const r of [...raw].sort((a, b) => a.rank - b.rank)) {
     if (!known.has(r.property_id) || seen.has(r.property_id)) continue;
     seen.add(r.property_id);
     kept.push({
       property_id: r.property_id,
       rank: 0,
-      fit: FITS.includes(r.fit) ? r.fit : 'good',
-      reason: (r.reason ?? '').trim(),
+      score: cleanScore(r.score),
+      label: shortText(r.label, 32),
+      pros: tags(r.pros),
+      cons: tags(r.cons),
     });
   }
   for (const id of homeIds) {
-    if (!seen.has(id)) kept.push({ property_id: id, rank: 0, fit: 'weak', reason: '' });
+    if (!seen.has(id)) kept.push({ property_id: id, rank: 0, score: null, label: '', pros: [], cons: [] });
   }
-  return kept.map((r, i) => ({ ...r, rank: i + 1 }));
+  let ceiling = 10;
+  return kept.map((r, i) => {
+    // Missing scores sit just under the home above; scores never rise down the list.
+    const score = Math.min(r.score ?? Math.max(0, ceiling - 0.5), ceiling);
+    ceiling = score;
+    return { ...r, rank: i + 1, score, fit: fitFromScore(score) };
+  });
 }
 
 /** Cleans the learned priorities: valid importance, no blanks or duplicates, at most 12. */
 export function normalizePriorities(raw: Priority[]): Priority[] {
   const seen = new Set<string>();
   const out: Priority[] = [];
-  for (const p of raw) {
+  for (const p of raw ?? []) {
     const label = (p.label ?? '').trim();
     const key = label.toLowerCase();
     if (!label || seen.has(key)) continue;
@@ -169,27 +240,6 @@ export function normalizePriorities(raw: Priority[]): Priority[] {
   }
   const order: Record<Importance, number> = { must: 0, high: 1, medium: 2, low: 3 };
   return out.sort((a, b) => order[a.importance] - order[b.importance]).slice(0, 12);
-}
-
-/**
- * How a past assistant turn is replayed to the model: its reply, the ranking it
- * gave (by address, so the model can refer to it), and the question it asked.
- */
-export function replayAssistantTurn(
-  reply: string,
-  ranking: RankedHome[] | null,
-  question: string | null,
-  labels: Map<string, string>,
-): string {
-  const parts = [reply.trim()];
-  if (ranking?.length) {
-    parts.push(
-      'Ranking given: ' +
-        ranking.map((r) => `#${r.rank} ${labels.get(r.property_id) ?? 'removed home'} (${r.fit})`).join(', '),
-    );
-  }
-  if (question?.trim()) parts.push(`Question asked: ${question.trim()}`);
-  return parts.join('\n');
 }
 
 /** Tappable quick replies: trimmed, non-empty, distinct, short, at most 3. */
@@ -207,4 +257,31 @@ export function normalizeSuggestions(raw: unknown): string[] {
     if (out.length === 3) break;
   }
   return out;
+}
+
+/** A stored ranking item; rows saved before labels existed carry `reason` instead. */
+export type StoredRankedHome = Partial<RankedHome> & { property_id: string; rank: number; reason?: string };
+
+/**
+ * How a past assistant turn is replayed to the model. Ranking turns list the
+ * ranking by address with labels; chat turns give the reply and question.
+ */
+export function replayAssistantTurn(
+  content: string,
+  ranking: StoredRankedHome[] | null,
+  question: string | null,
+  labels: Map<string, string>,
+): string {
+  if (ranking?.length) {
+    const list = ranking
+      .map((r) => {
+        const detail = [r.score != null ? `${r.score}/10` : r.fit, r.label].filter(Boolean).join(', ');
+        return `#${r.rank} ${labels.get(r.property_id) ?? 'removed home'}${detail ? ` (${detail})` : ''}`;
+      })
+      .join(', ');
+    return `${content.trim() ? `${content.trim()}\n` : ''}Ranking given: ${list}`;
+  }
+  const parts = [content.trim()];
+  if (question?.trim()) parts.push(`Question asked: ${question.trim()}`);
+  return parts.join('\n');
 }
