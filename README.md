@@ -11,6 +11,8 @@ This document covers:
 5. [Build plan](#5-build-plan)
 6. [Risks and open questions](#6-risks-and-open-questions)
 
+To run or deploy the code, see [SETUP.md](SETUP.md).
+
 > **Design assumption:** NORA records one short reaction after each visit, not the whole tour. The buyer records alone, typically in the car or on the sidewalk, while the home is still fresh in their mind. This matches the original mockup ("Talk naturally for 40–60 seconds") and keeps the app quick to use, cheap to run, and free of the consent problems that come with recording other people.
 
 ---

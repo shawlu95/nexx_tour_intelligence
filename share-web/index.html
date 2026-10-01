@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>Home notes · NORA</title>
+  <style>
+    :root {
+      --bg: #F4F6F9; --surface: #FFFFFF; --sunk: #E9EDF3; --ink: #18202E; --ink-2: #4A5568; --ink-3: #7A8496;
+      --line: #D8DEE8; --accent: #2E5BE6; --good: #1E7A4C; --warn: #A8620B;
+      color-scheme: light;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0F141D; --surface: #171E2A; --sunk: #1F2836; --ink: #E8ECF3; --ink-2: #B3BCCB; --ink-3: #8590A3;
+        --line: #2A3445; --accent: #7D9BFF; --good: #5FCB92; --warn: #E6A653;
+        color-scheme: dark;
+      }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    main { max-width: 640px; margin: 0 auto; padding: 40px 20px 64px; display: grid; gap: 24px; }
+    .logo { font-weight: 800; letter-spacing: .25em; font-size: 14px; }
+    .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+    h1 { font-size: 30px; line-height: 1.15; margin: 6px 0 2px; letter-spacing: -.01em; }
+    .meta { color: var(--ink-3); font-size: 15px; }
+    .overall { background: var(--sunk); border-radius: 14px; padding: 16px 18px; font-size: 17px; }
+    section { display: grid; gap: 10px; }
+    h2 { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin: 0; }
+    h2.liked { color: var(--good); } h2.concern { color: var(--warn); } h2.question { color: var(--accent); }
+    ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+    li { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+    li q { display: block; margin-top: 6px; color: var(--ink-2); font-size: 14px; font-style: italic; }
+    .transcript { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; color: var(--ink-2); }
+    .notice { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+    footer { color: var(--ink-3); font-size: 13px; border-top: 1px solid var(--line); padding-top: 16px; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="logo">NORA</div>
+    <div id="status" class="notice">Loading…</div>
+
+    <article id="note" hidden>
+      <div class="eyebrow">Buyer's notes</div>
+      <h1 id="address"></h1>
+      <div class="meta" id="meta"></div>
+    </article>
+    <div class="overall" id="overall" hidden></div>
+    <div id="sections"></div>
+    <section id="transcript-section" hidden>
+      <h2>What they said</h2>
+      <div class="transcript" id="transcript"></div>
+    </section>
+
+    <footer>Shared privately by your client from NORA. Recorded right after their visit; points are summarized from their own words.</footer>
+  </main>
+
+  <script src="config.js"></script>
+  <script>
+    (function () {
+      var LABELS = { liked: 'Liked', concern: 'Concerns', question: 'Questions for you' };
+      var statusEl = document.getElementById('status');
+
+      function show(message) {
+        statusEl.textContent = message;
+        statusEl.hidden = false;
+      }
+
+      function text(tag, value, className) {
+        var el = document.createElement(tag);
+        el.textContent = value;
+        if (className) el.className = className;
+        return el;
+      }
+
+      var token = new URLSearchParams(location.search).get('t');
+      if (!token || !/^[0-9a-f]{32}$/.test(token)) {
+        show('This link is not valid. Ask your client to send it again.');
+        return;
+      }
+
+      fetch(window.NORA_CONFIG.supabaseUrl + '/rest/v1/rpc/get_shared_note', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: window.NORA_CONFIG.supabaseAnonKey,
+          Authorization: 'Bearer ' + window.NORA_CONFIG.supabaseAnonKey
+        },
+        body: JSON.stringify({ p_token: token })
+      })
+        .then(function (res) {
+          if (!res.ok) throw new Error('status ' + res.status);
+          return res.json();
+        })
+        .then(function (note) {
+          if (!note) {
+            show('This link has expired or was turned off. Ask your client for a new one.');
+            return;
+          }
+          statusEl.hidden = true;
+          document.title = note.address + ' · NORA';
+          document.getElementById('address').textContent = note.address;
+          var when = new Date(note.recorded_at).toLocaleString('en-US', {
+            weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+          });
+          document.getElementById('meta').textContent = [note.city, 'Visited ' + when].filter(Boolean).join(' · ');
+          document.getElementById('note').hidden = false;
+
+          var overall = document.getElementById('overall');
+          overall.textContent = note.overall;
+          overall.hidden = !note.overall;
+
+          var container = document.getElementById('sections');
+          ['liked', 'concern', 'question'].forEach(function (kind) {
+            var items = (note.items || []).filter(function (i) { return i.kind === kind; });
+            if (!items.length) return;
+            var section = document.createElement('section');
+            section.appendChild(text('h2', LABELS[kind], kind));
+            var ul = document.createElement('ul');
+            items.forEach(function (i) {
+              var li = text('li', i.text);
+              if (i.quote) li.appendChild(text('q', i.quote));
+              ul.appendChild(li);
+            });
+            section.appendChild(ul);
+            container.appendChild(section);
+          });
+
+          if (note.transcript) {
+            document.getElementById('transcript').textContent = '“' + note.transcript + '”';
+            document.getElementById('transcript-section').hidden = false;
+          }
+        })
+        .catch(function () {
+          show("We couldn't load these notes. Check your connection and refresh.");
+        });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+# Supabase CLI configuration for NORA.
+# Functions check the caller themselves (user session or service key), so the
+# gateway's JWT check is turned off. This also lets the newer non-JWT API keys work.
+
+project_id = "nora"
+
+[functions.process-visit]
+verify_jwt = false
+
+[functions.sweep]
+verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = false

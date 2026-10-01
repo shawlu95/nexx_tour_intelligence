@@ -1,0 +1,11 @@
+node_modules/
+.DS_Store
+
+# Secrets and local config
+.env
+.env.*
+!.env.example
+app/.env.local
+share-web/config.js
+supabase/.temp/
+supabase/.branches/

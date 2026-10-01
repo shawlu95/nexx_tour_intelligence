@@ -1,0 +1,13 @@
+{
+  "name": "nora",
+  "private": true,
+  "type": "module",
+  "description": "NORA buyer tour notes: Expo app (app/), Supabase back end (supabase/), share page (share-web/)",
+  "scripts": {
+    "test": "vitest run",
+    "check:functions": "npx --yes deno@2.9.6 check --config supabase/functions/deno.json supabase/functions/*/index.ts"
+  },
+  "devDependencies": {
+    "vitest": "5.0.3"
+  }
+}
