@@ -9,7 +9,8 @@ This document covers:
 3. [System design](#3-system-design): platform, architecture, data storage, front end, back end
 4. [Third-party services and cost](#4-third-party-services-and-cost)
 5. [Build plan](#5-build-plan)
-6. [Risks and open questions](#6-risks-and-open-questions)
+6. [Beta test](#6-beta-test): moving NORA to company-owned accounts and inviting testers
+7. [Risks and open questions](#7-risks-and-open-questions)
 
 To run or deploy the code, see [SETUP.md](SETUP.md).
 
@@ -388,7 +389,160 @@ Two full-stack engineers (React Native and TypeScript) plus a part-time product 
 
 ---
 
-## 6. Risks and open questions
+## 6. Beta test
+
+Today NORA runs entirely on one developer's personal accounts: a free Apple Personal Team, a personal GitHub repository, and personal Supabase, Deepgram, Anthropic, RentCast and Resend accounts. Only that developer can install it, and sign-in emails reach only one address. For a beta, **the company (the LLC) must own the app, the code, the data and every paid account**. The developer works inside the company's accounts with a limited role.
+
+This section is the setup checklist, in the order to do it. Every step marked **Owner** must be done by someone with authority to act for the LLC. Steps marked **Developer** are done by the developer once invited.
+
+### 6.1 Principles
+
+- **Company-owned logins.** Create every account with a company email address that isn't tied to one person, such as `admin@<company-domain>`, not a personal Gmail. Anyone the owner chooses can then recover the account.
+- **Shared password manager.** Keep all logins, recovery codes and API keys in a company vault (1Password Business or Bitwarden Teams). Turn on two-factor authentication everywhere. Use an authenticator app or hardware key that the owner controls, and store the recovery codes in the vault.
+- **Company payment method.** Use a company card on every paid service, so invoices go to the LLC.
+- **Least privilege.** The owner keeps the owner/admin role on every account. The developer gets the narrowest role that lets them work (listed below), and can be removed in minutes.
+- **Fresh API keys.** Every key the beta uses is created in the company's accounts. Keys from the developer's personal accounts are revoked after the switch (§6.11).
+- **Secrets never go in git or chat.** Keys live in Supabase function secrets, EAS environment variables, and the password manager.
+
+### 6.2 Company basics (Owner)
+
+| Item | Why it's needed | Notes |
+|---|---|---|
+| **Company domain**, for example `<company-domain>` | Company email, the sending address for sign-in codes, the share page (`share.<company-domain>`), the privacy policy URL | Registered in the LLC's name |
+| **Company email** `admin@`, plus a `support@` address | Account logins and support contact for App Store Connect | A shared mailbox or alias the owner controls |
+| **D-U-N-S number** for the LLC | Apple requires it to enroll an organization | Free from Dun & Bradstreet through Apple's lookup tool. Allow up to ~2 weeks, so **start this first**. |
+| **Public website with a privacy policy and terms** | Required for TestFlight external testing and the App Store; also needed by the vendors' terms | Must describe the voice recordings, transcripts, location use, and the third-party processors (Supabase, Deepgram, Anthropic, RentCast, Resend) |
+
+### 6.3 Apple Developer Program, as an organization
+
+1. **Owner:** enroll at developer.apple.com/programs/enroll as an **Organization** (not an individual), with the LLC's legal name, D-U-N-S number and website, paying the $99/year with the company card. The person enrolling becomes the **Account Holder** and must have legal authority to bind the LLC. Apple may call to verify.
+2. **Owner:** in App Store Connect → **Agreements, Tax, and Banking**, accept the latest agreements (the free-apps agreement is enough for a beta).
+3. **Owner:** in App Store Connect → **Users and Access**, invite the developer:
+   - Role **Developer**: uploads builds, sees TestFlight, can't change agreements, pricing or users.
+   - Add **App Manager** for the NORA app only if the developer should also manage TestFlight testers and app metadata.
+   - Leave **Access to Certificates, Identifiers & Profiles** on, so the developer can sign builds for the company team.
+4. **Developer:** accept the invitation. Then in Xcode → Settings → Accounts, sign in and confirm the company team appears next to the Personal Team.
+5. **Register the app under the company team.** In Certificates, Identifiers & Profiles, create the App ID `com.nexx.tour.intelligence`, with **Push Notifications** and **Sign in with Apple** enabled.
+   - The developer's Personal Team registered this identifier during development. If Apple reports it as unavailable, remove it from the personal team (Xcode → Settings → Accounts → Personal Team) or pick a company-style identifier such as `com.<company>.nora`. A new identifier also needs changing in `app/app.json`, and as the Sign in with Apple client ID in Supabase.
+6. **Owner or developer:** in App Store Connect, create the app record **NORA** with that bundle ID, under the company. The app, its reviews, and its TestFlight testers now belong to the LLC.
+7. **Paid-team build:** build *without* `NORA_FREE_SIGNING`, so push notifications and Sign in with Apple are included again: `npx expo prebuild --platform ios --clean`, then EAS Build (§6.5) with the company team.
+
+**Testers on TestFlight**
+- **Internal testers:** up to 100 people added in App Store Connect → Users and Access. No Apple review, available minutes after a build is processed.
+- **External testers:** up to 10,000, by email or a public link. The first build of each version goes through a short **Beta App Review**. Apple needs a beta description, a feedback email, the privacy policy URL, and **a way for the reviewer to sign in**. NORA signs in with an emailed code, so the reviewer's address must receive mail: this requires the company sending domain from §6.9. Put sign-in instructions in the review notes.
+- TestFlight builds expire after 90 days.
+
+### 6.4 GitHub: company organization
+
+1. **Owner:** create a GitHub **organization** (the Free plan is enough) with the company admin email, for example `github.com/<company>`. Turn on "Require two-factor authentication" for members.
+2. **Developer:** transfer the repository: `shawlu95/nexx_tour_intelligence` → Settings → Danger Zone → **Transfer ownership** → the company organization. History, issues and branches move with it, and GitHub redirects the old URL. (The developer must be allowed to create repositories in the organization for the transfer; the owner can grant this temporarily.)
+3. **Owner:** add the developer as an organization **Member** (not Owner), and give them **Write** (or **Maintain**) access to the repository. The developer shows up as a contributor through their commit history.
+4. **Owner:** protect `main` (Settings → Branches): require pull requests and block force pushes.
+5. **Developer:** update the local clone: `git remote set-url origin https://github.com/<company>/nexx_tour_intelligence.git`.
+
+### 6.5 Expo / EAS: company organization
+
+1. **Owner:** create an Expo account with the company email, then an **organization** for the company (expo.dev → Create organization). For more than occasional builds, choose a paid plan with the company card (Starter ~$19/month).
+2. **Owner:** invite the developer with the **Developer** role (can build and submit; can't manage billing or members).
+3. **Developer:** set the owner in `app/app.json` (`"owner": "<expo-org-slug>"`), then run `npx eas-cli@latest init`. This creates the project under the organization and writes its `projectId`, which also turns on push notifications.
+4. **Developer:** add the environment variables to EAS (`npx eas-cli@latest env:create`, for the preview and production environments):
+   - `EXPO_PUBLIC_SUPABASE_URL`
+   - `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+   - `EXPO_PUBLIC_SHARE_BASE_URL`
+
+   These are the company project's values from §6.6 and §6.10.
+5. **Developer:** `npx eas-cli@latest build --platform ios --profile production`. Sign in with the developer's Apple ID when asked, choose the **company team**, and let EAS create the distribution certificate and provisioning profile. Then run `npx eas-cli@latest submit --platform ios` to send the build to TestFlight.
+
+### 6.6 Supabase: company organization and project
+
+1. **Owner:** create a Supabase account with the company email, and an **organization** for the LLC on the **Pro plan** ($25/month, company card). Pro avoids free-tier pausing after a week of inactivity and adds daily backups. Both matter once testers depend on it.
+2. **Owner:** invite the developer to the organization with the **Developer** role (can change the database and functions; can't change billing or members).
+3. **Move the project.** Pick one:
+   - **Transfer** the existing project `nexx-tour-intelligence` to the company organization (Project Settings → General → Transfer project). This keeps the current data. The developer must be a member of both organizations when transferring.
+   - **Or create a new project** in the company organization and set it up from scratch with SETUP.md §2 (`supabase link`, `db push`, deploy the four functions, the Vault entries for the retry job). This is cleaner for a beta: test data from development doesn't come along. **Recommended.**
+4. Either way, set every function secret again with the **company's** new keys (§6.7–6.9):
+   ```bash
+   supabase secrets set DEEPGRAM_API_KEY=... ANTHROPIC_API_KEY=... RENTCAST_API_KEY=... RENTCAST_MONTHLY_LIMIT=950
+   ```
+   Set `SWEEP_SECRET` and its Vault entry with the snippet in SETUP.md.
+5. Redo the dashboard settings from SETUP.md §2:
+   - SMTP through the company's Resend account and sending domain (§6.9)
+   - the sign-in email templates with `{{ .Token }}`
+   - the redirect URL `nora://auth-callback`
+   - Apple and Google sign-in providers, if used
+
+### 6.7 Deepgram (speech-to-text)
+
+1. **Owner:** sign up at deepgram.com with the company email. Add the company card under Billing (pay-as-you-go; new accounts get starting credit).
+2. **Owner:** invite the developer to the project with the **Member** role (Admin only if they need to manage keys).
+3. **Owner or developer:** create a new API key named `nora-beta-supabase`, with the narrowest scope Deepgram offers for transcription (Member is enough). Copy it straight into the password manager and into `supabase secrets set DEEPGRAM_API_KEY=...`.
+4. Optional: set a usage alert under Billing.
+
+### 6.8 Anthropic (Claude)
+
+1. **Owner:** create an organization at console.anthropic.com with the company email, under the LLC's name, and add the company card under Billing. Accept the commercial terms for the LLC. Anthropic doesn't train on API data by default; confirm the retention terms fit the privacy policy.
+2. **Owner:** invite the developer with the **Developer** role (can create and use API keys; can't change billing or members).
+3. **Owner:** create a **workspace** named `nora-beta`, and set a **monthly spend limit** on it. About $50–100 covers a 50-tester beta; see §4.
+4. **Developer:** create an API key in that workspace, then run `supabase secrets set ANTHROPIC_API_KEY=...`.
+5. Optional: `SUMMARY_MODEL` and `RANKING_MODEL` (default `claude-opus-5`).
+
+### 6.9 Resend (sign-in email) and the sending domain
+
+1. **Owner:** create a Resend account with the company email. Under Billing, the free plan (3,000 emails/month, 100/day) is enough for a beta.
+2. **Owner:** invite the developer to the team (Member).
+3. **Owner or developer:** **verify the company domain**: Domains → Add domain → `<company-domain>` (or `mail.<company-domain>`), then add the DNS records Resend shows (SPF, DKIM, and optionally DMARC) at the domain's DNS host. **This step is what lets every tester receive sign-in codes**; the test sender `onboarding@resend.dev` only delivers to the Resend account's own address.
+4. Create an API key with **Sending access** only. Enter it as the SMTP password in the company Supabase project (Authentication → Emails → SMTP Settings):
+   - **Sender:** `no-reply@<company-domain>`, name NORA
+   - **Host:** `smtp.resend.com`, port `465`, username `resend`
+5. Raise **Authentication → Rate Limits → emails per hour** if testers sign in at the same time (default 30).
+
+### 6.10 RentCast, share page hosting, and Google sign-in
+
+**RentCast (home facts)**
+1. **Owner:** create a RentCast account with the company email.
+2. **Owner:** subscribe to an **API plan**. A key without an active plan is refused with "subscription-inactive". For a 50-tester beta, choose **Foundation** ($74/month, 1,000 calls) with the company card.
+3. Create an API key, then run `supabase secrets set RENTCAST_API_KEY=... RENTCAST_MONTHLY_LIMIT=950`.
+
+**Share page (Cloudflare Pages)**
+1. **Owner:** create a Cloudflare account with the company email and add the company domain. Free plan.
+2. **Owner:** invite the developer as a member with access to Pages.
+3. **Developer:** deploy `share-web/` as a Pages project, with `share-web/config.js` pointing at the company Supabase project. Attach `share.<company-domain>`. Set `EXPO_PUBLIC_SHARE_BASE_URL=https://share.<company-domain>` in EAS.
+
+**Google sign-in (optional)**
+1. **Owner:** create a Google Cloud project under a company Google account, and configure the OAuth consent screen under the company name.
+2. Create the OAuth client and enter it in Supabase → Authentication → Providers → Google.
+
+### 6.11 Switch-over checklist
+
+Do these once the company accounts work, before inviting testers:
+
+- [ ] The company Supabase project holds every secret, and none of them comes from a personal account.
+- [ ] A TestFlight build from the company team signs in (code arrives from `no-reply@<company-domain>`), records, and shows a note, facts, and a ranking.
+- [ ] A share link opens at `share.<company-domain>`.
+- [ ] Push notifications arrive (company team build, EAS project id set).
+- [ ] **Revoke the developer's personal keys:** Deepgram, Anthropic, RentCast and Resend API keys from the development accounts. Pause or delete the development Supabase project (or keep it as a separate dev environment, clearly labeled).
+- [ ] Remove personal values from the developer's machine: `app/.env.local` and `share-web/config.js` now point at the company project.
+- [ ] The password manager has every login, recovery code and key, and at least two company people can access it.
+- [ ] Every account's Owner/Admin is the company. The developer has the roles listed above.
+
+### 6.12 Who owns what
+
+| Service | Account owner | Developer role | Paid by |
+|---|---|---|---|
+| Apple Developer Program / App Store Connect | LLC (Account Holder) | Developer (App Manager for NORA, optional) | LLC, $99/year |
+| GitHub | LLC organization | Member, Write/Maintain on the repo | Free |
+| Expo / EAS | LLC organization | Developer | LLC, $0–19/month |
+| Supabase | LLC organization | Developer | LLC, $25/month |
+| Deepgram | LLC | Member | LLC, usage |
+| Anthropic | LLC organization | Developer, in workspace `nora-beta` | LLC, usage, with a spend limit |
+| Resend | LLC | Member | Free at beta volume |
+| RentCast | LLC | (shared key in the vault) | LLC, $74/month (Foundation) |
+| Cloudflare | LLC | Member (Pages) | Free |
+| Domain and DNS | LLC | none | LLC, ~$15/year |
+
+**Expected beta cost** (50 testers, §4): about **$140–175 a month** in services, plus $99/year for Apple and ~$15/year for the domain.
+
+## 7. Risks and open questions
 
 | Risk | Mitigation |
 |---|---|
