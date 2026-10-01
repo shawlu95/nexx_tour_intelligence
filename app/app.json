@@ -8,7 +8,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "bundleIdentifier": "com.nora.tours",
+      "bundleIdentifier": "com.nexx.tour.intelligence",
       "supportsTablet": false,
       "usesAppleSignIn": true,
       "infoPlist": {
@@ -16,7 +16,7 @@
       }
     },
     "android": {
-      "package": "com.nora.tours",
+      "package": "com.nexx.tour.intelligence",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",

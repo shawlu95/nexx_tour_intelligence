@@ -61,7 +61,7 @@ Then, in the Supabase dashboard:
 1. **SQL editor:** open `supabase/setup/cron.sql`, replace the project URL and service-role key placeholders, and run it.
 2. **Authentication → Email templates → Magic link:** include the code so the app's six-digit sign-in works, for example `Your NORA code is {{ .Token }}`.
 3. **Authentication → URL configuration:** add `nora://auth-callback` to the redirect URLs (needed for Google sign-in).
-4. **Authentication → Providers:** turn on Google (OAuth client from Google Cloud) and Apple (bundle id `com.nora.tours` as the client id) when you're ready. Email works without either.
+4. **Authentication → Providers:** turn on Google (OAuth client from Google Cloud) and Apple (bundle id `com.nexx.tour.intelligence` as the client id) when you're ready. Email works without either.
 5. **Authentication → SMTP:** for real users, connect an email provider such as Resend. Supabase's built-in email is rate-limited and meant only for testing.
 
 ## 3. App
@@ -79,7 +79,7 @@ For the cloud build, also add the three `EXPO_PUBLIC_*` values as EAS environmen
 
 The app uses native modules (microphone, Apple sign-in, secure storage, SQLite), so it does not run in Expo Go; it needs the development build above. Building locally instead (`npx expo run:ios`) requires Xcode.
 
-The bundle identifier is `com.nora.tours` in `app/app.json`. Change it before the first build if you own a different identifier.
+The bundle identifier (iOS) and package name (Android) are `com.nexx.tour.intelligence`, set in `app/app.json`.
 
 ## 4. Share page
 
