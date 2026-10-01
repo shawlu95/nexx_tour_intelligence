@@ -7,9 +7,8 @@ The design is in [README.md](README.md). This file covers running and deploying 
 | Path | What it is |
 |---|---|
 | `app/` | iOS and Android app (Expo SDK 57, React Native, TypeScript, Expo Router). Screens are in `app/src/app/`, shared code in `app/src/lib/` and `app/src/components/`. |
-| `supabase/migrations/` | Database schema, row-level security, storage bucket, and the `get_shared_note` function |
+| `supabase/migrations/` | Database schema, row-level security, storage bucket, the `get_shared_note` function, and the 5-minute schedule for `sweep` |
 | `supabase/functions/` | Edge Functions: `process-visit` (transcribe and summarize), `sweep` (retries), `delete-account`. Shared code is in `_shared/`. |
-| `supabase/setup/cron.sql` | Schedules `sweep` every 5 minutes |
 | `share-web/` | Static page agents open from a share link |
 
 ## Checks
@@ -51,18 +50,26 @@ supabase db push                               # applies supabase/migrations
 supabase secrets set DEEPGRAM_API_KEY=... ANTHROPIC_API_KEY=...
 # Optional: supabase secrets set SUMMARY_MODEL=claude-sonnet-5   (default is claude-opus-5)
 
-supabase functions deploy process-visit
-supabase functions deploy sweep
-supabase functions deploy delete-account
+supabase functions deploy process-visit sweep delete-account --use-api   # --use-api bundles on Supabase's side, so Docker isn't needed
 ```
+
+**Scheduled retries.** A migration schedules `sweep` every 5 minutes with `pg_cron`. The job authenticates with its own key, so the project's service-role key never leaves Supabase. Create that key once per project; it is generated in a shell variable and never printed:
+
+```bash
+S=$(openssl rand -hex 32)
+supabase secrets set SWEEP_SECRET="$S"
+supabase db query --linked "select vault.create_secret('https://YOUR-PROJECT-REF.supabase.co', 'nora_project_url'); select vault.create_secret('$S', 'nora_sweep_secret');"
+unset S
+```
+
+Until both Vault entries exist, the job runs and does nothing. To check it, run `supabase db query --linked "select public.run_sweep()"`, then `supabase db query --linked "select status_code, content from net._http_response order by created desc limit 1"`, which should show status `200`.
 
 Then, in the Supabase dashboard:
 
-1. **SQL editor:** open `supabase/setup/cron.sql`, replace the project URL and service-role key placeholders, and run it.
-2. **Authentication → Email templates → Magic link:** include the code so the app's six-digit sign-in works, for example `Your NORA code is {{ .Token }}`.
-3. **Authentication → URL configuration:** add `nora://auth-callback` to the redirect URLs (needed for Google sign-in).
+1. **Authentication → Emails → SMTP Settings:** connect an email provider such as Resend. Supabase only lets you edit email templates once custom SMTP is set up, and its built-in email is rate-limited and meant only for testing.
+2. **Authentication → Emails → Magic link or OTP:** add the code to the template so the app's six-digit sign-in works, for example `Your NORA code is {{ .Token }}`. The default template contains only a link.
+3. **Authentication → URL Configuration:** add `nora://auth-callback` to the redirect URLs (needed for Google sign-in).
 4. **Authentication → Providers:** turn on Google (OAuth client from Google Cloud) and Apple (bundle id `com.nexx.tour.intelligence` as the client id) when you're ready. Email works without either.
-5. **Authentication → SMTP:** for real users, connect an email provider such as Resend. Supabase's built-in email is rate-limited and meant only for testing.
 
 ## 3. App
 

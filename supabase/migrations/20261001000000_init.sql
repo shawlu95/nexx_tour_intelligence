@@ -3,7 +3,7 @@
 -- Server-only writes (transcripts, AI note items, status changes past "uploading")
 -- happen in Edge Functions with the service role, which bypasses RLS.
 
-create extension if not exists pgcrypto;
+create extension if not exists pgcrypto with schema extensions;
 
 -- ---------------------------------------------------------------------------
 -- Profiles
@@ -156,7 +156,7 @@ create table public.share_links (
   id uuid primary key default gen_random_uuid(),
   note_id uuid not null references public.notes (id) on delete cascade,
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
-  token text not null unique default encode(gen_random_bytes(16), 'hex'),
+  token text not null unique default encode(extensions.gen_random_bytes(16), 'hex'),
   include_transcript boolean not null default false,
   created_at timestamptz not null default now(),
   expires_at timestamptz not null default now() + interval '90 days',
