@@ -186,7 +186,7 @@ User 1 ──── * Property 1 ──── * Visit 1 ──── 1 Transcrip
 
 | Screen | Purpose |
 |---|---|
-| Sign in | Apple, Google, or a six-digit email code |
+| Sign in | Apple, Google, or a code sent by email |
 | Home | "Record a home" button, notes still processing, recent visits |
 | Confirm property | GPS-suggested address, editable, with the buyer's nearby properties as shortcuts |
 | Record | Rotating prompts, a timer that turns green at 40 seconds, stop, re-record, save |

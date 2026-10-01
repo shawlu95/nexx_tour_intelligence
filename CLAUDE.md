@@ -66,7 +66,7 @@ Run tests, typecheck, lint and expo-doctor before calling app work done.
 **Supabase / Postgres**
 - `pgcrypto` lives in the `extensions` schema. Write `extensions.gen_random_bytes`.
 - Phones may only set a visit's status to `uploading` (trigger `guard_visit_status`). Only the server writes transcripts and AI note items (RLS).
-- Auth email goes through Resend SMTP (test sender `onboarding@resend.dev`, which only delivers to `shawlu95@126.com` until a domain is verified). The sign-in templates send the six-digit `{{ .Token }}`. Supabase only allows editing templates when custom SMTP is on.
+- Auth email goes through Resend SMTP (test sender `onboarding@resend.dev`, which only delivers to `shawlu95@126.com` until a domain is verified). The sign-in templates send the `{{ .Token }}` code. This project issues 8-digit codes; the app accepts 6–10 digits. Supabase only allows editing templates when custom SMTP is on.
 - The dashboard's template body is a Monaco editor that auto-closes tags when typed into. Set it with `monaco.editor.getEditors()[0].executeEdits(...)` instead.
 
 **Claude usage** (`supabase/functions/_shared/claude.ts`)

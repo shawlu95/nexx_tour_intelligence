@@ -11,7 +11,7 @@ Last updated: 2026-10-01. Update this file at the end of each work session: move
 5. **Changed the app identifier** to `com.nexx.tour.intelligence`.
 6. **Installed tools:** Supabase CLI 2.119.0 (Homebrew). The user installed Xcode and accepted its license; whether the iOS Simulator runtime is installed hasn't been checked.
 7. **Set up Supabase** (org Nexx, project `amhonfefejwrgttxfkrl`): pushed both migrations, deployed all three functions, the user set the Deepgram and Anthropic keys, and the retry schedule was set up with its own key.
-8. **Dashboard:** added redirect URL `nora://auth-callback`. Custom SMTP connected through Resend (Resend account `shawlu95@126.com`; the user created the API key and pasted it in). Sender `onboarding@resend.dev` / "NORA", host `smtp.resend.com:465`, username `resend`. The "Magic link or OTP" and "Confirm sign up" templates now send the six-digit `{{ .Token }}` (subject "Your NORA sign-in code"). Email rate limit is 30 per hour.
+8. **Dashboard:** added redirect URL `nora://auth-callback`. Custom SMTP connected through Resend (Resend account `shawlu95@126.com`; the user created the API key and pasted it in). Sender `onboarding@resend.dev` / "NORA", host `smtp.resend.com:465`, username `resend`. The "Magic link or OTP" and "Confirm sign up" templates now send the `{{ .Token }}` code (this project issues 8-digit codes; the app accepts 6–10 digits) (subject "Your NORA sign-in code"). Email rate limit is 30 per hour.
 9. **Docs:** SETUP.md (setup, deployment, Xcode dev guide), this file, CLAUDE.md.
 
 ## Done and verified
@@ -42,10 +42,10 @@ These are written and type-checked but have not been exercised end to end. Expec
 ## Not done yet (next steps, in order)
 
 1. **Sending domain.** Resend's test sender `onboarding@resend.dev` only delivers to the Resend account owner (`shawlu95@126.com`), so sign-in by email currently works for that address only. To open sign-in to anyone: verify a domain the user owns in Resend (DNS records), then change the sender email in Supabase → Authentication → Emails → SMTP Settings. The Resend "Connect to Supabase" wizard requires an owned domain, which is why SMTP was configured by hand.
-2. **First Simulator run:** `cd app && npx expo run:ios`. Fix runtime issues, then test the whole path with a real recording: upload, Deepgram, Claude, note.
+2. **First Simulator run.** The app builds and launches on the iPhone 15 Pro simulator (via `xcodebuild`, because a connected iPhone makes `expo run:ios` try to sign). Next: sign in as `shawlu95@126.com`, record a test reaction, and check the whole path: upload, Deepgram, Claude, note.
 3. **Share page hosting:** deploy `share-web/` (Cloudflare Pages suggested) and replace `EXPO_PUBLIC_SHARE_BASE_URL` in `app/.env.local` (currently the placeholder `https://share.example.com`).
 4. **EAS:** `npx eas-cli@latest init` (adds the project id, which enables push), and add the `EXPO_PUBLIC_*` variables as EAS environment variables.
-5. **Free-account device build:** to install on a physical iPhone without the paid Apple program, add a build switch (for example, convert `app.json` to `app.config.ts` and check an env flag) that removes `usesAppleSignIn` and the `expo-notifications` plugin. Free Apple accounts can't sign either.
+5. **Running on the user's iPhone 15 with a free Apple ID (done 2026-10-01).** Built with `NORA_FREE_SIGNING=1` and the Personal Team "Xiao Lu (Personal Team)", team ID `K7U2974RH8`, via `xcodebuild ... -allowProvisioningUpdates DEVELOPMENT_TEAM=K7U2974RH8`, installed with `xcrun devicectl device install app`. iPhone UDID `00008120-000045A01A63601E`. Metro runs with `NORA_FREE_SIGNING=1`; the phone loads JS from `http://10.0.0.216:8081`. The local `ios/` folder is currently generated in free-signing mode. The install expires after 7 days. The first sign-in attempt found the 8-digit code mismatch, now fixed; the end-to-end recording test is in progress.
 6. **Auth providers:** Google (OAuth client from Google Cloud) and Apple (client id `com.nexx.tour.intelligence`; needs the paid Apple Developer Program).
 7. **Note quality evaluation:** 30–50 sample reactions, scored for missed and invented points. Compare `claude-opus-5` with `claude-sonnet-5` (README §4).
 

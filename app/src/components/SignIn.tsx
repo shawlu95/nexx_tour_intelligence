@@ -2,6 +2,7 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 import { sendEmailCode, signInWithApple, signInWithGoogle, verifyEmailCode } from '../lib/auth';
+import { FREE_SIGNING } from '../lib/config';
 import { Banner, Body, Button, colors, Field, Screen, Title } from './ui';
 
 type Step = 'choose' | 'email' | 'code';
@@ -21,6 +22,7 @@ export default function SignIn() {
   const [appleAvailable, setAppleAvailable] = useState(false);
 
   useEffect(() => {
+    if (FREE_SIGNING) return;
     AppleAuthentication.isAvailableAsync().then(setAppleAvailable).catch(() => setAppleAvailable(false));
   }, []);
 
@@ -92,20 +94,20 @@ export default function SignIn() {
 
         {step === 'code' && (
           <View style={s.stack}>
-            <Body>We sent a six-digit code to {email.trim()}.</Body>
+            <Body>We sent a sign-in code to {email.trim()}.</Body>
             <Field
               label="Code"
               value={code}
-              onChangeText={(t) => setCode(t.replace(/\D/g, '').slice(0, 6))}
+              onChangeText={(t) => setCode(t.replace(/\D/g, '').slice(0, 10))}
               keyboardType="number-pad"
               autoComplete="one-time-code"
               textContentType="oneTimeCode"
-              placeholder="123456"
+              placeholder="Code from the email"
               autoFocus
             />
             <Button
               title="Sign in"
-              disabled={code.length !== 6}
+              disabled={code.length < 6}
               loading={busy === 'verify'}
               onPress={() => run('verify', () => verifyEmailCode(email, code))}
             />

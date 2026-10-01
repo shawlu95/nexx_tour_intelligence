@@ -3,6 +3,7 @@ import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
+import { FREE_SIGNING } from './config';
 import { supabase } from './supabase';
 
 Notifications.setNotificationHandler({
@@ -16,7 +17,7 @@ Notifications.setNotificationHandler({
 
 /** Asks for permission (once) and saves this phone's push token on the profile. */
 export async function registerForPush(userId: string): Promise<void> {
-  if (!Device.isDevice) return;
+  if (!Device.isDevice || FREE_SIGNING) return;
   const projectId =
     (Constants.expoConfig?.extra as { eas?: { projectId?: string } } | undefined)?.eas?.projectId ??
     Constants.easConfig?.projectId;

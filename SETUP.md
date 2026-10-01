@@ -67,7 +67,7 @@ Until both Vault entries exist, the job runs and does nothing. To check it, run 
 Then, in the Supabase dashboard:
 
 1. **Authentication → Emails → SMTP Settings:** connect an email provider such as Resend. Supabase only lets you edit email templates once custom SMTP is set up, and its built-in email is rate-limited and meant only for testing.
-2. **Authentication → Emails → Magic link or OTP:** add the code to the template so the app's six-digit sign-in works, for example `Your NORA code is {{ .Token }}`. The default template contains only a link.
+2. **Authentication → Emails → Magic link or OTP:** add the code to the template so the app's code sign-in works, for example `Your NORA code is {{ .Token }}`. The default template contains only a link.
 3. **Authentication → URL Configuration:** add `nora://auth-callback` to the redirect URLs (needed for Google sign-in).
 4. **Authentication → Providers:** turn on Google (OAuth client from Google Cloud) and Apple (bundle id `com.nexx.tour.intelligence` as the client id) when you're ready. Email works without either.
 
@@ -120,7 +120,7 @@ Without Xcode, the only way to run the app is an EAS cloud build, which needs th
 | Sign in with Apple | Needs the paid account's signing setup. Use email sign-in until then. |
 | TestFlight and the App Store | Giving the app to other people. |
 
-Apple doesn't let free accounts sign apps that use push notifications or Sign in with Apple, and this app declares both. So installing on a physical iPhone with a free account needs a build with those two turned off. Ask Claude to add a switch for this when you get there. The Simulator is not affected.
+Apple doesn't let free accounts sign apps that use push notifications or Sign in with Apple, and this app declares both. Set `NORA_FREE_SIGNING=1` to build without them (see `app/app.config.ts`): the entitlements are removed, the Apple button is hidden, and push registration is skipped. The Simulator doesn't need this.
 
 ### One-time setup
 
@@ -147,7 +147,19 @@ cp .env.example .env.local      # if you haven't already; fill in the Supabase U
 npx expo run:ios                # first build takes several minutes; later ones are faster
 ```
 
-This generates the native `ios/` project, builds it, installs it on a simulator, and starts the development server. After that, `npx expo start` and pressing `i` is enough, unless you change native settings in `app.json` or add a native package.
+This generates the native `ios/` project, builds it, installs it on a simulator, and starts the development server.
+
+**If an iPhone is connected to the Mac,** `npx expo run:ios` picks the phone and stops with "No code signing certificates are available". Unplug it, or build for the Simulator directly:
+
+```bash
+xcodebuild -workspace ios/NORA.xcworkspace -scheme NORA -configuration Debug -sdk iphonesimulator \
+  -destination "id=<simulator-udid>" -derivedDataPath ios/build CODE_SIGNING_ALLOWED=NO
+xcrun simctl install <simulator-udid> ios/build/Build/Products/Debug-iphonesimulator/NORA.app
+npx expo start --dev-client
+xcrun simctl launch <simulator-udid> com.nexx.tour.intelligence
+```
+
+CocoaPods must be 1.16 or newer (`brew install cocoapods`). The old system-Ruby version 1.12 fails on the `visionos` setting in current packages. After that, `npx expo start` and pressing `i` is enough, unless you change native settings in `app.json` or add a native package.
 
 Useful Simulator controls:
 
@@ -166,16 +178,18 @@ Useful Simulator controls:
 1. In Xcode, open **Settings → Accounts** and add your Apple ID. This creates a free "Personal Team".
 2. On the iPhone, turn on **Settings → Privacy & Security → Developer Mode** and restart when asked.
 3. Connect the iPhone by cable and trust the Mac when prompted.
-4. Build and install:
+4. Keep the iPhone unlocked and open Xcode's **Window → Devices and Simulators** until it finishes preparing the phone. Before that, `xcrun devicectl list devices` shows it as "connected (no DDI)".
+5. Build and install:
    ```bash
    cd app
-   npx expo run:ios --device
+   NORA_FREE_SIGNING=1 npx expo prebuild --platform ios --clean
+   NORA_FREE_SIGNING=1 npx expo run:ios --device
    ```
-   Pick your iPhone from the list. If asked for a signing team, choose your Personal Team.
-5. The first time, the iPhone blocks the app until you trust it: **Settings → General → VPN & Device Management**, select your Apple ID, and tap **Trust**.
-6. The install expires after 7 days. Run step 4 again to reinstall; your data on the phone is kept.
+   Pick your iPhone from the list. If asked for a signing team, choose your Personal Team. Run `npx expo prebuild --platform ios --clean` without the flag before the next Simulator or paid-account build.
+6. The first time, the iPhone blocks the app until you trust it: **Settings → General → VPN & Device Management**, select your Apple ID, and tap **Trust**.
+7. The install expires after 7 days. Run step 5 again to reinstall; your data on the phone is kept.
 
-Remember the signing limit above: with a free account, push notifications and Sign in with Apple must be turned off for this build.
+The phone loads the app's code from the Mac while developing, so keep both on the same Wi-Fi network.
 
 ## How a recording becomes a note
 
