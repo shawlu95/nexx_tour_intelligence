@@ -1,5 +1,5 @@
 import * as Location from 'expo-location';
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { HomeThumb } from '../../components/HomeThumb';
@@ -7,36 +7,65 @@ import { Banner, Body, Button, colors, Eyebrow, Field, Screen } from '../../comp
 import {
   displayAddress,
   distanceMeters,
-  draftFromGeocode,
   EMPTY_DRAFT,
   formatDistance,
   normalizedKey,
   type AddressDraft,
 } from '../../lib/address';
 import { fetchProperties } from '../../lib/api';
+import { formatHomeLine } from '../../lib/format';
+import { fixPropertyCoordinates, nearbyAddresses } from '../../lib/geo';
 import type { Property } from '../../lib/types';
 
-const NEARBY_METERS = 500;
+const NEARBY_METERS = 800; // your saved homes within about half a mile
+const MAX_OPTIONS = 6;
+const PRESELECT_EXISTING_METERS = 80;
 
-type Choice = { kind: 'existing'; property: Property } | { kind: 'new' };
+type Coords = { latitude: number; longitude: number };
+
+/** One tappable choice: a home you've visited, or a street address found nearby. */
+type Option =
+  | { key: string; kind: 'existing'; property: Property; meters: number | null }
+  | { key: string; kind: 'new'; draft: AddressDraft; meters: number | null };
+
+type Selection = { kind: 'option'; key: string } | { kind: 'typed' };
+
+function keyOfProperty(p: Property) {
+  return normalizedKey({ addressLine: p.address_line, unit: p.unit ?? '', city: p.city ?? '' });
+}
+
+function distanceTo(here: Coords | null, p: { latitude: number | null; longitude: number | null }) {
+  if (!here || p.latitude === null || p.longitude === null) return null;
+  return distanceMeters(here, { latitude: p.latitude, longitude: p.longitude });
+}
 
 export default function PickHome() {
   const [locating, setLocating] = useState(true);
   const [locationNote, setLocationNote] = useState('');
-  const [here, setHere] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [draft, setDraft] = useState<AddressDraft>(EMPTY_DRAFT);
+  const [here, setHere] = useState<Coords | null>(null);
   const [properties, setProperties] = useState<Property[]>([]);
-  const [choice, setChoice] = useState<Choice>({ kind: 'new' });
+  const [candidates, setCandidates] = useState<AddressDraft[]>([]);
+  const [selection, setSelection] = useState<Selection | null>(null);
+  const [typing, setTyping] = useState(false);
+  const [draft, setDraft] = useState<AddressDraft>(EMPTY_DRAFT);
+  const [now] = useState(() => new Date());
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const props = await fetchProperties().then((r) => r.data).catch(() => [] as Property[]);
-      if (!cancelled) setProperties(props);
+      const props = await fetchProperties()
+        .then((r) => r.data)
+        .catch(() => [] as Property[]);
+      if (cancelled) return;
+      setProperties(props);
+      // Correct homes saved with the phone's position instead of the house's (best effort).
+      void fixPropertyCoordinates(props).then((fixed) => !cancelled && setProperties(fixed));
+
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
-          setLocationNote('Location is off, so type the address below.');
+          setLocationNote('Location is off, so type the address.');
+          setTyping(true);
           return;
         }
         const pos =
@@ -45,16 +74,13 @@ export default function PickHome() {
         const coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
         if (cancelled) return;
         setHere(coords);
-        const [geo] = await Location.reverseGeocodeAsync(coords).catch(() => []);
-        if (geo && !cancelled) setDraft(draftFromGeocode(geo, coords));
-        // Pre-select one of the buyer's own homes if they're right next to it.
-        const nearest = props
-          .filter((p) => p.latitude !== null && p.longitude !== null)
-          .map((p) => ({ p, d: distanceMeters(coords, { latitude: p.latitude!, longitude: p.longitude! }) }))
-          .sort((a, b) => a.d - b.d)[0];
-        if (nearest && nearest.d < 60 && !cancelled) setChoice({ kind: 'existing', property: nearest.p });
+        const found = await nearbyAddresses(coords);
+        if (!cancelled) setCandidates(found);
       } catch {
-        if (!cancelled) setLocationNote("Couldn't get your location. Type the address below.");
+        if (!cancelled) {
+          setLocationNote("Couldn't get your location, so type the address.");
+          setTyping(true);
+        }
       } finally {
         if (!cancelled) setLocating(false);
       }
@@ -64,151 +90,241 @@ export default function PickHome() {
     };
   }, []);
 
-  const nearby = useMemo(() => {
-    if (!here) return [];
-    return properties
-      .filter((p) => p.latitude !== null && p.longitude !== null)
-      .map((p) => ({ property: p, meters: distanceMeters(here, { latitude: p.latitude!, longitude: p.longitude! }) }))
-      .filter((x) => x.meters <= NEARBY_METERS)
-      .sort((a, b) => a.meters - b.meters)
-      .slice(0, 4);
-  }, [here, properties]);
+  // Your homes nearby first (distance to the house), then new street addresses nearby.
+  const options = useMemo<Option[]>(() => {
+    const existing = properties
+      .map((p) => ({ key: `p:${p.id}`, kind: 'existing' as const, property: p, meters: distanceTo(here, p) }))
+      .filter((o) => o.meters !== null && o.meters <= NEARBY_METERS)
+      .sort((a, b) => a.meters! - b.meters!)
+      .slice(0, 3);
+    const known = new Set(properties.map(keyOfProperty));
+    const fresh = candidates
+      .filter((d) => !known.has(normalizedKey(d)))
+      .map((d) => ({ key: `n:${normalizedKey(d)}`, kind: 'new' as const, draft: d, meters: distanceTo(here, d) }))
+      .sort((a, b) => (a.meters ?? Infinity) - (b.meters ?? Infinity));
+    return [...existing, ...fresh].slice(0, MAX_OPTIONS);
+  }, [properties, candidates, here]);
 
-  // If the typed address matches a home already saved, record against that home.
+  // Default choice once options arrive: a saved home you're right next to, else the nearest address.
+  const effective: Selection | null = useMemo(() => {
+    if (selection) return selection;
+    if (typing) return { kind: 'typed' };
+    const closeExisting = options.find((o) => o.kind === 'existing' && (o.meters ?? Infinity) <= PRESELECT_EXISTING_METERS);
+    const nearestNew = options.find((o) => o.kind === 'new');
+    const pick = closeExisting ?? nearestNew ?? options[0];
+    return pick ? { kind: 'option', key: pick.key } : null;
+  }, [selection, typing, options]);
+
+  const chosen = effective?.kind === 'option' ? (options.find((o) => o.key === effective.key) ?? null) : null;
+
+  // A typed address that matches a saved home records against that home.
   const typedMatch = useMemo(() => {
     if (!draft.addressLine.trim()) return null;
     const key = normalizedKey(draft);
-    return (
-      properties.find(
-        (p) => normalizedKey({ addressLine: p.address_line, unit: p.unit ?? '', city: p.city ?? '' }) === key,
-      ) ?? null
-    );
+    return properties.find((p) => keyOfProperty(p) === key) ?? null;
   }, [draft, properties]);
 
-  const canStart = choice.kind === 'existing' || draft.addressLine.trim().length >= 3;
+  const canStart = effective?.kind === 'typed' ? draft.addressLine.trim().length >= 3 : !!chosen;
 
   function start() {
-    if (choice.kind === 'existing' || typedMatch) {
-      const property = choice.kind === 'existing' ? choice.property : typedMatch!;
+    let property: Property | null = null;
+    let newDraft: AddressDraft | null = null;
+    if (effective?.kind === 'typed') {
+      if (typedMatch) property = typedMatch;
+      else newDraft = { ...draft, addressLine: draft.addressLine.trim(), unit: draft.unit.trim(), city: draft.city.trim() };
+    } else if (chosen?.kind === 'existing') {
+      property = chosen.property;
+    } else if (chosen?.kind === 'new') {
+      newDraft = chosen.draft;
+    }
+    if (property) {
+      router.push({ pathname: '/record/capture', params: { propertyId: property.id, label: displayAddress(property) } });
+    } else if (newDraft) {
       router.push({
         pathname: '/record/capture',
-        params: { propertyId: property.id, label: displayAddress(property) },
+        params: {
+          draft: JSON.stringify(newDraft),
+          label: displayAddress({ address_line: newDraft.addressLine, unit: newDraft.unit || null }),
+        },
       });
-      return;
     }
-    const clean = { ...draft, addressLine: draft.addressLine.trim(), unit: draft.unit.trim(), city: draft.city.trim() };
-    router.push({
-      pathname: '/record/capture',
-      params: {
-        draft: JSON.stringify(clean),
-        label: displayAddress({ address_line: clean.addressLine, unit: clean.unit || null }),
-      },
-    });
   }
 
-  const set = (field: keyof AddressDraft) => (value: string) => {
-    setChoice({ kind: 'new' });
-    setDraft((d) => ({ ...d, [field]: value }));
-  };
+  const set = (field: keyof AddressDraft) => (value: string) => setDraft((d) => ({ ...d, [field]: value }));
+
+  const time = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
   return (
-    <Screen>
-      <Body>Pick the home you just visited, or type its address.</Body>
+    <Screen style={s.screen}>
+      <Stack.Screen options={{ title: '' }} />
+      <View style={s.heading}>
+        <Eyebrow>New reaction · {time}</Eyebrow>
+        <Text style={s.title} accessibilityRole="header">
+          Which home was this?
+        </Text>
+      </View>
+
+      {chosen ? <ChosenCard option={chosen} /> : null}
+      {effective?.kind === 'typed' && typedMatch ? (
+        <Banner tone="success">{"You've visited this home before. This reaction will be added to it."}</Banner>
+      ) : null}
 
       {locating ? (
         <View style={s.locating}>
           <ActivityIndicator color={colors.accent} />
-          <Text style={s.locatingText}>Finding nearby addresses…</Text>
+          <Text style={s.locatingText}>Finding homes near you…</Text>
         </View>
       ) : null}
       {locationNote ? <Banner>{locationNote}</Banner> : null}
 
-      {nearby.length > 0 && (
-        <View style={s.group}>
-          <Eyebrow>Your homes nearby</Eyebrow>
-          {nearby.map(({ property, meters }) => {
-            const selected = choice.kind === 'existing' && choice.property.id === property.id;
-            return (
-              <Option
-                key={property.id}
-                home={property}
-                selected={selected}
-                title={displayAddress(property)}
-                detail={`Visited before · ${formatDistance(meters)}`}
-                onPress={() => setChoice({ kind: 'existing', property })}
-              />
-            );
-          })}
+      {options.length > 0 ? (
+        <View style={s.options} accessibilityRole="radiogroup">
+          {options.map((o) => (
+            <OptionRow
+              key={o.key}
+              option={o}
+              selected={effective?.kind === 'option' && effective.key === o.key}
+              onPress={() => {
+                setTyping(false);
+                setSelection({ kind: 'option', key: o.key });
+              }}
+            />
+          ))}
         </View>
+      ) : !locating && !typing ? (
+        <Body muted>No addresses found nearby.</Body>
+      ) : null}
+
+      {typing ? (
+        <View style={s.form}>
+          <Field
+            label="Street address"
+            value={draft.addressLine}
+            onChangeText={set('addressLine')}
+            placeholder="812 Pastoria Avenue"
+            autoCapitalize="words"
+            autoFocus={!locationNote}
+          />
+          <View style={s.row}>
+            <View style={s.unit}>
+              <Field label="Unit" value={draft.unit} onChangeText={set('unit')} placeholder="Optional" />
+            </View>
+            <View style={s.city}>
+              <Field label="City" value={draft.city} onChangeText={set('city')} placeholder="Sunnyvale" autoCapitalize="words" />
+            </View>
+          </View>
+        </View>
+      ) : (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            setTyping(true);
+            setSelection({ kind: 'typed' });
+          }}
+          hitSlop={8}
+        >
+          <Text style={s.typeLink}>Not listed? Type the address</Text>
+        </Pressable>
       )}
 
-      <View style={s.group}>
-        <Eyebrow>{nearby.length > 0 ? 'Or a new home' : 'Address'}</Eyebrow>
-        <Field
-          label="Street address"
-          value={draft.addressLine}
-          onChangeText={set('addressLine')}
-          onFocus={() => setChoice({ kind: 'new' })}
-          placeholder="812 Pastoria Avenue"
-          autoCapitalize="words"
-        />
-        <View style={s.row}>
-          <View style={s.unit}>
-            <Field label="Unit" value={draft.unit} onChangeText={set('unit')} placeholder="Optional" />
-          </View>
-          <View style={s.city}>
-            <Field label="City" value={draft.city} onChangeText={set('city')} placeholder="Sunnyvale" autoCapitalize="words" />
-          </View>
-        </View>
-        {choice.kind === 'new' && typedMatch ? (
-          <Banner tone="success">{"You've visited this home before. This reaction will be added to it."}</Banner>
-        ) : null}
-      </View>
-
-      <Button title="Start recording" disabled={!canStart} onPress={start} style={{ marginTop: 'auto' }} />
+      <Button title="Start recording" disabled={!canStart} onPress={start} style={s.start} />
     </Screen>
   );
 }
 
-function Option({
-  title,
-  detail,
-  selected,
-  onPress,
-  home,
-}: {
-  title: string;
-  detail: string;
-  selected: boolean;
-  onPress: () => void;
-  home?: Property;
-}) {
+function ChosenCard({ option }: { option: Option }) {
+  const home =
+    option.kind === 'existing'
+      ? option.property
+      : { id: option.key, latitude: option.draft.latitude, longitude: option.draft.longitude };
+  const title = option.kind === 'existing' ? displayAddress(option.property) : option.draft.addressLine;
+  const facts = option.kind === 'existing' ? formatHomeLine(option.property) : '';
+  const city = option.kind === 'existing' ? option.property.city : option.draft.city;
+  return (
+    <View style={s.chosen}>
+      <HomeThumb home={home} size={88} />
+      <View style={s.flex}>
+        <Text style={s.chosenTitle} numberOfLines={2}>
+          {title}
+        </Text>
+        {city ? <Text style={s.chosenMeta}>{city}</Text> : null}
+        <Text style={s.chosenMeta}>
+          {[option.kind === 'existing' ? 'Visited before' : 'New home', option.meters !== null ? formatDistance(option.meters) : null]
+            .filter(Boolean)
+            .join(' · ')}
+        </Text>
+        {facts ? <Text style={s.chosenFacts}>{facts}</Text> : null}
+      </View>
+    </View>
+  );
+}
+
+function OptionRow({ option, selected, onPress }: { option: Option; selected: boolean; onPress: () => void }) {
+  const title = option.kind === 'existing' ? displayAddress(option.property) : option.draft.addressLine;
   return (
     <Pressable
       accessibilityRole="radio"
       accessibilityState={{ selected }}
+      accessibilityLabel={`${title}${option.kind === 'existing' ? ', visited before' : ''}`}
       onPress={onPress}
-      style={[s.option, s.optionRow, selected && s.optionSelected]}
+      style={({ pressed }) => [s.option, selected && s.optionSelected, pressed && { opacity: 0.85 }]}
     >
-      {home ? <HomeThumb home={home} size={44} /> : null}
-      <View style={{ flex: 1, gap: 2 }}>
-        <Text style={s.optionTitle}>{title}</Text>
-        <Text style={s.optionDetail}>{detail}</Text>
+      <View style={[s.radio, selected && s.radioOn]}>{selected ? <View style={s.radioDot} /> : null}</View>
+      <View style={s.flex}>
+        <Text style={s.optionTitle} numberOfLines={1}>
+          {title}
+        </Text>
+        {option.kind === 'existing' ? <Text style={s.optionTag}>Visited before</Text> : null}
       </View>
+      {option.meters !== null ? <Text style={s.optionDistance}>{formatDistance(option.meters)}</Text> : null}
     </Pressable>
   );
 }
 
 const s = StyleSheet.create({
+  screen: { gap: 20 },
+  flex: { flex: 1 },
+  heading: { gap: 6 },
+  title: { fontSize: 28, fontWeight: '800', color: colors.ink, letterSpacing: -0.4 },
+  chosen: {
+    flexDirection: 'row',
+    gap: 16,
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.line,
+    padding: 16,
+  },
+  chosenTitle: { fontSize: 19, fontWeight: '700', color: colors.ink, lineHeight: 24 },
+  chosenMeta: { fontSize: 14, color: colors.ink3, marginTop: 2 },
+  chosenFacts: { fontSize: 14, color: colors.ink2, fontWeight: '600', marginTop: 6 },
   locating: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   locatingText: { color: colors.ink3, fontSize: 15 },
-  group: { gap: 10 },
+  options: { gap: 8 },
+  option: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    minHeight: 56,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.surface,
+  },
+  optionSelected: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
+  radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: colors.line, alignItems: 'center', justifyContent: 'center' },
+  radioOn: { borderColor: colors.accent },
+  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.accent },
+  optionTitle: { fontSize: 16, fontWeight: '600', color: colors.ink },
+  optionTag: { fontSize: 13, color: colors.accent, marginTop: 2 },
+  optionDistance: { fontSize: 13, color: colors.ink3, fontVariant: ['tabular-nums'] },
+  typeLink: { fontSize: 15, fontWeight: '600', color: colors.accent },
+  form: { gap: 10 },
   row: { flexDirection: 'row', gap: 10 },
   unit: { flex: 1 },
   city: { flex: 2 },
-  option: { borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, borderRadius: 12, padding: 14, gap: 2 },
-  optionRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  optionSelected: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
-  optionTitle: { fontSize: 16, fontWeight: '600', color: colors.ink },
-  optionDetail: { fontSize: 13, color: colors.ink3 },
+  start: { marginTop: 'auto' },
 });

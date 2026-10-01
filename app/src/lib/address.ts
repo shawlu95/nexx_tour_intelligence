@@ -113,3 +113,50 @@ export function draftFromGeocode(g: GeocodedAddress, coords: { latitude: number;
     longitude: coords.longitude,
   };
 }
+
+/** One line for forward geocoding: "812 Pastoria Avenue, Sunnyvale, CA 94086". */
+export function geocodeQuery(d: Pick<AddressDraft, 'addressLine' | 'city' | 'region' | 'postalCode'>): string {
+  const cityPart = [d.city.trim(), [d.region.trim(), d.postalCode.trim()].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+  return [d.addressLine.trim(), cityPart].filter(Boolean).join(', ');
+}
+
+/** A point `north` and `east` meters away (small distances; flat-earth approximation). */
+export function offsetPoint(
+  p: { latitude: number; longitude: number },
+  north: number,
+  east: number,
+): { latitude: number; longitude: number } {
+  const dLat = north / 111_320;
+  const dLon = east / (111_320 * Math.cos((p.latitude * Math.PI) / 180));
+  return { latitude: p.latitude + dLat, longitude: p.longitude + dLon };
+}
+
+/**
+ * Points to reverse-geocode around the buyer to find candidate street addresses:
+ * where they are, plus a ring at `radius` meters. Homes on both sides of the street
+ * and a few doors down usually show up.
+ */
+export function samplePoints(p: { latitude: number; longitude: number }, radius = 35) {
+  const d = radius / Math.SQRT2;
+  return [
+    p,
+    offsetPoint(p, radius, 0),
+    offsetPoint(p, -radius, 0),
+    offsetPoint(p, 0, radius),
+    offsetPoint(p, 0, -radius),
+    offsetPoint(p, d, d),
+    offsetPoint(p, -d, -d),
+  ];
+}
+
+/** Drops drafts with no street number and repeats of the same address (first wins). */
+export function uniqueStreetAddresses(drafts: AddressDraft[]): AddressDraft[] {
+  const seen = new Set<string>();
+  return drafts.filter((d) => {
+    if (!/^\d+[a-z]?\s/i.test(d.addressLine.trim())) return false;
+    const key = normalizedKey(d);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}

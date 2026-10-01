@@ -12,6 +12,8 @@ export interface Property {
   postal_code: string | null;
   latitude: number | null;
   longitude: number | null;
+  /** 'address' when the coordinates were looked up from the street address (the house itself). */
+  coords_source?: 'device' | 'address';
   last_visited_at: string | null;
   // Public facts (RentCast), filled in after the first note is processed.
   beds: number | null;

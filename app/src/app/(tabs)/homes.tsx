@@ -5,6 +5,7 @@ import { HomeThumb } from '../../components/HomeThumb';
 import { Banner, Body, Card, colors, Field, Screen, TabHeader } from '../../components/ui';
 import { displayAddress } from '../../lib/address';
 import { fetchProperties } from '../../lib/api';
+import { fixPropertyCoordinates } from '../../lib/geo';
 import { formatHomeLine, formatWhen } from '../../lib/format';
 import type { Property } from '../../lib/types';
 
@@ -21,6 +22,8 @@ export default function Properties() {
           setProperties(r.data);
           setOffline(r.offline);
           setError('');
+          // Homes saved with the phone's position get the house's real coordinates (and a fresh photo).
+          if (!r.offline) void fixPropertyCoordinates(r.data).then(setProperties);
         })
         .catch(() => setError("Couldn't load your homes. Check your connection."));
     }, []),

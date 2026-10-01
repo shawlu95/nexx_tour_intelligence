@@ -38,7 +38,7 @@ function Root() {
       }}
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Back' }} />
-      <Stack.Screen name="record/pick" options={{ title: 'Which home?' }} />
+      <Stack.Screen name="record/pick" options={{ title: '' }} />
       <Stack.Screen
         name="record/capture"
         options={{

@@ -6,6 +6,7 @@ import * as Network from 'expo-network';
 import { AppState } from 'react-native';
 import { normalizedKey } from './address';
 import { retryDelayMs } from './backoff';
+import { geocodeAddress } from './geo';
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from './config';
 import { listPending, removePending, updatePending, type PendingVisit } from './localdb';
 import { callFunction, supabase } from './supabase';
@@ -37,6 +38,8 @@ async function ensureProperty(v: PendingVisit): Promise<string> {
   if (v.property_id) return v.property_id;
   const d = v.property_draft;
   if (!d) throw new Error('Missing address for this recording.');
+  // Save the house's own coordinates, not where the phone was when the home was added.
+  const house = await geocodeAddress(d);
   const { data, error } = await supabase
     .from('properties')
     .upsert(
@@ -46,8 +49,9 @@ async function ensureProperty(v: PendingVisit): Promise<string> {
         city: d.city.trim() || null,
         region: d.region.trim() || null,
         postal_code: d.postalCode.trim() || null,
-        latitude: d.latitude,
-        longitude: d.longitude,
+        latitude: house?.latitude ?? d.latitude,
+        longitude: house?.longitude ?? d.longitude,
+        coords_source: house ? 'address' : 'device',
         normalized_key: normalizedKey(d),
       },
       { onConflict: 'user_id,normalized_key' },

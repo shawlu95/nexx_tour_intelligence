@@ -70,7 +70,7 @@ export function fetchProperties(): Promise<Cached<Property[]>> {
   return withCache('properties', async () => {
     const { data, error } = await supabase
       .from('properties')
-      .select(`${PROPERTY_CARD}, region, postal_code, last_visited_at, facts_status`)
+      .select(`${PROPERTY_CARD}, region, postal_code, last_visited_at, facts_status, coords_source`)
       .order('last_visited_at', { ascending: false, nullsFirst: false });
     if (error) throw error;
     return data as Property[];

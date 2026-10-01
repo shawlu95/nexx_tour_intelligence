@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { displayAddress, distanceMeters, draftFromGeocode, formatDistance, normalizedKey } from './address';
+import {
+  displayAddress,
+  distanceMeters,
+  draftFromGeocode,
+  EMPTY_DRAFT,
+  formatDistance,
+  geocodeQuery,
+  normalizedKey,
+  offsetPoint,
+  samplePoints,
+  uniqueStreetAddresses,
+} from './address';
 import { retryDelayMs } from './backoff';
 import { latestRanking, newHomesSince, type RankingMessage } from './rankingLogic';
 import { cueIndex, factTiles, formatClock, formatFacts, formatHomeLine, formatMoney, formatPrice, formatWhen } from './format';
@@ -168,5 +179,32 @@ describe('ranking helpers', () => {
     const latest = msg({ based_on: ['a', 'b'], ranking: [{ property_id: 'a', rank: 1, fit: 'good', reason: '' }] });
     expect(newHomesSince(latest, ['a', 'b', 'c'])).toEqual(['c']);
     expect(newHomesSince(null, ['a'])).toEqual([]);
+  });
+});
+
+describe('address lookup helpers', () => {
+  it('builds a geocoding query from the parts that are known', () => {
+    expect(geocodeQuery({ addressLine: '812 Pastoria Avenue', city: 'Sunnyvale', region: 'CA', postalCode: '94086' })).toBe(
+      '812 Pastoria Avenue, Sunnyvale, CA 94086',
+    );
+    expect(geocodeQuery({ addressLine: '812 Pastoria Avenue', city: 'Sunnyvale', region: '', postalCode: '' })).toBe(
+      '812 Pastoria Avenue, Sunnyvale',
+    );
+  });
+
+  it('offsets points by meters', () => {
+    const start = { latitude: 37.37, longitude: -122.03 };
+    expect(distanceMeters(start, offsetPoint(start, 35, 0))).toBeCloseTo(35, 0);
+    expect(distanceMeters(start, offsetPoint(start, 0, -35))).toBeCloseTo(35, 0);
+    expect(samplePoints(start)).toHaveLength(7);
+  });
+
+  it('keeps distinct street addresses only', () => {
+    const d = (addressLine: string) => ({ ...EMPTY_DRAFT, addressLine, city: 'Sunnyvale' });
+    expect(
+      uniqueStreetAddresses([d('812 Pastoria Avenue'), d('812 Pastoria Ave'), d('Pastoria Avenue'), d('790 Pastoria Ave')]).map(
+        (x) => x.addressLine,
+      ),
+    ).toEqual(['812 Pastoria Avenue', '790 Pastoria Ave']);
   });
 });
