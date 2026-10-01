@@ -1,7 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
-import { Banner, Body, Card, colors, Field, Screen } from '../../components/ui';
+import { Banner, Body, Card, colors, Field, Screen, TabHeader } from '../../components/ui';
 import { displayAddress } from '../../lib/address';
 import { fetchProperties } from '../../lib/api';
 import { formatWhen } from '../../lib/format';
@@ -31,7 +31,8 @@ export default function Properties() {
   );
 
   return (
-    <Screen>
+    <Screen tab>
+      <TabHeader title="Your homes" />
       <Field label="Search" value={query} onChangeText={setQuery} placeholder="Street, city or ZIP" autoCorrect={false} />
       {offline ? <Banner>{"You're offline. Showing your last saved list."}</Banner> : null}
       {error ? <Banner tone="error">{error}</Banner> : null}

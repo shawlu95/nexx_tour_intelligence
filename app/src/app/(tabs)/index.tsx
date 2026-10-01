@@ -1,13 +1,12 @@
-import { router, Stack, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Banner, Body, colors, Eyebrow } from '../components/ui';
-import { VisitRow } from '../components/VisitRow';
-import { fetchRecentVisits, type VisitSummary } from '../lib/api';
-import { useUserId } from '../lib/auth';
-import { listPending, type PendingVisit } from '../lib/localdb';
-import { onQueueChange, runQueue } from '../lib/sync';
+import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { Banner, Body, colors, Eyebrow, Screen, TabHeader } from '../../components/ui';
+import { VisitRow } from '../../components/VisitRow';
+import { fetchRecentVisits, type VisitSummary } from '../../lib/api';
+import { useUserId } from '../../lib/auth';
+import { listPending, type PendingVisit } from '../../lib/localdb';
+import { onQueueChange, runQueue } from '../../lib/sync';
 
 export default function Home() {
   const userId = useUserId();
@@ -57,18 +56,8 @@ export default function Home() {
   const localIds = new Set(localOnly.map((p) => p.id));
 
   return (
-    <SafeAreaView style={s.flex} edges={['bottom', 'left', 'right']}>
-      <Stack.Screen
-        options={{
-          headerRight: () => (
-            <View style={s.headerLinks}>
-              <HeaderLink label="Homes" onPress={() => router.push('/properties')} />
-              <HeaderLink label="Settings" onPress={() => router.push('/settings')} />
-            </View>
-          ),
-        }}
-      />
-      <ScrollView contentContainerStyle={s.screen} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}>
+    <Screen tab style={s.screen} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}>
+        <TabHeader />
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Record a home"
@@ -121,24 +110,12 @@ export default function Home() {
               ))
           )}
         </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-function HeaderLink({ label, onPress }: { label: string; onPress: () => void }) {
-  return (
-    <Pressable accessibilityRole="button" onPress={onPress} hitSlop={8}>
-      <Text style={s.headerLink}>{label}</Text>
-    </Pressable>
+    </Screen>
   );
 }
 
 const s = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.bg },
-  screen: { padding: 20, gap: 20 },
-  headerLinks: { flexDirection: 'row', gap: 16 },
-  headerLink: { color: colors.accent, fontSize: 16, fontWeight: '600' },
+  screen: { gap: 20 },
   hero: { backgroundColor: colors.stage, borderRadius: 20, padding: 20, gap: 8 },
   heroEyebrow: { color: '#9DB4FF', fontSize: 12, fontWeight: '700', letterSpacing: 1.2 },
   heroTitle: { color: colors.stageInk, fontSize: 24, fontWeight: '800' },

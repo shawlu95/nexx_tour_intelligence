@@ -37,7 +37,7 @@ function Root() {
         headerBackTitle: 'Back',
       }}
     >
-      <Stack.Screen name="index" options={{ title: 'NORA' }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Back' }} />
       <Stack.Screen name="record/pick" options={{ title: 'Which home?' }} />
       <Stack.Screen
         name="record/capture"
@@ -51,9 +51,7 @@ function Root() {
       />
       <Stack.Screen name="visit/[id]" options={{ title: 'Note' }} />
       <Stack.Screen name="share/[visitId]" options={{ title: 'Share', presentation: 'modal' }} />
-      <Stack.Screen name="properties/index" options={{ title: 'Your homes' }} />
       <Stack.Screen name="properties/[id]" options={{ title: 'Home' }} />
-      <Stack.Screen name="settings" options={{ title: 'Settings' }} />
       <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
     </Stack>
   );

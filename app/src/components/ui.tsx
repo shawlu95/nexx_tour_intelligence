@@ -1,5 +1,5 @@
 // Small set of shared UI building blocks. Colors follow the NORA mockup.
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -8,12 +8,13 @@ import {
   Text,
   TextInput,
   View,
+  type RefreshControlProps,
   type StyleProp,
   type TextInputProps,
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
 export const colors = {
   bg: '#F4F6F9',
@@ -37,22 +38,35 @@ export const colors = {
   stageLine: '#26324A',
 };
 
+/**
+ * Page container. `tab` is for tab-bar screens, which have no header: they pad
+ * the top for the status bar and Dynamic Island, and leave the bottom to the tab bar.
+ */
 export function Screen({
   children,
   scroll = true,
   style,
   dark = false,
+  tab = false,
+  refreshControl,
 }: {
   children: ReactNode;
   scroll?: boolean;
   style?: StyleProp<ViewStyle>;
   dark?: boolean;
+  tab?: boolean;
+  refreshControl?: ReactElement<RefreshControlProps>;
 }) {
   const bg = { backgroundColor: dark ? colors.stage : colors.bg };
+  const edges: Edge[] = tab ? ['top', 'left', 'right'] : ['bottom', 'left', 'right'];
   return (
-    <SafeAreaView style={[styles.flex, bg]} edges={['bottom', 'left', 'right']}>
+    <SafeAreaView style={[styles.flex, bg]} edges={edges}>
       {scroll ? (
-        <ScrollView contentContainerStyle={[styles.screen, style]} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={[styles.screen, style]}
+          keyboardShouldPersistTaps="handled"
+          refreshControl={refreshControl}
+        >
           {children}
         </ScrollView>
       ) : (
@@ -182,6 +196,19 @@ export function StatusPill({ label, tone }: { label: string; tone: 'good' | 'war
   );
 }
 
+/** Top of a tab screen: the NORA wordmark and the "Private" badge, as in the mockup. */
+export function TabHeader({ title }: { title?: string }) {
+  return (
+    <View style={styles.tabHeader}>
+      <View style={styles.tabHeaderRow}>
+        <Text style={styles.wordmark}>NORA</Text>
+        <StatusPill label="Private" tone="good" />
+      </View>
+      {title ? <Title>{title}</Title> : null}
+    </View>
+  );
+}
+
 export function Loading() {
   return (
     <View style={[styles.flex, styles.center]}>
@@ -228,6 +255,9 @@ export const styles = StyleSheet.create({
   },
   banner: { borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 },
   bannerText: { fontSize: 14, lineHeight: 20 },
+  tabHeader: { gap: 14 },
+  tabHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  wordmark: { fontSize: 16, fontWeight: '800', letterSpacing: 4, color: colors.ink },
   pill: { borderRadius: 999, paddingVertical: 4, paddingHorizontal: 9, alignSelf: 'flex-start' },
   pillText: { fontSize: 12, fontWeight: '600' },
 });

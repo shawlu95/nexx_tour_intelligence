@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Banner, Body, Button, Card, colors, Eyebrow, Screen } from '../components/ui';
-import { deleteAccount } from '../lib/api';
-import { signOut, useAuth } from '../lib/auth';
-import { listPending } from '../lib/localdb';
+import { Banner, Body, Button, Card, colors, Eyebrow, Screen, TabHeader } from '../../components/ui';
+import { deleteAccount } from '../../lib/api';
+import { signOut, useAuth } from '../../lib/auth';
+import { listPending } from '../../lib/localdb';
 
 export default function Settings() {
   const { session } = useAuth();
@@ -20,7 +20,8 @@ export default function Settings() {
   const provider = (user?.app_metadata?.provider as string | undefined) ?? 'email';
 
   return (
-    <Screen>
+    <Screen tab>
+      <TabHeader title="Profile" />
       <Card>
         <Eyebrow>Account</Eyebrow>
         <Row label="Email" value={user?.email ?? '—'} />
