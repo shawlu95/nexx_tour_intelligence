@@ -18,6 +18,8 @@ Last updated: 2026-10-01. Update this file at the end of each work session: move
 
 12. **Ranking tab** (Tour · Ranking · History · Profile). Migration `20261002010000_ranking.sql` adds `ranking_messages` (conversation; assistant turns carry `ranking`, `question`, `based_on`) and `buyer_priorities` (learned needs). Function `rank-homes` (`action`: start | send | refresh) builds a summary of every home with notes plus RentCast facts (`_shared/ranking.ts`), calls Claude (`rankHomes` in `_shared/claude.ts`, `RANKING_MODEL`, medium effort, structured output, cached system blocks), normalizes the ranking (every home exactly once), saves both turns, and limits each buyer to 60 turns a day. App: `app/src/app/(tabs)/ranking.tsx` (ranked cards with reasons for the top 3, priority chips, chat, composer, "Update ranking" when new homes exist, "Start over"). **Not yet exercised against the real model**: the account had only one home with a note (the minimum is two).
 
+13. **iOS 27 launch crash fixed (2026-10-01).** After the phone updated to iOS 27.0.1, NORA crashed at launch because iOS 27 requires the UIScene life cycle. Fixed with the `withSceneLifecycle` config plugin in `app/app.config.ts` (scene manifest with `EXExpoAppSceneDelegate`; AppDelegate conforms to `ExpoReactNativeFactoryProvider` and no longer creates the window). Verified on the iPhone: still running 15 seconds after launch, no new crash reports.
+
 ## Done and verified
 
 | Area | Verified how |

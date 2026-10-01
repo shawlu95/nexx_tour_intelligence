@@ -57,6 +57,8 @@ Run tests, typecheck, lint and expo-doctor before calling app work done.
 - npm has a `react-dom` peer conflict with React Native 0.86. Use `--legacy-peer-deps` for installs (`npx expo install x -- --legacy-peer-deps`).
 - Expo Router 57 exports its own `Stack`. The app uses a single stack (no tabs). `router.dismissTo('/')` exists.
 - The app needs a development build (native modules), not Expo Go.
+- **iOS 27 requires the UIScene life cycle.** Without it the app crashes at launch in `_UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption`. Expo SDK 57's template doesn't adopt it yet, so `withSceneLifecycle` in `app/app.config.ts` adds the scene manifest (delegate `EXExpoAppSceneDelegate`) and patches `AppDelegate.swift` on every prebuild. Don't remove it. It throws if the template changes shape; once Expo's template adopts scenes, drop the plugin.
+- When the app crashes on the phone, pull reports with `xcrun devicectl device copy from --device <udid> --domain-type systemCrashLogs --source / --destination <dir>` and read the `.ips` JSON (faulting thread frames).
 
 **Deno / Edge Functions**
 - Deno refuses npm packages published less than 24 hours ago. Pin versions at least a day old. `@anthropic-ai/sdk` is pinned to `0.129.0` for this reason; it supports `fallbacks: 'default'` and `output_config.format`.
