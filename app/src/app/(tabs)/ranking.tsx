@@ -151,7 +151,7 @@ export default function Ranking() {
             <Text style={s.headline} accessibilityRole="header">
               {reordered && topHome ? `${topHome.address_line} is your #1` : latest.content || 'Your homes, best fit first'}
             </Text>
-            <Text style={s.helper}>{"Scores are NORA's, out of 10. Tap a home for details; drag ≡ to reorder."}</Text>
+            <Text style={s.helper}>Tap an address for details. Drag its number to change the order.</Text>
             {reordered ? (
               <Pressable accessibilityRole="button" onPress={revert} hitSlop={8} style={s.revert}>
                 <SymbolView name="arrow.uturn.backward" tintColor={colors.ink3} size={12} type="monochrome" />
@@ -194,8 +194,8 @@ export default function Ranking() {
           </View>
 
           <View style={s.actions}>
-            <Button title="Discuss" onPress={() => router.push('/ranking/discuss')} accessibilityLabel="Discuss your ranking with NORA" />
-            <Button kind="secondary" title="Record the next home" onPress={() => router.push('/tour/locate')} />
+            <Button title="Record the next home" onPress={() => router.push('/tour/locate')} />
+            <Button kind="secondary" title="Ask Nora" onPress={() => router.push('/ranking/discuss')} accessibilityLabel="Ask Nora about your ranking" />
           </View>
         </>
       ) : null}
@@ -244,9 +244,16 @@ function RankRow({
         onLongPress={drag}
         style={({ pressed }) => [s.rowMain, pressed && { opacity: 0.7 }]}
       >
-        <View style={[s.badge, item.rank === 1 && s.badgeFirst]}>
+        {/* The number is the drag handle ("Drag its number to change the order"). */}
+        <Pressable
+          onPressIn={drag}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={`Drag to move ${address}`}
+          style={[s.badge, item.rank === 1 && s.badgeFirst]}
+        >
           <Text style={[s.badgeText, item.rank === 1 && s.badgeTextFirst]}>{item.rank}</Text>
-        </View>
+        </Pressable>
         <HomeThumb home={home} size={48} />
         <View style={s.flex}>
           <Text style={s.address} numberOfLines={1}>
@@ -263,9 +270,6 @@ function RankRow({
         ) : (
           <Text style={[s.fit, { color: FIT[item.fit].color }]}>{FIT[item.fit].label}</Text>
         )}
-      </Pressable>
-      <Pressable onPressIn={drag} style={s.grip} accessibilityRole="button" accessibilityLabel={`Drag to move ${address}`}>
-        <SymbolView name="line.3.horizontal" tintColor={colors.ink3} size={16} type="monochrome" />
       </Pressable>
       </View>
 
@@ -316,16 +320,15 @@ const s = StyleSheet.create({
   rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
   rowTop: { flexDirection: 'row', alignItems: 'center' },
   rowMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
-  grip: { width: 36, height: 48, marginRight: -8, alignItems: 'center', justifyContent: 'center' },
   revert: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', marginTop: 2 },
   revertText: { fontSize: 13, color: colors.ink3, fontWeight: '600' },
-  badge: { width: 24, height: 24, borderRadius: 7, backgroundColor: colors.sunk, alignItems: 'center', justifyContent: 'center' },
+  badge: { width: 28, height: 28, borderRadius: 8, backgroundColor: colors.sunk, alignItems: 'center', justifyContent: 'center' },
   badgeFirst: { backgroundColor: colors.ink },
   badgeText: { fontSize: 13, fontWeight: '800', color: colors.ink2, fontVariant: ['tabular-nums'] },
   badgeTextFirst: { color: '#FFFFFF' },
   address: { fontSize: 15, fontWeight: '700', color: colors.ink },
   label: { fontSize: 12, lineHeight: 16, color: colors.ink3, marginTop: 2 },
-  score: { fontSize: 20, fontWeight: '800', color: colors.ink, fontVariant: ['tabular-nums'], minWidth: 36, textAlign: 'right' },
+  score: { fontSize: 14, fontWeight: '700', color: colors.ink, fontVariant: ['tabular-nums'], minWidth: 30, textAlign: 'right' },
   fit: { fontSize: 13, fontWeight: '700' },
   detail: { gap: 10, paddingBottom: 14, paddingLeft: 34 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },

@@ -66,6 +66,26 @@ export function fetchRecentVisits(limit = 15): Promise<Cached<VisitSummary[]>> {
   });
 }
 
+export interface HistoryVisit extends Visit {
+  properties: PropertyCard | null;
+  notes: (Pick<Note, 'overall'> & { note_items: Pick<NoteItem, 'kind' | 'text' | 'deleted' | 'sort'>[] }) | null;
+}
+
+/** Every visit, newest first, with the note's points for the History tab. */
+export function fetchHistory(): Promise<Cached<HistoryVisit[]>> {
+  return withCache('history', async () => {
+    const { data, error } = await supabase
+      .from('visits')
+      .select(
+        `id, property_id, recorded_at, duration_seconds, audio_path, status, error, properties(${PROPERTY_CARD}), notes(overall, note_items(kind, text, deleted, sort))`,
+      )
+      .order('recorded_at', { ascending: false })
+      .limit(200);
+    if (error) throw error;
+    return data as unknown as HistoryVisit[];
+  });
+}
+
 export function fetchProperties(): Promise<Cached<Property[]>> {
   return withCache('properties', async () => {
     const { data, error } = await supabase

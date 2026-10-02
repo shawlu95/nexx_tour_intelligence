@@ -42,7 +42,7 @@ function Root() {
       <Stack.Screen name="visit/[id]" options={{ title: 'Note' }} />
       <Stack.Screen name="share/[visitId]" options={{ title: 'Share', presentation: 'modal' }} />
       <Stack.Screen name="properties/[id]" options={{ title: 'Home' }} />
-      <Stack.Screen name="ranking/discuss" options={{ title: 'Discuss' }} />
+      <Stack.Screen name="ranking/discuss" options={{ title: 'Ask Nora' }} />
       <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
     </Stack>
   );

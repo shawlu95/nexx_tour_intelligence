@@ -3,21 +3,30 @@
 import { SymbolView, type SFSymbol } from 'expo-symbols';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Avatar } from '../../components/Avatar';
-import { Banner, Body, Button, colors, Screen, StatusPill, TabHeader } from '../../components/ui';
+import { Body, Button, colors, Screen, StatusPill, TabHeader } from '../../components/ui';
 import { deleteAccount } from '../../lib/api';
 import { displayNameOf, signOut, useAuth } from '../../lib/auth';
 import { listPending } from '../../lib/localdb';
+import { setWorkspacePaused, useWorkspacePaused } from '../../lib/sharingPreview';
 
 export default function Profile() {
   const { session } = useAuth();
   const user = session?.user;
   const [unsent, setUnsent] = useState(0);
-  const [confirm, setConfirm] = useState<'signout' | 'delete' | null>(null);
-  const [paused, setPaused] = useState(false); // UI-only preview of deactivation
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
+  const [confirm, setConfirm] = useState<'signout' | null>(null);
+  const paused = useWorkspacePaused(); // UI-only preview of deactivation
+  const [asking, setAsking] = useState<'deactivate' | 'delete' | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  const [toast, setToast] = useState('');
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(''), 3000);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   useEffect(() => {
     if (user) listPending(user.id).then((p) => setUnsent(p.filter((v) => v.stage !== 'submitted').length));
@@ -41,7 +50,7 @@ export default function Profile() {
             </Text>
             <Text style={s.kind}>Buyer account</Text>
           </View>
-          {paused ? <StatusPill label="Paused" tone="neutral" /> : <StatusPill label="Active" tone="good" />}
+          {paused ? <StatusPill label="Deactivated" tone="bad" /> : <StatusPill label="Active" tone="good" />}
         </View>
       </View>
 
@@ -78,46 +87,125 @@ export default function Profile() {
             : 'Deactivation pauses your workspace and immediately pauses every agent’s access. You can reactivate later.'}
         </Text>
         {paused ? (
-          <Button title="Reactivate account" onPress={() => setPaused(false)} />
+          <Button
+            title="Reactivate account"
+            onPress={() => {
+              setWorkspacePaused(false);
+              setToast('Account reactivated');
+            }}
+            style={s.reactivate}
+          />
         ) : (
-          <Button kind="danger" title="Deactivate account" onPress={() => setPaused(true)} />
+          <Button kind="danger" title="Deactivate account" onPress={() => setAsking('deactivate')} />
         )}
       </View>
 
-      {error ? <Banner tone="error">{error}</Banner> : null}
+      {/* Required by the App Store for apps with accounts; kept quiet below the mockup's design. */}
+      <Pressable accessibilityRole="button" onPress={() => setAsking('delete')} hitSlop={8} style={s.delete}>
+        <Text style={s.deleteText}>Delete account and all data</Text>
+      </Pressable>
 
-      {confirm === 'delete' ? (
-        <View style={s.confirm}>
-          <Text style={s.confirmTitle}>Delete your account?</Text>
-          <Body>{"Every recording, transcript, note and share link is deleted for good. This can't be undone."}</Body>
-          <View style={s.row}>
-            <Button kind="secondary" title="Cancel" onPress={() => setConfirm(null)} style={s.flex} />
-            <Button
-              kind="danger"
-              title="Delete account"
-              loading={busy}
-              style={s.flex}
-              onPress={async () => {
-                setBusy(true);
-                setError('');
-                try {
-                  await deleteAccount();
-                  await signOut();
-                } catch (e) {
-                  setError(e instanceof Error ? e.message : "Couldn't delete your account. Try again.");
-                  setBusy(false);
-                }
-              }}
-            />
-          </View>
+      <WarningSheet
+        visible={asking === 'deactivate'}
+        title="Deactivate your account?"
+        copy="Your workspace will be paused and every agent will immediately lose access until you reactivate."
+        confirmLabel="Deactivate account"
+        cancelLabel="Keep account active"
+        onConfirm={() => {
+          setAsking(null);
+          setWorkspacePaused(true);
+          setToast('Account deactivated · agent access paused');
+        }}
+        onCancel={() => setAsking(null)}
+      />
+      <WarningSheet
+        visible={asking === 'delete'}
+        title="Delete your account?"
+        copy={`Every recording, transcript, note and ranking is deleted for good, and share links stop working.${
+          unsent > 0 ? ` ${unsent} recording${unsent === 1 ? " that hasn't" : "s that haven't"} uploaded yet will be lost too.` : ''
+        } This can't be undone.`}
+        confirmLabel="Delete account"
+        cancelLabel="Keep my account"
+        busy={deleting}
+        error={deleteError}
+        onConfirm={async () => {
+          setDeleting(true);
+          setDeleteError('');
+          try {
+            await deleteAccount();
+            await signOut();
+          } catch (e) {
+            setDeleteError(e instanceof Error ? e.message : "Couldn't delete your account. Try again.");
+            setDeleting(false);
+          }
+        }}
+        onCancel={() => {
+          setAsking(null);
+          setDeleteError('');
+        }}
+      />
+      {toast ? (
+        <View style={s.toast} pointerEvents="none" accessibilityLiveRegion="polite">
+          <Text style={s.toastText}>{toast}</Text>
         </View>
-      ) : (
-        // Required by the App Store for apps with accounts; kept quiet below the mockup's design.
-        <Pressable accessibilityRole="button" onPress={() => setConfirm('delete')} hitSlop={8} style={s.delete}>
-          <Text style={s.deleteText}>Delete account and all data</Text>
-        </Pressable>
-      )}
+      ) : null}
     </Screen>
+  );
+}
+
+/** Warning bottom sheet, as in the mockup's deactivation dialog. */
+function WarningSheet({
+  visible,
+  title,
+  copy,
+  confirmLabel,
+  cancelLabel,
+  busy,
+  error,
+  onConfirm,
+  onCancel,
+}: {
+  visible: boolean;
+  title: string;
+  copy: string;
+  confirmLabel: string;
+  cancelLabel: string;
+  busy?: boolean;
+  error?: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
+      <View style={s.backdrop}>
+        <View style={s.sheet} accessibilityViewIsModal>
+          <View style={s.sheetIcon}>
+            <Text style={s.sheetIconText}>!</Text>
+          </View>
+          <Text style={s.sheetTitle} accessibilityRole="header">
+            {title}
+          </Text>
+          <Text style={s.sheetCopy}>{copy}</Text>
+          {error ? <Text style={s.sheetError}>{error}</Text> : null}
+          <Pressable
+            style={({ pressed }) => [s.sheetDanger, (pressed || busy) && { opacity: 0.85 }]}
+            onPress={onConfirm}
+            disabled={busy}
+            accessibilityRole="button"
+          >
+            {busy ? <ActivityIndicator color="#FFFFFF" /> : <Text style={s.sheetDangerText}>{confirmLabel}</Text>}
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [s.sheetSecondary, pressed && { opacity: 0.7 }]}
+            onPress={onCancel}
+            disabled={busy}
+            accessibilityRole="button"
+          >
+            <Text style={s.sheetSecondaryText}>{cancelLabel}</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -189,6 +277,52 @@ const s = StyleSheet.create({
     marginTop: 8,
   },
   statusBody: { fontSize: 13, lineHeight: 19, color: colors.ink2 },
+  reactivate: { backgroundColor: colors.good },
   delete: { alignSelf: 'center', paddingVertical: 8 },
   deleteText: { fontSize: 13, color: colors.ink3, fontWeight: '600' },
+  sheetError: { fontSize: 13, color: colors.bad, textAlign: 'center' },
+  backdrop: { flex: 1, backgroundColor: 'rgba(10,15,24,0.55)', justifyContent: 'flex-end' },
+  sheet: {
+    margin: 12,
+    marginBottom: 28,
+    backgroundColor: colors.surface,
+    borderRadius: 26,
+    padding: 20,
+    paddingTop: 24,
+    gap: 12,
+    alignItems: 'center',
+  },
+  sheetIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: colors.badSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  sheetIconText: { fontSize: 18, fontWeight: '800', color: colors.bad },
+  sheetTitle: { fontSize: 21, fontWeight: '800', color: colors.ink, textAlign: 'center', letterSpacing: -0.3 },
+  sheetCopy: { fontSize: 14, lineHeight: 20, color: colors.ink2, textAlign: 'center', paddingHorizontal: 12, marginBottom: 4 },
+  sheetDanger: { alignSelf: 'stretch', backgroundColor: colors.bad, borderRadius: 14, paddingVertical: 15, alignItems: 'center' },
+  sheetDangerText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
+  sheetSecondary: {
+    alignSelf: 'stretch',
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: 'center',
+  },
+  sheetSecondaryText: { fontSize: 16, fontWeight: '700', color: colors.ink },
+  toast: {
+    position: 'absolute',
+    bottom: 12,
+    alignSelf: 'center',
+    backgroundColor: colors.ink,
+    borderRadius: 999,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  toastText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
 });

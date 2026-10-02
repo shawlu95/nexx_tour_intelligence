@@ -32,6 +32,12 @@ export function setAgentStatus(id: string, status: PreviewAgent['status']) {
   emit();
 }
 
+/** Cancels a pending invitation or removes an agent's access. */
+export function removeAgent(id: string) {
+  agents = agents.filter((a) => a.id !== id);
+  emit();
+}
+
 export function usePreviewAgents(): PreviewAgent[] {
   return useSyncExternalStore(
     (l) => {
@@ -46,4 +52,23 @@ export function usePreviewAgents(): PreviewAgent[] {
 export function initials(nameOrEmail: string): string {
   const words = nameOrEmail.split('@')[0].split(/[\s._-]+/).filter(Boolean);
   return (words.length >= 2 ? words[0][0] + words[1][0] : (words[0]?.[0] ?? '?')).toUpperCase();
+}
+
+// Deactivation preview (Profile → Deactivate account). Also UI only: nothing
+// changes on the server; it pauses the Sharing tab until the app restarts.
+let paused = false;
+
+export function setWorkspacePaused(value: boolean) {
+  paused = value;
+  emit();
+}
+
+export function useWorkspacePaused(): boolean {
+  return useSyncExternalStore(
+    (l) => {
+      listeners.add(l);
+      return () => listeners.delete(l);
+    },
+    () => paused,
+  );
 }

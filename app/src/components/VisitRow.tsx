@@ -82,6 +82,6 @@ const s = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   title: { flex: 1, fontSize: 16, fontWeight: '700', color: colors.ink },
   meta: { fontSize: 13, color: colors.ink3 },
-  score: { fontSize: 17, fontWeight: '800', color: colors.accent, fontVariant: ['tabular-nums'] },
+  score: { fontSize: 14, fontWeight: '700', color: colors.accent, fontVariant: ['tabular-nums'] },
   summary: { fontSize: 14, lineHeight: 20, color: colors.ink2, marginTop: 4 },
 });

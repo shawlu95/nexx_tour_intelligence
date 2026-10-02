@@ -1,4 +1,3 @@
-import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { File } from 'expo-file-system';
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -7,7 +6,7 @@ import { HomeHero } from '../../components/HomeHero';
 import { NoteSections } from '../../components/NoteSections';
 import { Banner, Body, Button, Card, colors, Eyebrow, Loading, Screen, Title } from '../../components/ui';
 import { displayAddress } from '../../lib/address';
-import { deleteVisit, fetchVisit, retryVisit, signedAudioUrl, updatePersonalNote, type VisitDetail } from '../../lib/api';
+import { deleteVisit, fetchVisit, retryVisit, updatePersonalNote, type VisitDetail } from '../../lib/api';
 import { formatClock, formatWhen } from '../../lib/format';
 import { getPending, removePending, type PendingVisit } from '../../lib/localdb';
 import { onQueueChange, runQueue } from '../../lib/sync';
@@ -171,9 +170,8 @@ function ReadyNote({
   onError: (m: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
-  const [showTranscript, setShowTranscript] = useState(false);
   const [personal, setPersonal] = useState(detail.note?.personal_note ?? '');
-  const [confirm, setConfirm] = useState<'regenerate' | 'delete' | null>(null);
+  const [confirm, setConfirm] = useState<'delete' | null>(null);
   const [busy, setBusy] = useState(false);
   const note = detail.note;
 
@@ -224,58 +222,31 @@ function ReadyNote({
         <Button title="Done editing" onPress={() => setEditing(false)} />
       ) : (
         <>
-          <Button title="Share with your agent" onPress={() => router.push(`/share/${detail.visit.id}`)} />
-          <View style={s.chips}>
-            <Button kind="secondary" title="Edit" onPress={() => setEditing(true)} style={s.chip} />
-            <Playback audioPath={detail.visit.audio_path} localUri={pending?.file_uri ?? null} onError={onError} />
-            <Button
-              kind="secondary"
-              title={showTranscript ? 'Hide' : 'Transcript'}
-              accessibilityLabel={showTranscript ? 'Hide transcript' : 'Show transcript'}
-              onPress={() => setShowTranscript((v) => !v)}
-              style={s.chip}
-            />
-          </View>
-          {showTranscript ? (
-            <View style={s.transcript}>
-              <Body>{detail.transcript?.trim() ? `“${detail.transcript}”` : 'No speech was picked up.'}</Body>
-            </View>
-          ) : null}
-
           {confirm === null ? (
-            <View style={s.quiet}>
-              <Button kind="ghost" title="Rewrite note" onPress={() => setConfirm('regenerate')} />
-              <Button kind="ghost" title="Delete visit" onPress={() => setConfirm('delete')} />
+            <View style={s.chips}>
+              <Button kind="secondary" title="Edit note" onPress={() => setEditing(true)} style={s.chip} />
+              <Button kind="ghost" title="Delete note" onPress={() => setConfirm('delete')} style={s.chip} />
             </View>
           ) : (
             <Card>
-              <Text style={s.cardTitle}>{confirm === 'regenerate' ? 'Rewrite this note?' : 'Delete this visit?'}</Text>
-              <Body>
-                {confirm === 'regenerate'
-                  ? 'NORA writes the note again from your recording. Points you added, edited or deleted stay as they are.'
-                  : 'The recording, transcript and note are deleted for good. Share links stop working.'}
-              </Body>
+              <Text style={s.cardTitle}>Delete this note?</Text>
+              <Body>The recording, transcript and note are deleted for good. Share links stop working.</Body>
               <View style={s.actions}>
                 <Button kind="secondary" title="Cancel" onPress={() => setConfirm(null)} />
                 <Button
-                  kind={confirm === 'delete' ? 'danger' : 'primary'}
-                  title={confirm === 'regenerate' ? 'Rewrite' : 'Delete'}
+                  kind="danger"
+                  title="Delete"
                   loading={busy}
                   onPress={async () => {
                     setBusy(true);
                     try {
-                      if (confirm === 'regenerate') {
-                        await retryVisit(detail.visit.id, true);
-                        onChanged({ ...detail, visit: { ...detail.visit, status: 'processing' } });
-                      } else {
-                        await deleteVisit(detail.visit);
-                        if (pending) {
-                          const f = new File(pending.file_uri);
-                          if (f.exists) f.delete();
-                          await removePending(pending.id);
-                        }
-                        router.dismissTo('/tour');
+                      await deleteVisit(detail.visit);
+                      if (pending) {
+                        const f = new File(pending.file_uri);
+                        if (f.exists) f.delete();
+                        await removePending(pending.id);
                       }
+                      router.dismissTo('/tour');
                     } catch (e) {
                       onError(e instanceof Error ? e.message : 'That did not work. Try again.');
                     }
@@ -289,53 +260,6 @@ function ReadyNote({
         </>
       )}
     </View>
-  );
-}
-
-function Playback({ audioPath, localUri, onError }: { audioPath: string | null; localUri: string | null; onError: (m: string) => void }) {
-  const player = useAudioPlayer(null);
-  const status = useAudioPlayerStatus(player);
-  const [loading, setLoading] = useState(false);
-  const [sourceSet, setSourceSet] = useState(false);
-
-  async function toggle() {
-    if (status.playing) {
-      player.pause();
-      return;
-    }
-    if (!sourceSet) {
-      setLoading(true);
-      try {
-        await setAudioModeAsync({ playsInSilentMode: true, allowsRecording: false });
-        const local = localUri ? new File(localUri) : null;
-        const uri = local?.exists ? local.uri : audioPath ? await signedAudioUrl(audioPath) : null;
-        if (!uri) throw new Error('The recording is not available.');
-        player.replace({ uri });
-        setSourceSet(true);
-      } catch (e) {
-        onError(e instanceof Error ? e.message : 'Could not load the recording.');
-        setLoading(false);
-        return;
-      }
-      setLoading(false);
-    }
-    if (status.didJustFinish || (status.duration > 0 && status.currentTime >= status.duration - 0.2)) {
-      await player.seekTo(0);
-    }
-    player.play();
-  }
-
-  if (!audioPath && !localUri) return null;
-  const label = status.playing ? `Pause ${formatClock(status.currentTime)}` : 'Play';
-  return (
-    <Button
-      kind="secondary"
-      title={label}
-      accessibilityLabel={status.playing ? 'Pause recording' : 'Play your recording'}
-      loading={loading}
-      onPress={toggle}
-      style={{ flex: 1 }}
-    />
   );
 }
 
@@ -354,7 +278,6 @@ const s = StyleSheet.create({
   overall: { fontSize: 18, lineHeight: 27, color: colors.ink },
   chips: { flexDirection: 'row', gap: 10 },
   chip: { flex: 1 },
-  transcript: { backgroundColor: colors.sunk, borderRadius: 16, padding: 16 },
   personal: { gap: 8 },
   personalInput: {
     minHeight: 90,
@@ -368,7 +291,6 @@ const s = StyleSheet.create({
     textAlignVertical: 'top',
   },
   actions: { gap: 10 },
-  quiet: { flexDirection: 'row', justifyContent: 'space-between' },
   progress: { alignItems: 'center', gap: 10, paddingVertical: 24 },
   cardTitle: { fontSize: 17, fontWeight: '700', color: colors.ink },
   retry: { fontSize: 13, color: colors.ink3, textAlign: 'center' },

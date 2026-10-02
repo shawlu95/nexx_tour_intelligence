@@ -25,7 +25,7 @@ import {
   shortLabel,
   type RankingMessage,
 } from './rankingLogic';
-import { cueIndex, factTiles, formatClock, formatFacts, startOfWeek, formatHomeLine, formatMoney, formatPrice, formatWhen } from './format';
+import { cueIndex, dayHeading, factTiles, formatClock, formatFacts, groupByDay, startOfWeek, timeOfDay, traitsLine, formatHomeLine, formatMoney, formatPrice, formatWhen } from './format';
 
 describe('normalizedKey', () => {
   it('treats spelling variants of the same address as equal', () => {
@@ -292,5 +292,47 @@ describe('confirm screen wording', () => {
     expect(cityState('Castro Valley', 'California')).toBe('Castro Valley, California');
     expect(cityState('Sunnyvale', '')).toBe('Sunnyvale');
     expect(cityState(null, 'ca')).toBe('California');
+  });
+});
+
+describe('history helpers', () => {
+  const now = new Date(2026, 9, 1, 18, 0);
+
+  it('titles sections like the mockup', () => {
+    expect(dayHeading(new Date(2026, 9, 1, 16, 42).toISOString(), now)).toBe('TODAY');
+    expect(dayHeading(new Date(2026, 8, 30, 9).toISOString(), now)).toBe('YESTERDAY');
+    expect(dayHeading(new Date(2026, 8, 21, 11).toISOString(), now)).toBe('SEPTEMBER 21');
+    expect(dayHeading(new Date(2025, 11, 2, 11).toISOString(), now)).toBe('DECEMBER 2, 2025');
+  });
+
+  it('formats the time of a visit', () => {
+    expect(timeOfDay(new Date(2026, 9, 1, 16, 42).toISOString())).toBe('4:42 PM');
+  });
+
+  it('groups consecutive visits by day', () => {
+    const visits = [
+      new Date(2026, 9, 1, 16).toISOString(),
+      new Date(2026, 8, 21, 11).toISOString(),
+      new Date(2026, 8, 21, 10).toISOString(),
+      new Date(2026, 8, 14, 14).toISOString(),
+    ];
+    expect(groupByDay(visits, (v) => v, now).map((sec) => [sec.title, sec.items.length])).toEqual([
+      ['TODAY', 1],
+      ['SEPTEMBER 21', 2],
+      ['SEPTEMBER 14', 1],
+    ]);
+  });
+
+  it('picks a liked point and a concern as traits', () => {
+    expect(
+      traitsLine([
+        { kind: 'question', text: 'HOA fees?', sort: 0 },
+        { kind: 'liked', text: 'Open layout', sort: 1 },
+        { kind: 'liked', text: 'Big kitchen', sort: 2 },
+        { kind: 'concern', text: 'Small backyard', sort: 3 },
+      ]),
+    ).toBe('Open layout · Small backyard');
+    expect(traitsLine([{ kind: 'liked', text: 'Walkable' }, { kind: 'liked', text: 'Quiet' }])).toBe('Walkable · Quiet');
+    expect(traitsLine([{ kind: 'liked', text: 'Gone', deleted: true }])).toBe('');
   });
 });

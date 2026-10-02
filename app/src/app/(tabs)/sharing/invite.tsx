@@ -5,18 +5,21 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Button, colors, Field, Screen, TabHeader } from '../../../components/ui';
-import { inviteAgent } from '../../../lib/sharingPreview';
+import { inviteAgent, useWorkspacePaused } from '../../../lib/sharingPreview';
 
 export default function InviteAgent() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [agreement, setAgreement] = useState(false);
+  const paused = useWorkspacePaused();
   const [showAgreementError, setShowAgreementError] = useState(false);
 
   const validEmail = /^\S+@\S+\.\S+$/.test(email.trim());
   const ready = name.trim().length > 0 && validEmail;
 
   function send() {
+    // A deactivated account can't invite agents.
+    if (paused) return router.back();
     if (!agreement) {
       setShowAgreementError(true);
       return;

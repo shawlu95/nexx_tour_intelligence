@@ -111,3 +111,50 @@ export function startOfWeek(now: Date = new Date()): Date {
   d.setDate(d.getDate() - daysSinceMonday);
   return d;
 }
+
+/** History section title: "TODAY", "YESTERDAY", "SEPTEMBER 21" (with the year if not this year). */
+export function dayHeading(iso: string, now: Date = new Date()): string {
+  const d = new Date(iso);
+  const startOfDay = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const days = Math.round((startOfDay(now) - startOfDay(d)) / 86_400_000);
+  if (days === 0) return 'TODAY';
+  if (days === 1) return 'YESTERDAY';
+  const opts: Intl.DateTimeFormatOptions = { month: 'long', day: 'numeric' };
+  if (d.getFullYear() !== now.getFullYear()) opts.year = 'numeric';
+  return d.toLocaleDateString('en-US', opts).toUpperCase();
+}
+
+/** "4:42 PM". */
+export function timeOfDay(iso: string): string {
+  return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+/** Items grouped into consecutive day sections, newest first (input must be newest first). */
+export function groupByDay<T>(items: T[], dateOf: (item: T) => string, now: Date = new Date()): { title: string; items: T[] }[] {
+  const sections: { title: string; items: T[] }[] = [];
+  for (const item of items) {
+    const title = dayHeading(dateOf(item), now);
+    const last = sections[sections.length - 1];
+    if (last && last.title === title) last.items.push(item);
+    else sections.push({ title, items: [item] });
+  }
+  return sections;
+}
+
+/**
+ * Two traits for a history row, like the mockup's "Open layout · Small backyard":
+ * the first thing liked and the first concern, topped up from other points.
+ */
+export function traitsLine(items: { kind: 'liked' | 'concern' | 'question'; text: string; deleted?: boolean; sort?: number }[]): string {
+  const live = items.filter((i) => !i.deleted).sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
+  const picks: string[] = [];
+  const liked = live.find((i) => i.kind === 'liked');
+  const concern = live.find((i) => i.kind === 'concern');
+  if (liked) picks.push(liked.text);
+  if (concern) picks.push(concern.text);
+  for (const i of live) {
+    if (picks.length >= 2) break;
+    if (!picks.includes(i.text)) picks.push(i.text);
+  }
+  return picks.slice(0, 2).join(' · ');
+}

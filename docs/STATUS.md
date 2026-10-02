@@ -26,7 +26,7 @@ Last updated: 2026-10-01. Update this file at the end of each work session: move
 
 16. **Drag to reorder (2026-10-01).** Ranking rows reorder with `react-native-reorderable-list` (`NestedReorderableList` inside `ScrollViewContainer`), on Reanimated 4 + react-native-worklets + Gesture Handler (`GestureHandlerRootView` wraps the app in `_layout.tsx`). Drag starts immediately from the ≡ grip or with a long press on the row. A first hand-rolled PanResponder version looked wrong and was replaced. The order is saved in `ranking_overrides` (migration `20261002040000`, owner-only RLS), applied over NORA's ranking (`applyOverride`), shown as "Your order" with a "Revert to NORA's ranking" link, and given to NORA as a strong preference; a successful re-rank or Start over clears it. Native rebuild done; clean app load verified on the iPhone.
 
-17. **Sharing tab and Profile recreated from the mockup (2026-10-01).** Tabs are now Tour · Ranking · History · Sharing · Profile. Sharing (`app/src/app/(tabs)/sharing/`: index, invite, sent, with its own stack so the tab bar stays visible) and Profile follow the mockup's layout and copy. **Sharing is UI only**: invitations live in memory (`app/src/lib/sharingPreview.ts`) and are never sent or saved; "Preview accepted status" just flips the pill. On Profile, Deactivate/Reactivate is UI only; Sign out and Delete account work (Delete is kept as a quiet link because the App Store requires it). The confirmation names the agent, fixing the mockup's "Francis will receive…" bug. Also fixed: the "VirtualizedLists should never be nested…" warning on Ranking (`scrollEnabled={false}` on `NestedReorderableList`).
+17. **Sharing tab and Profile recreated from the mockup (2026-10-01).** Tabs are now Tour · Ranking · History · Sharing · Profile. Sharing (`app/src/app/(tabs)/sharing/`: index, invite, sent, with its own stack so the tab bar stays visible) and Profile follow the mockup's layout and copy. **Sharing is UI only**: invitations live in memory (`app/src/lib/sharingPreview.ts`) and are never sent or saved; "Preview accepted status" just flips the pill. On Profile, Deactivate/Reactivate is UI only; Sign out and Delete account work. Delete account is a quiet link (the App Store requires it) that opens a warning sheet before anything is deleted. The confirmation names the agent, fixing the mockup's "Francis will receive…" bug. Also fixed: the "VirtualizedLists should never be nested…" warning on Ranking (`scrollEnabled={false}` on `NestedReorderableList`).
 
 ## Done and verified
 
@@ -73,7 +73,7 @@ These are written and type-checked but have not been exercised end to end. Expec
 ## Built as UI only (not functional yet)
 
 - **Sharing tab** (invite an agent, invitation sent, who has access): no invitations are sent or stored. The real version needs an `agent_invitations` table, an invite email through Resend, an agent sign-in, and read access for agents to the buyer's notes (README §1, "Agent workspace").
-- **Deactivate account** on Profile: switches the screen to a paused state only.
+- **Deactivate account** on Profile: the mockup's confirmation sheet, then a paused state held in memory (`setWorkspacePaused` in `lib/sharingPreview.ts`). The header pill reads "Paused", and the Sharing tab shows the paused copy, disables inviting ("Reactivate to invite") and marks access as paused. Nothing changes on the server, and it resets when the app restarts.
 
 ## Deliberately left out of the MVP
 

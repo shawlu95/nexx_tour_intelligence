@@ -3,16 +3,17 @@
 import { SymbolView } from 'expo-symbols';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Avatar } from '../../../components/Avatar';
-import { Button, colors, Screen, StatusPill, TabHeader } from '../../../components/ui';
+import { Banner, Button, colors, Screen, StatusPill, TabHeader } from '../../../components/ui';
 import { displayNameOf, useAuth } from '../../../lib/auth';
-import { AGENT_LIMIT, usePreviewAgents } from '../../../lib/sharingPreview';
+import { AGENT_LIMIT, removeAgent, usePreviewAgents, useWorkspacePaused } from '../../../lib/sharingPreview';
 import { supabase } from '../../../lib/supabase';
 
 export default function Sharing() {
   const { session } = useAuth();
   const agents = usePreviewAgents();
+  const paused = useWorkspacePaused();
   const [notes, setNotes] = useState<number | null>(null);
 
   useFocusEffect(
@@ -41,7 +42,9 @@ export default function Sharing() {
           Your home search belongs to you.
         </Text>
         <Text style={s.body}>
-          {agents.some((a) => a.status === 'active')
+          {paused
+            ? 'Your workspace and every agent connection are paused.'
+            : agents.some((a) => a.status === 'active')
             ? 'You and the agents you invited can see your tour notes and rankings.'
             : `Only you can see your ${notes === null ? '' : `${notes} `}tour ${notes === 1 ? 'note' : 'notes'} and rankings right now.`}
         </Text>
@@ -57,18 +60,40 @@ export default function Sharing() {
             ? `You can invite ${left} more ${left === 1 ? 'agent' : 'agents'}. Pending invitations count toward the two-agent limit.`
             : "You've invited two agents, the most allowed. Pending invitations count toward the limit."}
         </Text>
-        <Button title="Invite an agent" onPress={() => router.push('/sharing/invite')} disabled={left === 0} style={s.cardButton} />
+        <Button
+          title={paused ? 'Reactivate to invite' : 'Invite an agent'}
+          onPress={() => router.push('/sharing/invite')}
+          disabled={paused || left === 0}
+          style={s.cardButton}
+        />
       </View>
 
       <View style={s.access}>
         <Text style={s.accessTitle}>Who has access</Text>
-        <AccessRow name={name} detail="Owner · full control" pill={<StatusPill label="Active" tone="good" />} />
+        {paused ? <Banner tone="error">Workspace paused. All agent access is disabled until the owner reactivates.</Banner> : null}
+        <AccessRow
+          name={name}
+          detail={paused ? 'Owner · workspace paused' : 'Owner · full control'}
+          pill={paused ? <StatusPill label="Deactivated" tone="neutral" /> : <StatusPill label="Active" tone="good" />}
+        />
         {agents.map((a) => (
           <AccessRow
             key={a.id}
             name={a.name || a.email}
-            detail={a.status === 'active' ? 'Agent · can view and add notes' : 'Invitation sent'}
-            pill={a.status === 'active' ? <StatusPill label="Active" tone="good" /> : <StatusPill label="Invitation pending" tone="warn" />}
+            detail={paused ? 'Access paused' : a.status === 'active' ? 'Agent · can view and add notes' : 'Invitation sent'}
+            pill={
+              paused ? (
+                <StatusPill label="Paused" tone="neutral" />
+              ) : a.status === 'active' ? (
+                <StatusPill label="Active" tone="good" />
+              ) : (
+                <StatusPill label="Invitation pending" tone="warn" />
+              )
+            }
+            action={{
+              label: a.status === 'active' ? 'Remove access' : 'Cancel invitation',
+              onPress: () => removeAgent(a.id),
+            }}
           />
         ))}
       </View>
@@ -76,17 +101,39 @@ export default function Sharing() {
   );
 }
 
-function AccessRow({ name, detail, pill }: { name: string; detail: string; pill: React.ReactNode }) {
+function AccessRow({
+  name,
+  detail,
+  pill,
+  action,
+}: {
+  name: string;
+  detail: string;
+  pill: React.ReactNode;
+  action?: { label: string; onPress: () => void };
+}) {
   return (
-    <View style={s.row}>
-      <Avatar name={name} size={40} />
-      <View style={s.flex}>
-        <Text style={s.rowName} numberOfLines={1}>
-          {name}
-        </Text>
-        <Text style={s.rowDetail}>{detail}</Text>
+    <View style={s.rowCard}>
+      <View style={s.rowTop}>
+        <Avatar name={name} size={40} />
+        <View style={s.flex}>
+          <Text style={s.rowName} numberOfLines={1}>
+            {name}
+          </Text>
+          <Text style={s.rowDetail}>{detail}</Text>
+        </View>
+        {pill}
       </View>
-      {pill}
+      {action ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${action.label}, ${name}`}
+          onPress={action.onPress}
+          style={({ pressed }) => [s.rowAction, pressed && { opacity: 0.7 }]}
+        >
+          <Text style={s.rowActionText}>{action.label}</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -130,9 +177,7 @@ const s = StyleSheet.create({
   cardButton: { alignSelf: 'stretch', marginTop: 8 },
   access: { gap: 10 },
   accessTitle: { fontSize: 16, fontWeight: '700', color: colors.ink },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  rowCard: {
     gap: 12,
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -140,6 +185,15 @@ const s = StyleSheet.create({
     borderRadius: 16,
     padding: 12,
   },
+  rowTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  rowAction: {
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: 12,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  rowActionText: { fontSize: 14, fontWeight: '700', color: colors.bad },
   rowName: { fontSize: 15, fontWeight: '700', color: colors.ink },
   rowDetail: { fontSize: 13, color: colors.ink3, marginTop: 1 },
 });

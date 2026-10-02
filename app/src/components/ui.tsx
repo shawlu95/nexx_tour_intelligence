@@ -15,6 +15,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
+import { useWorkspacePaused } from '../lib/sharingPreview';
 
 export const colors = {
   bg: '#F4F6F9',
@@ -202,11 +203,12 @@ export function StatusPill({ label, tone }: { label: string; tone: 'good' | 'war
 
 /** Top of a tab screen: the NORA wordmark and the "Private" badge, as in the mockup. */
 export function TabHeader({ title }: { title?: string }) {
+  const paused = useWorkspacePaused();
   return (
     <View style={styles.tabHeader}>
       <View style={styles.tabHeaderRow}>
         <Text style={styles.wordmark}>NORA</Text>
-        <StatusPill label="Private" tone="good" />
+        <StatusPill label={paused ? 'Paused' : 'Private'} tone="good" />
       </View>
       {title ? <Title>{title}</Title> : null}
     </View>
