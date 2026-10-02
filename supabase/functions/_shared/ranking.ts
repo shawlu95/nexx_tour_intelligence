@@ -5,6 +5,8 @@
 // - chat: a conversational reply in the Discuss screen that refines the priorities
 //   (no re-ranking until the buyer asks for it).
 
+import { plainText } from './text.ts';
+
 export type Fit = 'strong' | 'good' | 'weak';
 export type Importance = 'must' | 'high' | 'medium' | 'low';
 
@@ -161,7 +163,7 @@ const IMPORTANCE: readonly Importance[] = ['must', 'high', 'medium', 'low'];
 
 function shortText(s: unknown, maxChars: number): string {
   if (typeof s !== 'string') return '';
-  const t = s.trim().replace(/\s+/g, ' ').replace(/[.。]+$/, '');
+  const t = plainText(s).trim().replace(/\s+/g, ' ').replace(/[.。]+$/, '');
   return t.length > maxChars ? `${t.slice(0, maxChars - 1).trimEnd()}…` : t;
 }
 
@@ -228,14 +230,14 @@ export function normalizePriorities(raw: Priority[]): Priority[] {
   const seen = new Set<string>();
   const out: Priority[] = [];
   for (const p of raw ?? []) {
-    const label = (p.label ?? '').trim();
+    const label = plainText(p.label ?? '').trim();
     const key = label.toLowerCase();
     if (!label || seen.has(key)) continue;
     seen.add(key);
     out.push({
       label,
       importance: IMPORTANCE.includes(p.importance) ? p.importance : 'medium',
-      evidence: (p.evidence ?? '').trim(),
+      evidence: plainText(p.evidence ?? '').trim(),
     });
   }
   const order: Record<Importance, number> = { must: 0, high: 1, medium: 2, low: 3 };
@@ -249,7 +251,7 @@ export function normalizeSuggestions(raw: unknown): string[] {
   const out: string[] = [];
   for (const r of raw) {
     if (typeof r !== 'string') continue;
-    const text = r.trim().replace(/\s+/g, ' ');
+    const text = plainText(r).trim().replace(/\s+/g, ' ');
     const key = text.toLowerCase();
     if (!text || text.length > 80 || seen.has(key)) continue;
     seen.add(key);

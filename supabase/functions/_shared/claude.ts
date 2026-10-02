@@ -22,7 +22,8 @@ Rules:
 - quote is a verbatim excerpt (4 to 20 words) copied exactly from the transcript, showing where the point came from.
 - One point per item. Merge repeats of the same point. Keep the order in which they were said.
 - Skip filler and false starts.
-- If the buyer said nothing about the home, say so in overall and return an empty items list.`;
+- If the buyer said nothing about the home, say so in overall and return an empty items list.
+- Write plain characters (an em dash —, curly quotes), never escape sequences such as \\u2014 or \\n.`;
 
 export async function writeNote(params: { transcript: string; address: string }): Promise<{ note: ModelNote; model: string }> {
   const client = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY') });
@@ -75,7 +76,8 @@ Always:
 - Ground everything in the buyer's own notes or the listed facts. Never invent features, prices, commute times, schools, or neighborhood facts. If something important is unknown, say so and suggest asking their agent.
 - Treat old or inactive listing prices as historical, not current asking prices.
 - A home with few notes can't be judged confidently; say so rather than guessing.
-- Keep a full, current list of the buyer's priorities: each with importance (must, high, medium, low) and evidence (a few words: what they said or noted). Infer likely priorities from the notes at first; update them as the buyer tells you more; drop ones the buyer says don't matter. If the buyer insists a home belongs at a certain position, record the preference behind it.`;
+- Keep a full, current list of the buyer's priorities: each with importance (must, high, medium, low) and evidence (a few words: what they said or noted). Infer likely priorities from the notes at first; update them as the buyer tells you more; drop ones the buyer says don't matter. If the buyer insists a home belongs at a certain position, record the preference behind it.
+- Write plain characters (an em dash —, curly quotes), never escape sequences such as \\u2014 or \\n.`;
 
 const RANK_MODE = `This is a Ranking turn. Output:
 - headline: one short sentence naming the best fit, under 10 words (e.g. "Laredo Rd is your best fit").

@@ -19,6 +19,7 @@ import {
   type StoredRankedHome,
 } from '../_shared/ranking.ts';
 import { adminClient, corsHeaders, json, userIdFrom } from '../_shared/runtime.ts';
+import { plainText } from '../_shared/text.ts';
 
 const MAX_MESSAGE_CHARS = 2000;
 const HISTORY_TURNS = 30;
@@ -161,7 +162,7 @@ Deno.serve(async (req) => {
       rows.push({
         user_id: userId,
         role: 'assistant',
-        content: result.output.headline.trim(),
+        content: plainText(result.output.headline).trim(),
         ranking: normalizeRanking(result.output.ranking, homes.map((h) => h.id)),
         based_on: homes.map((h) => h.id),
         model: result.model,
@@ -173,8 +174,8 @@ Deno.serve(async (req) => {
       rows.push({
         user_id: userId,
         role: 'assistant',
-        content: result.output.reply.trim(),
-        question: result.output.question.trim() || null,
+        content: plainText(result.output.reply).trim(),
+        question: plainText(result.output.question).trim() || null,
         suggestions: normalizeSuggestions(result.output.suggestions),
         based_on: homes.map((h) => h.id),
         model: result.model,
@@ -184,11 +185,15 @@ Deno.serve(async (req) => {
     console.error('rank-homes failed', userId, mode, e);
     return json({ error: "NORA couldn't answer just now. Try again in a moment." }, 502);
   }
-  const { data: saved, error: sError } = await db.from('ranking_messages').insert(rows).select('*');
+  const { data: saved, error: sError } = await db
+    .from('ranking_messages')
+    // Rows differ in their keys; missing ones take the column default, not NULL.
+    .insert(rows, { defaultToNull: false })
+    .select('*');
   if (sError) return json({ error: sError.message }, 500);
 
-  // A fresh ranking has taken the manual order into account, so it replaces it.
-  if (mode === 'rank' && manualOrder.length) {
+  // A re-rank shows NORA's own order, so the buyer's manual order is dismissed.
+  if (mode === 'rank') {
     const { error: oError } = await db.from('ranking_overrides').delete().eq('user_id', userId);
     if (oError) console.error('clearing manual order failed', userId, oError);
   }

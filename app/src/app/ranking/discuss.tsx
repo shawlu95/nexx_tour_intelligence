@@ -1,4 +1,4 @@
-import { router, useFocusEffect } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -12,11 +12,9 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Banner, Body, Button, colors, Eyebrow } from '../../components/ui';
+import { Banner, colors, Eyebrow } from '../../components/ui';
 import {
-  discussedSinceRanking,
   fetchRankingState,
-  resetRanking,
   sendRankingTurn,
   type Importance,
   type RankingMessage,
@@ -34,10 +32,11 @@ const IMPORTANCE: Record<Importance, { label: string; color: string }> = {
 
 export default function Discuss() {
   const [state, setState] = useState<RankingState | null>(null);
-  const [busy, setBusy] = useState<'chat' | 'rank' | null>(null);
+  const [busy, setBusy] = useState<'chat' | null>(null);
   const [error, setError] = useState('');
   const [draft, setDraft] = useState('');
-  const [confirmReset, setConfirmReset] = useState(false);
+  // The buyer's message, shown in the thread right away while NORA answers.
+  const [sending, setSending] = useState<string | null>(null);
   const scroll = useRef<ScrollView>(null);
 
   const load = useCallback(async () => {
@@ -54,38 +53,31 @@ export default function Discuss() {
     }, [load]),
   );
 
-  async function chat(text: string) {
+  /** Sends a message; `typed` is true for the composer, false for a tapped reply. */
+  async function chat(text: string, typed = false) {
     const message = text.trim();
     if (!message) return;
     setBusy('chat');
     setError('');
+    setSending(message);
+    setDraft('');
+    setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 50);
     try {
       const result = await sendRankingTurn('chat', message);
       setState((s) => (s ? { ...s, messages: [...s.messages, ...result.messages], priorities: result.priorities } : s));
-      setDraft('');
-      setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 150);
     } catch (e) {
       setError(e instanceof Error ? e.message : "NORA couldn't answer just now. Try again.");
+      // Put typed text back so it isn't lost (a tapped reply can just be tapped again).
+      if (typed) setDraft((d) => d || message);
     }
+    setSending(null);
     setBusy(null);
-  }
-
-  async function updateRanking() {
-    setBusy('rank');
-    setError('');
-    try {
-      await sendRankingTurn('rank');
-      router.back(); // the Ranking tab reloads and shows the new order
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "NORA couldn't re-rank just now. Try again.");
-      setBusy(null);
-    }
+    setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 150);
   }
 
   const messages = state?.messages ?? [];
   const chatTurns = messages.filter((m) => !(m.role === 'assistant' && m.ranking?.length));
   const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant' && !m.ranking?.length);
-  const canUpdate = discussedSinceRanking(messages);
   const offline = state?.offline ?? false;
 
   return (
@@ -116,10 +108,10 @@ export default function Discuss() {
           <View style={s.thread}>
             <View style={[s.bubble, s.bubbleNora]}>
               <Text style={s.bubbleText}>
-                Tell me what matters to you, or ask why a home ranks where it does. When you&apos;re done, tap Update ranking.
+                Tell me what matters to you, or ask why a home ranks where it does.
               </Text>
             </View>
-            {chatTurns.length === 0 && state ? (
+            {chatTurns.length === 0 && state && !sending ? (
               <View style={s.replies}>
                 {STARTERS.map((t) => (
                   <Reply key={t} text={t} onPress={() => chat(t)} disabled={!!busy || offline} />
@@ -141,6 +133,11 @@ export default function Discuss() {
               ),
             )}
 
+            {sending ? (
+              <View style={[s.bubble, s.bubbleMine]}>
+                <Text style={[s.bubbleText, { color: '#FFFFFF' }]}>{sending}</Text>
+              </View>
+            ) : null}
             {busy === 'chat' ? (
               <View style={[s.bubble, s.bubbleNora, s.typing]}>
                 <ActivityIndicator size="small" color={colors.ink3} />
@@ -151,44 +148,9 @@ export default function Discuss() {
 
           {error ? <Banner tone="error">{error}</Banner> : null}
 
-          <View style={s.footer}>
-            {confirmReset ? (
-              <View style={s.confirm}>
-                <Body>Start over? NORA forgets this conversation and what it learned about you, then ranks your homes fresh.</Body>
-                <View style={s.row}>
-                  <Button kind="secondary" title="Cancel" onPress={() => setConfirmReset(false)} style={s.flex} />
-                  <Button
-                    kind="danger"
-                    title="Start over"
-                    style={s.flex}
-                    onPress={async () => {
-                      setConfirmReset(false);
-                      try {
-                        await resetRanking();
-                        router.back(); // the Ranking tab ranks again from scratch
-                      } catch {
-                        setError("Couldn't start over. Check your connection.");
-                      }
-                    }}
-                  />
-                </View>
-              </View>
-            ) : (
-              <Button kind="ghost" title="Start over" onPress={() => setConfirmReset(true)} />
-            )}
-          </View>
         </ScrollView>
 
         <View style={s.bottom}>
-          {canUpdate ? (
-            <Button
-              title="Update ranking"
-              onPress={updateRanking}
-              loading={busy === 'rank'}
-              disabled={!!busy || offline}
-              accessibilityLabel="Update the ranking with what we discussed"
-            />
-          ) : null}
           <View style={s.composer}>
             <TextInput
               accessibilityLabel="Message to NORA"
@@ -205,7 +167,7 @@ export default function Discuss() {
               accessibilityRole="button"
               accessibilityLabel="Send"
               disabled={!draft.trim() || !!busy || offline}
-              onPress={() => chat(draft)}
+              onPress={() => chat(draft, true)}
               style={[s.send, (!draft.trim() || !!busy || offline) && { opacity: 0.4 }]}
             >
               <Text style={s.sendText}>Send</Text>
@@ -306,9 +268,6 @@ const s = StyleSheet.create({
   marker: { alignSelf: 'center', fontSize: 12, color: colors.ink3, textAlign: 'center', paddingHorizontal: 20 },
   typing: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   typingText: { fontSize: 14, color: colors.ink3 },
-  footer: { alignItems: 'center' },
-  confirm: { gap: 10, alignSelf: 'stretch' },
-  row: { flexDirection: 'row', gap: 10 },
   bottom: {
     gap: 10,
     paddingHorizontal: 16,

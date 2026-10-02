@@ -38,7 +38,8 @@ export default function Ranking() {
     setError('');
     try {
       const result = await sendRankingTurn('rank');
-      setState((s) => (s ? { ...s, messages: [...s.messages, ...result.messages], priorities: result.priorities } : s));
+      // A re-rank shows NORA's new order; the buyer's own drag order is dismissed (the server clears it too).
+      setState((s) => (s ? { ...s, messages: [...s.messages, ...result.messages], priorities: result.priorities, override: null } : s));
       setOpen(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "NORA couldn't rank your homes just now. Try again.");
@@ -225,7 +226,9 @@ function RankRow({
   expanded: boolean;
   onToggle: () => void;
 }) {
-  // Starts a drag of this row: right away from the grip, or with a long press anywhere.
+  // Starts a drag of this row: a short hold on the number, or a long press anywhere.
+  // Not on touch-down: a swipe that starts on the number must still scroll the page, and
+  // a quick tap could leave the library's page-scroll lock on (it unlocks on finger-up).
   const drag = useReorderableDrag();
   const label = shortLabel(item);
   const pros = item.pros ?? [];
@@ -246,7 +249,8 @@ function RankRow({
       >
         {/* The number is the drag handle ("Drag its number to change the order"). */}
         <Pressable
-          onPressIn={drag}
+          onLongPress={drag}
+          delayLongPress={150}
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel={`Drag to move ${address}`}

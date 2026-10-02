@@ -23,6 +23,7 @@ import {
   setStatus,
   userIdFrom,
 } from '../_shared/runtime.ts';
+import { plainText } from '../_shared/text.ts';
 import { cleanUtterances, fullText } from '../_shared/transcript.ts';
 
 const STALE_MS = 5 * 60 * 1000;
@@ -102,7 +103,7 @@ Deno.serve(async (req) => {
           const result = await writeNote({ transcript, address });
           const checked = checkItems(result.note.items, transcript);
           if (checked.dropped.length > 0) console.warn(`dropped ${checked.dropped.length} unsupported items`, visitId);
-          overall = result.note.overall.trim() || NO_SPEECH;
+          overall = plainText(result.note.overall).trim() || NO_SPEECH;
           model = result.model;
           items = checked.kept;
         }

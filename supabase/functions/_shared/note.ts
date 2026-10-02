@@ -1,6 +1,8 @@
 // Pure note helpers: the model's output schema, faithfulness checks, and how a
 // regenerated note merges with the buyer's edits. No runtime imports.
 
+import { plainText } from './text.ts';
+
 export const PROMPT_VERSION = '2026-10-01';
 
 export type ItemKind = 'liked' | 'concern' | 'question';
@@ -85,8 +87,8 @@ export function checkItems(items: NoteItem[], transcript: string): { kept: NoteI
   const kept: NoteItem[] = [];
   const dropped: NoteItem[] = [];
   for (const item of items) {
-    const text = item.text?.trim() ?? '';
-    const quote = item.quote?.trim() ?? '';
+    const text = plainText(item.text ?? '').trim();
+    const quote = plainText(item.quote ?? '').trim();
     if (!KINDS.includes(item.kind) || !text || !quote || quoteSupport(quote, transcript) < MIN_SUPPORT) {
       dropped.push(item);
       continue;
