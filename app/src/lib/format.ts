@@ -103,3 +103,11 @@ export function factTiles(f: HomeFacts): FactTile[] {
   }
   return tiles;
 }
+
+/** Local midnight on the Monday of `now`'s week ("this week" on the Tour page). */
+export function startOfWeek(now: Date = new Date()): Date {
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const daysSinceMonday = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - daysSinceMonday);
+  return d;
+}

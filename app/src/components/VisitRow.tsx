@@ -27,6 +27,7 @@ export function VisitRow({
   state,
   summary,
   showAddress = true,
+  score,
   onPress,
 }: {
   address: PropertyCard | string;
@@ -34,6 +35,8 @@ export function VisitRow({
   state: RowState;
   summary?: string | null;
   showAddress?: boolean;
+  /** NORA's 0–10 score for the home, shown on the right as in the mockup (e.g. 9.1). */
+  score?: number | null;
   onPress: () => void;
 }) {
   const pill = STATE_LABEL[state];
@@ -49,7 +52,13 @@ export function VisitRow({
             <Text style={s.title} numberOfLines={1}>
               {showAddress ? title : formatWhen(recordedAt)}
             </Text>
-            {pill ? <StatusPill label={pill.label} tone={pill.tone} /> : null}
+            {pill ? (
+              <StatusPill label={pill.label} tone={pill.tone} />
+            ) : typeof score === 'number' ? (
+              <Text style={s.score} accessibilityLabel={`Score ${score.toFixed(1)} out of 10`}>
+                {score.toFixed(1)}
+              </Text>
+            ) : null}
           </View>
           {showAddress ? (
             <Text style={s.meta} numberOfLines={1}>
@@ -73,5 +82,6 @@ const s = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   title: { flex: 1, fontSize: 16, fontWeight: '700', color: colors.ink },
   meta: { fontSize: 13, color: colors.ink3 },
+  score: { fontSize: 17, fontWeight: '800', color: colors.accent, fontVariant: ['tabular-nums'] },
   summary: { fontSize: 14, lineHeight: 20, color: colors.ink2, marginTop: 4 },
 });

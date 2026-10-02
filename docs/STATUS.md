@@ -65,6 +65,11 @@ These are written and type-checked but have not been exercised end to end. Expec
 6. **Auth providers:** Google (OAuth client from Google Cloud) and Apple (client id `com.nexx.tour.intelligence`; needs the paid Apple Developer Program).
 7. **Note quality evaluation:** 30–50 sample reactions, scored for missed and invented points. Compare `claude-opus-5` with `claude-sonnet-5` (README §4).
 
+## Mockup screens (2026-10-01)
+
+- **Tour tab** follows the mockup: "YOUR HOME SEARCH / N homes toured" with the "this week" chip (`TourSearchHeader`, counts from `fetchTourSummary`), the dark "NEW HOME" card, and "Last recorded / See history"; visit rows show NORA's latest 0–10 score.
+- **Record a home flow lives in the Tour tab's own stack** (`app/src/app/(tabs)/tour/`): `index` → `locate` (pulsing "USING YOUR LOCATION" rings, then the confirm card with "Location found", "About N feet away", photo, ARE YOU HERE?, beds/baths/sq ft) → `record` (mockup recording screen: starts immediately, voice detection from metering, auto-stops at 1:30, Finish saves and opens the note). "Change location" opens `pick` (nearby list + type the address). No speech within 8 seconds, or Finish without any speech heard (judged from the recorder's metering, threshold -40 dB, only when the phone reports levels), discards the clip without uploading it and shows the mockup's "I'm not hearing anything." sheet (Try again / Cancel). The root `index` redirects to `/tour`; the old `record/*` routes are gone.
+
 ## Built as UI only (not functional yet)
 
 - **Sharing tab** (invite an agent, invitation sent, who has access): no invitations are sent or stored. The real version needs an `agent_invitations` table, an invite email through Resend, an agent sign-in, and read access for agents to the buyer's notes (README §1, "Agent workspace").

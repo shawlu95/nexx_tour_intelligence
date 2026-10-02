@@ -160,3 +160,29 @@ export function uniqueStreetAddresses(drafts: AddressDraft[]): AddressDraft[] {
     return true;
   });
 }
+
+/** "About 80 feet away" (nearest 10 ft) under a tenth of a mile, else "About 0.3 miles away". */
+export function aboutDistance(meters: number): string {
+  const feet = meters * 3.28084;
+  if (feet < 528) return `About ${Math.max(10, Math.round(feet / 10) * 10)} feet away`;
+  const miles = meters / 1609.344;
+  return `About ${miles.toFixed(1)} ${miles.toFixed(1) === '1.0' ? 'mile' : 'miles'} away`;
+}
+
+const US_STATES: Record<string, string> = {
+  AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California', CO: 'Colorado', CT: 'Connecticut',
+  DE: 'Delaware', DC: 'District of Columbia', FL: 'Florida', GA: 'Georgia', HI: 'Hawaii', ID: 'Idaho', IL: 'Illinois',
+  IN: 'Indiana', IA: 'Iowa', KS: 'Kansas', KY: 'Kentucky', LA: 'Louisiana', ME: 'Maine', MD: 'Maryland',
+  MA: 'Massachusetts', MI: 'Michigan', MN: 'Minnesota', MS: 'Mississippi', MO: 'Missouri', MT: 'Montana',
+  NE: 'Nebraska', NV: 'Nevada', NH: 'New Hampshire', NJ: 'New Jersey', NM: 'New Mexico', NY: 'New York',
+  NC: 'North Carolina', ND: 'North Dakota', OH: 'Ohio', OK: 'Oklahoma', OR: 'Oregon', PA: 'Pennsylvania',
+  RI: 'Rhode Island', SC: 'South Carolina', SD: 'South Dakota', TN: 'Tennessee', TX: 'Texas', UT: 'Utah',
+  VT: 'Vermont', VA: 'Virginia', WA: 'Washington', WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming',
+};
+
+/** "Sunnyvale, California" from a city and a state code or name. */
+export function cityState(city: string | null | undefined, region: string | null | undefined): string {
+  const r = (region ?? '').trim();
+  const state = US_STATES[r.toUpperCase()] ?? r;
+  return [city?.trim(), state].filter(Boolean).join(', ');
+}

@@ -20,7 +20,7 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="tour"
         options={{
           title: 'Tour',
           tabBarIcon: ({ color, size, focused }) => <TabIcon name={focused ? 'house.fill' : 'house'} color={color} size={size} />,

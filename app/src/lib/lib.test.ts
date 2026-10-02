@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  aboutDistance,
+  cityState,
   displayAddress,
   distanceMeters,
   draftFromGeocode,
@@ -23,7 +25,7 @@ import {
   shortLabel,
   type RankingMessage,
 } from './rankingLogic';
-import { cueIndex, factTiles, formatClock, formatFacts, formatHomeLine, formatMoney, formatPrice, formatWhen } from './format';
+import { cueIndex, factTiles, formatClock, formatFacts, startOfWeek, formatHomeLine, formatMoney, formatPrice, formatWhen } from './format';
 
 describe('normalizedKey', () => {
   it('treats spelling variants of the same address as equal', () => {
@@ -266,5 +268,29 @@ describe('manual ranking order', () => {
     expect(moveItem(['a', 'b', 'c', 'd'], 0, 2)).toEqual(['b', 'c', 'a', 'd']);
     expect(moveItem(['a', 'b', 'c', 'd'], 3, 0)).toEqual(['d', 'a', 'b', 'c']);
     expect(moveItem(['a', 'b', 'c'], 1, 9)).toEqual(['a', 'c', 'b']);
+  });
+});
+
+describe('startOfWeek', () => {
+  it('returns local midnight on Monday', () => {
+    expect(startOfWeek(new Date(2026, 9, 1, 15, 30))).toEqual(new Date(2026, 8, 28)); // Thu Oct 1 -> Mon Sep 28
+    expect(startOfWeek(new Date(2026, 8, 28, 9))).toEqual(new Date(2026, 8, 28)); // Monday itself
+    expect(startOfWeek(new Date(2026, 9, 4, 23))).toEqual(new Date(2026, 8, 28)); // Sunday belongs to the same week
+  });
+});
+
+describe('confirm screen wording', () => {
+  it('describes distance like the mockup', () => {
+    expect(aboutDistance(24.4)).toBe('About 80 feet away');
+    expect(aboutDistance(1)).toBe('About 10 feet away');
+    expect(aboutDistance(500)).toBe('About 0.3 miles away');
+    expect(aboutDistance(1609.344)).toBe('About 1.0 mile away');
+  });
+
+  it('spells out US states', () => {
+    expect(cityState('Sunnyvale', 'CA')).toBe('Sunnyvale, California');
+    expect(cityState('Castro Valley', 'California')).toBe('Castro Valley, California');
+    expect(cityState('Sunnyvale', '')).toBe('Sunnyvale');
+    expect(cityState(null, 'ca')).toBe('California');
   });
 });

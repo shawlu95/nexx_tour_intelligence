@@ -55,7 +55,7 @@ export default function VisitScreen() {
     return (
       <Screen>
         <Banner tone="error">{offline ? "You're offline and this note isn't saved on this phone yet." : 'This note no longer exists.'}</Banner>
-        <Button kind="secondary" title="Back to home" onPress={() => router.dismissTo('/')} />
+        <Button kind="secondary" title="Back to home" onPress={() => router.dismissTo('/tour')} />
       </Screen>
     );
   }
@@ -274,7 +274,7 @@ function ReadyNote({
                           if (f.exists) f.delete();
                           await removePending(pending.id);
                         }
-                        router.dismissTo('/');
+                        router.dismissTo('/tour');
                       }
                     } catch (e) {
                       onError(e instanceof Error ? e.message : 'That did not work. Try again.');

@@ -40,7 +40,7 @@ export default function PropertyScreen() {
 
       <Button
         title="Record another reaction"
-        onPress={() => router.push({ pathname: '/record/capture', params: { propertyId: property.id, label } })}
+        onPress={() => router.push({ pathname: '/tour/record', params: { propertyId: property.id, label } })}
       />
 
       <View style={s.list}>

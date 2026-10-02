@@ -218,3 +218,41 @@ export async function deleteProperty(propertyId: string) {
 export async function deleteAccount() {
   await callFunction('delete-account', {});
 }
+
+// --- Tour page summary -------------------------------------------------------
+
+export interface TourSummary {
+  /** Homes with at least one recorded visit. */
+  toured: number;
+  /** Homes visited since Monday. */
+  thisWeek: number;
+  /** NORA's latest score (0–10) for each home, by property id. */
+  scores: Record<string, number>;
+}
+
+export function fetchTourSummary(weekStart: Date): Promise<Cached<TourSummary>> {
+  return withCache('tour-summary', async () => {
+    const [toured, week, latest] = await Promise.all([
+      supabase.from('properties').select('id', { count: 'exact', head: true }).not('last_visited_at', 'is', null),
+      supabase
+        .from('properties')
+        .select('id', { count: 'exact', head: true })
+        .gte('last_visited_at', weekStart.toISOString()),
+      supabase
+        .from('ranking_messages')
+        .select('ranking')
+        .eq('role', 'assistant')
+        .not('ranking', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+    if (toured.error) throw toured.error;
+    if (week.error) throw week.error;
+    const scores: Record<string, number> = {};
+    for (const r of ((latest.data?.ranking ?? []) as { property_id: string; score?: number }[])) {
+      if (typeof r.score === 'number') scores[r.property_id] = r.score;
+    }
+    return { toured: toured.count ?? 0, thisWeek: week.count ?? 0, scores };
+  });
+}

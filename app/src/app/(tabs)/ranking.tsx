@@ -121,7 +121,7 @@ export default function Ranking() {
           <Eyebrow>Your ranking</Eyebrow>
           <Text style={s.headline}>Tour a couple of homes first</Text>
           <Body muted>Record your reaction to at least two homes, and NORA will rank them from your notes and the home facts.</Body>
-          <Button title="Record a home" onPress={() => router.push('/record/pick')} />
+          <Button title="Record a home" onPress={() => router.push('/tour/locate')} />
         </View>
       ) : null}
 
@@ -195,7 +195,7 @@ export default function Ranking() {
 
           <View style={s.actions}>
             <Button title="Discuss" onPress={() => router.push('/ranking/discuss')} accessibilityLabel="Discuss your ranking with NORA" />
-            <Button kind="secondary" title="Record the next home" onPress={() => router.push('/record/pick')} />
+            <Button kind="secondary" title="Record the next home" onPress={() => router.push('/tour/locate')} />
           </View>
         </>
       ) : null}

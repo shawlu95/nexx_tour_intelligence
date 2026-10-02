@@ -39,17 +39,6 @@ function Root() {
       }}
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Back' }} />
-      <Stack.Screen name="record/pick" options={{ title: '' }} />
-      <Stack.Screen
-        name="record/capture"
-        options={{
-          title: 'Record',
-          headerStyle: { backgroundColor: colors.stage },
-          headerTitleStyle: { color: colors.stageInk },
-          headerTintColor: colors.stageInk,
-          gestureEnabled: false,
-        }}
-      />
       <Stack.Screen name="visit/[id]" options={{ title: 'Note' }} />
       <Stack.Screen name="share/[visitId]" options={{ title: 'Share', presentation: 'modal' }} />
       <Stack.Screen name="properties/[id]" options={{ title: 'Home' }} />
