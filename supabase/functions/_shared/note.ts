@@ -3,7 +3,7 @@
 
 import { plainText } from './text.ts';
 
-export const PROMPT_VERSION = '2026-10-01';
+export const PROMPT_VERSION = '2026-10-03';
 
 export type ItemKind = 'liked' | 'concern' | 'question';
 
@@ -43,11 +43,13 @@ export const NOTE_SCHEMA = {
 
 const KINDS: readonly ItemKind[] = ['liked', 'concern', 'question'];
 
+/** Lowercase words without punctuation. Chinese has no spaces, so each Han character counts as a word. */
 export function normalizeWords(s: string): string[] {
   return s
     .toLowerCase()
     .replace(/[’']/g, '')
-    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\p{Script=Han}/gu, ' $& ')
+    .replace(/[^\p{Script=Han}a-z0-9\s]/gu, ' ')
     .split(/\s+/)
     .filter(Boolean);
 }

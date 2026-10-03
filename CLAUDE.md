@@ -1,6 +1,6 @@
 # NORA (nexx-tour-intelligence)
 
-Voice note-taking app for home buyers. After leaving an open house, the buyer records a **40–60 second spoken reaction**. NORA transcribes it (Deepgram), turns it into a note with Claude (overall impression, plus **Liked**, **Concerns**, **Questions for my agent**, each with a verbatim source quote), files it under the property, and lets the buyer share it with their agent as a private link.
+Voice note-taking app for home buyers. After leaving an open house, the buyer records a **40–60 second spoken reaction**. NORA transcribes it (AssemblyAI; English, Chinese, or a mix, detected automatically), turns it into a note with Claude (overall impression, plus **Liked**, **Concerns**, **Questions for my agent**, each with a verbatim source quote), files it under the property, and lets the buyer share it with their agent as a private link.
 
 - Design doc and MVP scope: @README.md
 - Setup, deployment, Xcode guide: [SETUP.md](SETUP.md)
@@ -41,7 +41,7 @@ Run tests, typecheck, lint and expo-doctor before calling app work done.
 
 - Org **Nexx**, project **nexx-tour-intelligence**, ref `amhonfefejwrgttxfkrl`, region us-west-1, Free plan. URL `https://amhonfefejwrgttxfkrl.supabase.co`.
 - CLI is logged in and linked from the repository root. `supabase db push` works without the database password.
-- Function secrets set: `DEEPGRAM_API_KEY`, `ANTHROPIC_API_KEY` (set by the user), `SWEEP_SECRET` (generated). Optional: `SUMMARY_MODEL` (default `claude-opus-5`), `RENTCAST_API_KEY` (not set yet), `RENTCAST_MONTHLY_LIMIT` (default 45; the RentCast free plan charges $0.20 per call over 50 a month, so keep the cap).
+- Function secrets set: `ASSEMBLYAI_API_KEY`, `ANTHROPIC_API_KEY` (set by the user), `SWEEP_SECRET` (generated). Optional: `SUMMARY_MODEL` (default `claude-opus-5`), `RENTCAST_API_KEY` (not set yet), `RENTCAST_MONTHLY_LIMIT` (default 45; the RentCast free plan charges $0.20 per call over 50 a month, so keep the cap).
 - Vault: `nora_project_url`, `nora_sweep_secret`.
 - App identifier (iOS bundle id and Android package): `com.nexx.tour.intelligence`. URL scheme: `nora`.
 
@@ -76,7 +76,8 @@ Run tests, typecheck, lint and expo-doctor before calling app work done.
 
 **Claude usage** (`supabase/functions/_shared/claude.ts`)
 - Model `claude-opus-5` (overridable with `SUMMARY_MODEL`), beta header `server-side-fallback-2026-07-01` with `fallbacks: 'default'`, structured output via `output_config.format` JSON schema, system prompt cached. Check `stop_reason` for `refusal` and `max_tokens` before parsing.
-- Every item's quote is checked against the transcript (`checkItems`, longest common word run ≥ 60%). Unsupported items are dropped.
+- Every item's quote is checked against the transcript (`checkItems`, longest common word run ≥ 60%; each Chinese character counts as a word). Unsupported items are dropped.
+- The note is written in the language the buyer mostly spoke; quotes are never translated.
 - Regeneration keeps buyer-added, edited and deleted items (`planRegeneration`).
 
 **Browser work**

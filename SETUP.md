@@ -32,7 +32,7 @@ npx expo-doctor                # dependency and config checks
 | Service | Used for | Notes |
 |---|---|---|
 | Supabase | Database, sign-in, storage, functions | Free plan is enough for development |
-| Deepgram | Speech-to-text | Starts with free credit |
+| AssemblyAI | Speech-to-text (English, Chinese, and mixed, detected automatically) | Starts with $50 of free credit |
 | Anthropic | Writing the note (Claude) | API key from console.anthropic.com |
 | RentCast | Beds, baths, square feet and price for each home | Free Developer plan (50 calls a month) is enough for development; a pilot needs Foundation ($74/month). See [RentCast setup](#rentcast-home-facts) below. |
 | Expo (EAS) | Cloud builds of the app | Free plan is enough to start |
@@ -48,7 +48,7 @@ supabase login
 supabase link --project-ref YOUR-PROJECT-REF
 supabase db push                               # applies supabase/migrations
 
-supabase secrets set DEEPGRAM_API_KEY=... ANTHROPIC_API_KEY=...
+supabase secrets set ASSEMBLYAI_API_KEY=... ANTHROPIC_API_KEY=...
 # Optional: supabase secrets set SUMMARY_MODEL=claude-sonnet-5   (note writer; default claude-opus-5)
 # Optional: supabase secrets set RANKING_MODEL=claude-sonnet-5   (ranking chat; default claude-opus-5)
 supabase secrets set RENTCAST_API_KEY=...
@@ -244,6 +244,6 @@ The phone loads the app's code from the Mac while developing, so keep both on th
 
 1. The buyer records on the phone. The clip is saved locally and added to the upload queue (`app/src/lib/sync.ts`).
 2. The queue creates the property and visit rows, uploads the clip to `audio/<user>/<visit>.m4a`, then calls `process-visit`.
-3. `process-visit` replies right away, then transcribes with Deepgram, writes the note with Claude, drops any point whose quote isn't in the transcript, saves the note, and sends a push notification.
+3. `process-visit` replies right away, then transcribes with AssemblyAI, writes the note with Claude, drops any point whose quote isn't in the transcript, saves the note, and sends a push notification.
 4. The app follows the visit's status (`uploading → processing → ready` or `failed`) and shows the note.
 5. `sweep` retries anything stuck or failed, up to 3 automatic attempts. **Try again** in the app always starts a fresh attempt.

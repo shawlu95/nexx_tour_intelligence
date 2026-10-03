@@ -27,6 +27,24 @@ describe('quoteSupport', () => {
   });
 });
 
+describe('quoteSupport in Chinese and mixed speech', () => {
+  const CHINESE = '这个房子采光很好，厨房很大。但是后院太小了，而且后面有高压线，要问一下中介会不会影响价格。';
+  const MIXED = '这个 house 的 kitchen island 很大，我很喜欢。But the backyard is tiny，后面还有 power lines。';
+
+  it('matches a Chinese excerpt character by character, ignoring punctuation', () => {
+    expect(quoteSupport('后院太小了，而且后面有高压线', CHINESE)).toBe(1);
+  });
+
+  it('scores a Chinese paraphrase low', () => {
+    expect(quoteSupport('院子非常小并且附近有电线', CHINESE)).toBeLessThan(0.6);
+  });
+
+  it('matches excerpts that switch between Chinese and English', () => {
+    expect(quoteSupport('kitchen island 很大，我很喜欢', MIXED)).toBe(1);
+    expect(quoteSupport('the backyard is tiny, 后面还有 power lines', MIXED)).toBe(1);
+  });
+});
+
 describe('checkItems', () => {
   const item = (kind: NoteItem['kind'], text: string, quote: string): NoteItem => ({ kind, text, quote });
 

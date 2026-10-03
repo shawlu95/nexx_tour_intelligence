@@ -19,7 +19,8 @@ Write:
 Rules:
 - Only include what the buyer actually said. Never add features, prices, or opinions that are not in the transcript.
 - Each item's text is short (under 12 words), concrete, and written for the buyer ("Large kitchen island", "Power lines along the back fence").
-- quote is a verbatim excerpt (4 to 20 words) copied exactly from the transcript, showing where the point came from.
+- quote is a verbatim excerpt (4 to 20 words, or about 6 to 30 characters of Chinese) copied exactly from the transcript, showing where the point came from. Never translate or tidy a quote.
+- The buyer may speak English, Chinese, or a mix of both. Write overall and each item's text in the language the buyer mostly spoke (Simplified or Traditional Chinese to match the transcript).
 - One point per item. Merge repeats of the same point. Keep the order in which they were said.
 - Skip filler and false starts.
 - If the buyer said nothing about the home, say so in overall and return an empty items list.

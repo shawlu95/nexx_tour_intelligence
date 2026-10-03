@@ -1,6 +1,6 @@
 # Status
 
-Last updated: 2026-10-01. Update this file at the end of each work session: move finished items to "Done", and keep "Next steps" ordered.
+Last updated: 2026-10-03. Update this file at the end of each work session: move finished items to "Done", and keep "Next steps" ordered.
 
 ## History so far
 
@@ -28,6 +28,8 @@ Last updated: 2026-10-01. Update this file at the end of each work session: move
 
 17. **Sharing tab and Profile recreated from the mockup (2026-10-01).** Tabs are now Tour · Ranking · History · Sharing · Profile. Sharing (`app/src/app/(tabs)/sharing/`: index, invite, sent, with its own stack so the tab bar stays visible) and Profile follow the mockup's layout and copy. **Sharing is UI only**: invitations live in memory (`app/src/lib/sharingPreview.ts`) and are never sent or saved; "Preview accepted status" just flips the pill. On Profile, Deactivate/Reactivate is UI only; Sign out and Delete account work. Delete account is a quiet link (the App Store requires it) that opens a warning sheet before anything is deleted. The confirmation names the agent, fixing the mockup's "Francis will receive…" bug. Also fixed: the "VirtualizedLists should never be nested…" warning on Ranking (`scrollEnabled={false}` on `NestedReorderableList`).
 
+18. **Speech-to-text moved from Deepgram to AssemblyAI (2026-10-03)** so buyers can speak English, Chinese, or a mix without choosing a language. Deepgram's automatic mode doesn't include Chinese. `_shared/assemblyai.ts` sends the signed audio URL with `speech_models: ['universal-3-5-pro', 'universal-2']` and `language_detection: true`, polls until done, then fetches sentence timings. `_shared/deepgram.ts` was removed. The quote check counts each Chinese character as a word, and the note prompt writes the note in the language the buyer mostly spoke (prompt version `2026-10-03`). Secret `ASSEMBLYAI_API_KEY` set by the user; `process-visit` redeployed. The old `DEEPGRAM_API_KEY` secret is still set but nothing reads it. **Not yet tested with a real recording.**
+
 ## Done and verified
 
 | Area | Verified how |
@@ -48,7 +50,7 @@ These are written and type-checked but have not been exercised end to end. Expec
 - **The app itself has never been launched** (no Simulator or device run yet).
 - Recording with `expo-audio` (`app/src/app/record/capture.tsx`), and moving the file into `Paths.document/recordings`.
 - Upload: `File.upload` POSTing to `/storage/v1/object/audio/<user>/<visit>.m4a` with the session token (`app/src/lib/sync.ts`). Check headers, the response status, and that the storage RLS policy accepts it.
-- `process-visit` against real Deepgram (response shape in `_shared/deepgram.ts`) and real Claude (the `fallbacks: 'default'` + `output_config.format` combination on `client.beta.messages.create`).
+- `process-visit` against real AssemblyAI (create, poll, then `/sentences` for timings, in `_shared/assemblyai.ts`) and real Claude (the `fallbacks: 'default'` + `output_config.format` combination on `client.beta.messages.create`).
 - Push notifications. `getExpoPushTokenAsync` needs an EAS project id, which doesn't exist yet, so registration is skipped with a warning.
 - Google OAuth (PKCE via `WebBrowser.openAuthSessionAsync`) and Sign in with Apple. Neither provider is enabled in Supabase yet.
 - The share page with a real token; `delete-account`.
@@ -58,7 +60,7 @@ These are written and type-checked but have not been exercised end to end. Expec
 0. **RentCast key.** The user creates a free RentCast account and runs `supabase secrets set RENTCAST_API_KEY=...`. Until then, homes stay `facts_status = pending` and show only the thumbnail.
 
 1. **Sending domain.** Resend's test sender `onboarding@resend.dev` only delivers to the Resend account owner (`shawlu95@126.com`), so sign-in by email currently works for that address only. To open sign-in to anyone: verify a domain the user owns in Resend (DNS records), then change the sender email in Supabase → Authentication → Emails → SMTP Settings. The Resend "Connect to Supabase" wizard requires an owned domain, which is why SMTP was configured by hand.
-2. **First Simulator run.** The app builds and launches on the iPhone 15 Pro simulator (via `xcodebuild`, because a connected iPhone makes `expo run:ios` try to sign). Next: sign in as `shawlu95@126.com`, record a test reaction, and check the whole path: upload, Deepgram, Claude, note.
+2. **First Simulator run.** The app builds and launches on the iPhone 15 Pro simulator (via `xcodebuild`, because a connected iPhone makes `expo run:ios` try to sign). Next: sign in as `shawlu95@126.com`, record a test reaction, and check the whole path: upload, AssemblyAI, Claude, note.
 3. **Share page hosting:** deploy `share-web/` (Cloudflare Pages suggested) and replace `EXPO_PUBLIC_SHARE_BASE_URL` in `app/.env.local` (currently the placeholder `https://share.example.com`).
 4. **EAS:** `npx eas-cli@latest init` (adds the project id, which enables push), and add the `EXPO_PUBLIC_*` variables as EAS environment variables.
 5. **Running on the user's iPhone 15 with a free Apple ID (done 2026-10-01).** Built with `NORA_FREE_SIGNING=1` and the Personal Team "Xiao Lu (Personal Team)", team ID `K7U2974RH8`, via `xcodebuild ... -allowProvisioningUpdates DEVELOPMENT_TEAM=K7U2974RH8`, installed with `xcrun devicectl device install app`. iPhone UDID `00008120-000045A01A63601E`. Metro runs with `NORA_FREE_SIGNING=1`; the phone loads JS from `http://10.0.0.216:8081`. The local `ios/` folder is currently generated in free-signing mode. The install expires after 7 days. The first sign-in attempt found the 8-digit code mismatch, now fixed; the end-to-end recording test is in progress.

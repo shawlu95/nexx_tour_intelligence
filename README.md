@@ -80,7 +80,7 @@ Something belongs in the MVP only if leaving it out would break that job. Everyt
 | Photos in notes | Valuable, but it adds storage, upload, and interface work. Buyers already have photos in their camera roll. | Phase 2 |
 | Co-buyers and shared searches | Sharing between two buyers is a larger permissions problem. | Phase 3 |
 | Android app | The code is shared, so Android follows the iOS launch with mostly testing and store work. | Phase 1.5 |
-| Languages other than English | Keeps prompts and quality testing focused. The transcription service supports more languages later. | Phase 3 |
+| Languages other than English and Chinese | Keeps prompts and quality testing focused. English, Chinese, and speech that mixes the two already work, with no language setting. | Phase 3 |
 | Comparing homes, searching by feature ("homes with a big kitchen") | Needs enough data per user to be useful. | Phase 2 |
 | Editing notes offline | Recording and reading work offline. Edits need a connection, which keeps sync simple. | Phase 2 |
 
@@ -120,7 +120,7 @@ flowchart LR
     CRON[Scheduled job<br/>retry sweeper]
   end
 
-  STT[Speech-to-text<br/>Deepgram]
+  STT[Speech-to-text<br/>AssemblyAI]
   LLM[Claude API<br/>summarization]
   PUSH[Expo Push]
   WEB[Share page<br/>Cloudflare Pages]
@@ -222,7 +222,7 @@ sequenceDiagram
   participant App
   participant Fn as process-visit
   participant DB as Postgres
-  participant STT as Deepgram
+  participant STT as AssemblyAI
   participant AI as Claude API
   App->>Fn: Process visit (visit ID)
   Fn->>DB: Status = processing
@@ -237,7 +237,7 @@ sequenceDiagram
   Fn->>App: Push notification "Your note for 812 Pastoria Ave is ready"
 ```
 
-A one-minute clip transcribes in a few seconds and the note takes 10–30 seconds to write, so one function handles both steps, working in the background after it has replied to the app. The app shows progress by reading the visit's status.
+A one-minute clip transcribes in several seconds and the note takes 10–30 seconds to write, so one function handles both steps, working in the background after it has replied to the app. The app shows progress by reading the visit's status.
 
 **Back-end functions**
 
@@ -255,6 +255,7 @@ Share links are created and revoked by the app directly in the database, under t
 - **Model:** Claude Opus 5 (`claude-opus-5`), set through a server setting (`SUMMARY_MODEL`). Claude Sonnet 5 (`claude-sonnet-5`) is a cheaper option once there is a quality test set (see §4).
 - **Input:** the transcript and the property address, after a fixed set of instructions. The instructions come first so prompt caching applies.
 - **Output:** structured JSON enforced by the API's structured-output feature. It contains an overall impression of one or two sentences, plus a list of items, each with a type (liked, concern, question), short text, and a verbatim quote.
+- **Language:** the buyer can speak English, Chinese, or a mix, and never picks a language. AssemblyAI detects it, and the note is written in the language the buyer mostly spoke. Quotes stay word for word.
 - **Faithfulness checks:** after the response arrives, the server checks that each item's quote actually appears in the transcript. Items whose quote can't be found are dropped. This is the safeguard against invented points.
 - **Refusals:** requests use the API's server-side fallback, so a rare safety-classifier refusal is retried on another model automatically. A remaining refusal marks the visit as failed with a message the buyer can act on.
 - **Regenerating:** AI items the buyer hasn't touched are replaced. Items the buyer added, edited, or deleted are kept, and a new AI item that repeats one of them is skipped.
@@ -267,7 +268,7 @@ Share links are created and revoked by the app directly in the database, under t
 - Row-level security on every table. Service keys exist only inside Edge Functions.
 - Audio is served only through signed URLs that expire after 15 minutes.
 - Share tokens are 128-bit random values that can be revoked and expire after 90 days.
-- Data sent to Deepgram and Anthropic through their APIs is not used to train their models by default. This should be confirmed in each vendor's terms and stated in the privacy policy.
+- Anthropic doesn't train on API data by default. Check AssemblyAI's terms on training and retention (its pricing page doesn't say) and state both in the privacy policy.
 - Error monitoring (Sentry) and product analytics (PostHog) never receive transcript or note text.
 
 ---
@@ -287,11 +288,11 @@ Share links are created and revoked by the app directly in the database, under t
 
 | Item | Calculation | Cost per visit |
 |---|---|---|
-| Transcription (Deepgram Nova-3, pre-recorded audio) | 1 min × ~$0.0045/min | ~$0.005 |
+| Transcription (AssemblyAI Universal-3.5 Pro, pre-recorded audio, $0.21/hour) | 1 min × $0.0035/min | ~$0.0035 |
 | Summarization, Claude Opus 5 ($5 per million input tokens, $25 per million output) | 1k × $5/M + 1k × $25/M | ~$0.03 |
 | Storage and data transfer | ~0.35 MB stored, played back a few times | <$0.001 |
-| **Total with Claude Opus 5** | | **≈ $0.035** |
-| *Alternative: summarize with Claude Sonnet 5 ($2 / $10 per million)* | 1k × $2/M + 1k × $10/M | *~$0.012, for a total of ≈ $0.017 per visit* |
+| **Total with Claude Opus 5** | | **≈ $0.034** |
+| *Alternative: summarize with Claude Sonnet 5 ($2 / $10 per million)* | 1k × $2/M + 1k × $10/M | *~$0.012, for a total of ≈ $0.016 per visit* |
 
 The model choice should be made with a small quality test: 30–50 real or realistic reactions, scored for missed points and invented points. If Sonnet 5 holds up on that test, switching halves the AI cost. At these amounts either choice is cheap.
 
@@ -327,7 +328,7 @@ Facts are looked up per buyer, so two buyers who visit the same open house cost 
 | Service | Used for | Pricing model | MVP cost |
 |---|---|---|---|
 | **Supabase** (Pro plan) | Sign-in, Postgres, storage, Edge Functions, scheduled jobs | $25/month, including 8 GB database, 100 GB storage, 250 GB transfer, 100k monthly active users, plus usage beyond that. The free plan works for development. | $25/month |
-| **Deepgram** | Speech-to-text | Pay per audio minute (~$0.0043–0.0045/min). Includes a starting credit of ~$200. | Usage-based |
+| **AssemblyAI** | Speech-to-text. Universal-3.5 Pro detects the language by itself and handles English, Chinese, and speech that switches between them. | Per audio hour: $0.21 for Universal-3.5 Pro ($0.15 for Universal-2, its fallback for other languages). Includes $50 of free credit. | Usage-based |
 | **Anthropic Claude API** | Summarizing reactions into notes | Per token. Claude Opus 5: $5 / $25 per million input/output tokens. | Usage-based |
 | **Expo EAS** | Cloud builds, app store submission, over-the-air updates | Free tier to start. ~$19/month Starter plan once builds are frequent. | $0–19/month |
 | **Expo Push** | Push notifications | Free | $0 |
@@ -344,14 +345,14 @@ Facts are looked up per buyer, so two buyers who visit the same open house cost 
 
 ### Monthly running cost by scale
 
-| Scale | Visits (≈ new homes) per month | Notes (Claude Opus 5 + Deepgram) | Ranking chat (~10 turns per buyer) | Home facts (RentCast) | Fixed services | **Total per month** |
+| Scale | Visits (≈ new homes) per month | Notes (Claude Opus 5 + AssemblyAI) | Ranking chat (~10 turns per buyer) | Home facts (RentCast) | Fixed services | **Total per month** |
 |---|---|---|---|---|---|---|
 | Development: you and a few testers | < 30 | < $1 | < $5 | $0 (Developer plan) | ~$0–25 | **≈ $0–30** |
 | Pilot: 50 buyers | 400 | ~$14 | ~$25–40 | ~$74 (Foundation; 400–800 calls) | ~$25–45 | **≈ $140–175** |
-| Launch: 500 buyers | 4,000 | ~$140 | ~$250–375 | ~$199–290 (Growth; 4,000–8,000 calls) | ~$45–65 | **≈ $635–870** |
-| Growth: 5,000 buyers | 40,000 | ~$1,400 | ~$2,500–3,750 | ~$675–1,275 (Scale; 40,000–80,000 calls) | ~$150–300 (Supabase usage, Resend, Sentry and PostHog paid tiers) | **≈ $4,725–6,725** |
+| Launch: 500 buyers | 4,000 | ~$135 | ~$250–375 | ~$199–290 (Growth; 4,000–8,000 calls) | ~$45–65 | **≈ $630–865** |
+| Growth: 5,000 buyers | 40,000 | ~$1,350 | ~$2,500–3,750 | ~$675–1,275 (Scale; 40,000–80,000 calls) | ~$150–300 (Supabase usage, Resend, Sentry and PostHog paid tiers) | **≈ $4,675–6,675** |
 
-Per buyer who tours 8 homes and has about 10 ranking exchanges a month: notes about $0.28, ranking chat $0.50–0.75, facts $0.32–0.64 (Growth plan), so about **$1.10–1.70 a month**. The ranking chat is the largest variable cost; switching it to Claude Sonnet 5 (`RANKING_MODEL`) is the first lever. Sharing RentCast lookups across buyers is the second.
+Per buyer who tours 8 homes and has about 10 ranking exchanges a month: notes about $0.27, ranking chat $0.50–0.75, facts $0.32–0.64 (Growth plan), so about **$1.10–1.70 a month**. The ranking chat is the largest variable cost; switching it to Claude Sonnet 5 (`RANKING_MODEL`) is the first lever. Sharing RentCast lookups across buyers is the second.
 
 ### One-time costs
 
@@ -372,7 +373,7 @@ Two full-stack engineers (React Native and TypeScript) plus a part-time product 
 |---|---|---|
 | 1 | **Foundations** | Expo project, Supabase project, sign-in with Apple, Google, and email code, database schema with access rules, CI and cloud builds to TestFlight |
 | 2 | **Record and queue** | Property confirmation with GPS, recording screen with prompts, local save, upload queue that survives no signal and app restarts |
-| 3 | **Processing** | `process-visit` function, Deepgram, Claude with quote checks, status tracking, retry sweeper, push notifications |
+| 3 | **Processing** | `process-visit` function, AssemblyAI, Claude with quote checks, status tracking, retry sweeper, push notifications |
 | 3–4 | **Note quality** | Quality test set of 30–50 reactions, prompt tuning, Opus 5 vs Sonnet 5 comparison |
 | 4–5 | **Note, history, editing** | Note screen with quotes, transcript and playback, editing that survives regeneration, property list and pages, offline cache |
 | 5–6 | **Sharing and data controls** | Share links, share page, revocation and expiry, account and data deletion, privacy policy, App Store privacy labels |
@@ -390,7 +391,7 @@ Two full-stack engineers (React Native and TypeScript) plus a part-time product 
 
 ## 6. Beta test
 
-Today NORA runs entirely on one developer's personal accounts: a free Apple Personal Team, a personal GitHub repository, and personal Supabase, Deepgram, Anthropic, RentCast and Resend accounts. Only that developer can install it, and sign-in emails reach only one address. For a beta, **the company (the LLC) must own the app, the code, the data and every paid account**. The developer works inside the company's accounts with a limited role.
+Today NORA runs entirely on one developer's personal accounts: a free Apple Personal Team, a personal GitHub repository, and personal Supabase, AssemblyAI, Anthropic, RentCast and Resend accounts. Only that developer can install it, and sign-in emails reach only one address. For a beta, **the company (the LLC) must own the app, the code, the data and every paid account**. The developer works inside the company's accounts with a limited role.
 
 This section is the setup checklist, in the order to do it. Every step marked **Owner** must be done by someone with authority to act for the LLC. Steps marked **Developer** are done by the developer once invited.
 
@@ -410,7 +411,7 @@ This section is the setup checklist, in the order to do it. Every step marked **
 | **Company domain**, for example `<company-domain>` | Company email, the sending address for sign-in codes, the share page (`share.<company-domain>`), the privacy policy URL | Registered in the LLC's name |
 | **Company email** `admin@`, plus a `support@` address | Account logins and support contact for App Store Connect | A shared mailbox or alias the owner controls |
 | **D-U-N-S number** for the LLC | Apple requires it to enroll an organization | Free from Dun & Bradstreet through Apple's lookup tool. Allow up to ~2 weeks, so **start this first**. |
-| **Public website with a privacy policy and terms** | Required for TestFlight external testing and the App Store; also needed by the vendors' terms | Must describe the voice recordings, transcripts, location use, and the third-party processors (Supabase, Deepgram, Anthropic, RentCast, Resend) |
+| **Public website with a privacy policy and terms** | Required for TestFlight external testing and the App Store; also needed by the vendors' terms | Must describe the voice recordings, transcripts, location use, and the third-party processors (Supabase, AssemblyAI, Anthropic, RentCast, Resend) |
 
 ### 6.3 Apple Developer Program, as an organization
 
@@ -461,7 +462,7 @@ This section is the setup checklist, in the order to do it. Every step marked **
    - **Or create a new project** in the company organization and set it up from scratch with SETUP.md §2 (`supabase link`, `db push`, deploy the four functions, the Vault entries for the retry job). This is cleaner for a beta: test data from development doesn't come along. **Recommended.**
 4. Either way, set every function secret again with the **company's** new keys (§6.7–6.9):
    ```bash
-   supabase secrets set DEEPGRAM_API_KEY=... ANTHROPIC_API_KEY=... RENTCAST_API_KEY=... RENTCAST_MONTHLY_LIMIT=950
+   supabase secrets set ASSEMBLYAI_API_KEY=... ANTHROPIC_API_KEY=... RENTCAST_API_KEY=... RENTCAST_MONTHLY_LIMIT=950
    ```
    Set `SWEEP_SECRET` and its Vault entry with the snippet in SETUP.md.
 5. Redo the dashboard settings from SETUP.md §2:
@@ -470,11 +471,11 @@ This section is the setup checklist, in the order to do it. Every step marked **
    - the redirect URL `nora://auth-callback`
    - Apple and Google sign-in providers, if used
 
-### 6.7 Deepgram (speech-to-text)
+### 6.7 AssemblyAI (speech-to-text)
 
-1. **Owner:** sign up at deepgram.com with the company email. Add the company card under Billing (pay-as-you-go; new accounts get starting credit).
-2. **Owner:** invite the developer to the project with the **Member** role (Admin only if they need to manage keys).
-3. **Owner or developer:** create a new API key named `nora-beta-supabase`, with the narrowest scope Deepgram offers for transcription (Member is enough). Copy it straight into the password manager and into `supabase secrets set DEEPGRAM_API_KEY=...`.
+1. **Owner:** sign up at assemblyai.com with the company email. Add the company card under Billing (pay as you go; new accounts get $50 of free credit).
+2. **Owner:** invite the developer to the account, without billing access.
+3. **Owner or developer:** create a new API key named `nora-beta-supabase`. Copy it straight into the password manager and into `supabase secrets set ASSEMBLYAI_API_KEY=...`.
 4. Optional: set a usage alert under Billing.
 
 ### 6.8 Anthropic (Claude)
@@ -519,7 +520,7 @@ Do these once the company accounts work, before inviting testers:
 - [ ] A TestFlight build from the company team signs in (code arrives from `no-reply@<company-domain>`), records, and shows a note, facts, and a ranking.
 - [ ] A share link opens at `share.<company-domain>`.
 - [ ] Push notifications arrive (company team build, EAS project id set).
-- [ ] **Revoke the developer's personal keys:** Deepgram, Anthropic, RentCast and Resend API keys from the development accounts. Pause or delete the development Supabase project (or keep it as a separate dev environment, clearly labeled).
+- [ ] **Revoke the developer's personal keys:** AssemblyAI, Anthropic, RentCast and Resend API keys from the development accounts. Pause or delete the development Supabase project (or keep it as a separate dev environment, clearly labeled).
 - [ ] Remove personal values from the developer's machine: `app/.env.local` and `share-web/config.js` now point at the company project.
 - [ ] The password manager has every login, recovery code and key, and at least two company people can access it.
 - [ ] Every account's Owner/Admin is the company. The developer has the roles listed above.
@@ -532,7 +533,7 @@ Do these once the company accounts work, before inviting testers:
 | GitHub | LLC organization | Member, Write/Maintain on the repo | Free |
 | Expo / EAS | LLC organization | Developer | LLC, $0–19/month |
 | Supabase | LLC organization | Developer | LLC, $25/month |
-| Deepgram | LLC | Member | LLC, usage |
+| AssemblyAI | LLC | Member | LLC, usage |
 | Anthropic | LLC organization | Developer, in workspace `nora-beta` | LLC, usage, with a spend limit |
 | Resend | LLC | Member | Free at beta volume |
 | RentCast | LLC | (shared key in the vault) | LLC, $74/month (Foundation) |
@@ -550,7 +551,7 @@ Do these once the company accounts work, before inviting testers:
 | **Note quality: missed or invented points** | A quote with every item, server-side quote checking, the transcript and recording one tap away, and a quality test set run on every prompt change. |
 | **Poor connection outside the home** | The clip is saved on the phone first, and the upload queue retries until it succeeds. |
 | **Address matching** (condo units, new builds, GPS drift) | Suggest an address but always let the buyer confirm or edit. Record a unit number. Offer the buyer's own nearby properties first. |
-| **Vendor dependence** | Transcription and summarization each sit behind one back-end module, so Deepgram can be swapped (for example, for AssemblyAI) and Claude models can change without touching the app. |
+| **Vendor dependence** | Transcription and summarization each sit behind one back-end module, so AssemblyAI can be swapped (for example, for another provider that handles mixed Chinese and English) and Claude models can change without touching the app. |
 
 **Open questions for the team**
 

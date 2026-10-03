@@ -9,7 +9,7 @@
 // Replies 202 straight away and does the work in the background; the app follows
 // progress through the visit's status.
 import { writeNote } from '../_shared/claude.ts';
-import { STT_MODEL, STT_PROVIDER, transcribeUrl } from '../_shared/deepgram.ts';
+import { STT_MODEL, STT_PROVIDER, transcribeUrl } from '../_shared/assemblyai.ts';
 import { checkItems, planRegeneration, PROMPT_VERSION, type ExistingItem, type NoteItem } from '../_shared/note.ts';
 import { sendPush } from '../_shared/push.ts';
 import { lookUpFacts } from '../_shared/rentcast.ts';

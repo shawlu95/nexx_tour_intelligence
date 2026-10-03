@@ -82,7 +82,7 @@ export async function setStatus(
 /** Turns an internal error into the short message the app shows the buyer. */
 export function friendlyError(e: unknown): string {
   const message = e instanceof Error ? e.message : String(e);
-  if (/deepgram/i.test(message)) return 'Transcription failed. Tap Try again.';
+  if (/assemblyai/i.test(message)) return 'Transcription failed. Tap Try again.';
   if (/anthropic|claude|summar/i.test(message)) return 'Writing the note failed. Tap Try again.';
   return 'Processing failed. Tap Try again.';
 }
