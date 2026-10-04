@@ -79,9 +79,9 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 4,
   },
-  sheetIconText: { fontFamily, fontSize: 18, fontWeight: '800', color: colors.bad },
-  sheetTitle: { fontFamily, fontSize: 21, fontWeight: '800', color: colors.ink, textAlign: 'center', letterSpacing: -0.3 },
-  sheetCopy: { fontFamily, fontSize: 14, lineHeight: 20, color: colors.ink2, textAlign: 'center', paddingHorizontal: 12, marginBottom: 4 },
+  sheetIconText: { fontFamily, fontSize: 17, fontWeight: '800', color: colors.bad },
+  sheetTitle: { fontFamily, fontSize: 22, fontWeight: '800', color: colors.ink, textAlign: 'center', letterSpacing: -0.3 },
+  sheetCopy: { fontFamily, fontSize: 15, lineHeight: 20, color: colors.ink2, textAlign: 'center', paddingHorizontal: 12, marginBottom: 4 },
   sheetDanger: { alignSelf: 'stretch', backgroundColor: colors.bad, borderRadius: 14, paddingVertical: 15, alignItems: 'center' },
   sheetDangerText: { fontFamily, fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
   sheetSecondary: {

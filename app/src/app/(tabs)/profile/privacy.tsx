@@ -238,8 +238,8 @@ const s = StyleSheet.create({
   flex: { flex: 1 },
   heading: { gap: 8, marginTop: 4 },
   eyebrow: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
-  title: { fontFamily, fontSize: 24, fontWeight: '800', color: colors.ink, letterSpacing: -0.3 },
-  lede: { fontFamily, fontSize: 14, lineHeight: 20, color: colors.ink2 },
+  title: { fontFamily, fontSize: 22, fontWeight: '800', color: colors.ink, letterSpacing: -0.3 },
+  lede: { fontFamily, fontSize: 15, lineHeight: 20, color: colors.ink2 },
   card: {
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -267,8 +267,8 @@ const s = StyleSheet.create({
   },
   aiError: { fontFamily, fontSize: 13, color: colors.bad, paddingBottom: 12 },
   settings: { backgroundColor: colors.accentSoft, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12 },
-  settingsText: { fontFamily, fontSize: 14, fontWeight: '700', color: colors.accent },
+  settingsText: { fontFamily, fontSize: 15, fontWeight: '700', color: colors.accent },
   legalLinks: { flexDirection: 'row', justifyContent: 'center', gap: 24, marginTop: 4 },
-  legalLink: { fontFamily, fontSize: 14, fontWeight: '700', color: colors.accent, textDecorationLine: 'underline' },
+  legalLink: { fontFamily, fontSize: 15, fontWeight: '700', color: colors.accent, textDecorationLine: 'underline' },
   footer: { fontFamily, fontSize: 12, color: colors.ink3, textAlign: 'center' },
 });

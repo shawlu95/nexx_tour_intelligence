@@ -95,7 +95,7 @@ const s = StyleSheet.create({
   },
   fact: { flex: 1, alignItems: 'center', paddingVertical: 2 },
   factDivider: { borderLeftWidth: 1, borderLeftColor: colors.line },
-  factValue: { fontFamily, fontSize: 14, fontWeight: '700', lineHeight: 18.2, color: colors.ink, marginBottom: 1 },
+  factValue: { fontFamily, fontSize: 15, fontWeight: '700', lineHeight: 18.2, color: colors.ink, marginBottom: 1 },
   factLabel: { fontFamily, fontSize: 12, lineHeight: 15.6, color: colors.ink3 },
   details: { marginTop: 5 },
   summary: { paddingVertical: 6 },
@@ -103,6 +103,6 @@ const s = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 14, columnGap: 16, marginTop: 8, marginBottom: 5 },
   cell: { width: '46%', gap: 4 },
   cellLabel: { fontFamily, fontSize: 12, color: colors.ink3 },
-  cellValue: { fontFamily, fontSize: 14, color: colors.ink },
+  cellValue: { fontFamily, fontSize: 15, color: colors.ink },
   source: { fontFamily, fontSize: 12, lineHeight: 16.2, color: '#949DAD', marginTop: 4 },
 });

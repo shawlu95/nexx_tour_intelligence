@@ -21,9 +21,9 @@ export function TourSearchHeader({ summary }: { summary: TourSummary | null }) {
 const s = StyleSheet.create({
   flex: { flex: 1 },
   search: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  eyebrow: { fontFamily, fontSize: 11, fontWeight: '700', letterSpacing: 1.4, color: colors.accent, marginBottom: 6 },
-  title: { fontFamily, fontSize: 21, fontWeight: '700', lineHeight: 24.5, color: colors.ink, letterSpacing: -0.74 },
-  week: { flexDirection: 'row', alignItems: 'center', gap: 3, height: 27, backgroundColor: colors.sunk, borderRadius: 14, paddingHorizontal: 9 },
-  weekCount: { fontFamily, fontSize: 11.5, fontWeight: '700', color: colors.ink },
-  weekLabel: { fontFamily, fontSize: 11, color: colors.ink3 },
+  eyebrow: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent, marginBottom: 6 },
+  title: { fontFamily, fontSize: 22, fontWeight: '700', lineHeight: 28, color: colors.ink, letterSpacing: -0.74 },
+  week: { flexDirection: 'row', alignItems: 'center', gap: 3, minHeight: 27, backgroundColor: colors.sunk, borderRadius: 14, paddingHorizontal: 9 },
+  weekCount: { fontFamily, fontSize: 12, fontWeight: '700', color: colors.ink },
+  weekLabel: { fontFamily, fontSize: 12, color: colors.ink3 },
 });

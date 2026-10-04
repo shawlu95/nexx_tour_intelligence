@@ -244,7 +244,8 @@ export function Loading() {
 export const styles = StyleSheet.create({
   flex: { flex: 1 },
   center: { alignItems: 'center', justifyContent: 'center' },
-  screen: { padding: 20, gap: 16, flexGrow: 1 },
+  // iOS standard margins: 16 pt at the sides.
+  screen: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24, gap: 16, flexGrow: 1 },
   button: {
     minHeight: 48,
     borderRadius: 11,
@@ -253,7 +254,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 16,
   },
-  buttonText: { fontFamily, fontSize: 14, fontWeight: '700' },
+  buttonText: { fontFamily, fontSize: 15, fontWeight: '700' },
   card: {
     backgroundColor: colors.surface,
     borderColor: colors.line,
@@ -263,7 +264,7 @@ export const styles = StyleSheet.create({
     gap: 6,
   },
   eyebrow: { fontFamily, fontSize: 12, fontWeight: '600', letterSpacing: 1.2, textTransform: 'uppercase' },
-  title: { fontFamily, fontSize: 24, fontWeight: '800', color: colors.ink, letterSpacing: -0.3 },
+  title: { fontFamily, fontSize: 22, fontWeight: '800', color: colors.ink, letterSpacing: -0.3 },
   body: { fontFamily, fontSize: 16, lineHeight: 23, color: colors.ink2 },
   field: { gap: 6 },
   fieldLabel: { fontFamily, fontSize: 13, fontWeight: '600', color: colors.ink2 },
@@ -278,7 +279,7 @@ export const styles = StyleSheet.create({
     color: colors.ink,
   },
   banner: { borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 },
-  bannerText: { fontFamily, fontSize: 14, lineHeight: 20 },
+  bannerText: { fontFamily, fontSize: 15, lineHeight: 20 },
   tabHeader: { gap: 14 },
   tabHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   wordmark: { fontFamily, fontSize: 16, fontWeight: '800', letterSpacing: 4, color: colors.ink },

@@ -149,8 +149,8 @@ const s = StyleSheet.create({
   account: { gap: 12, marginTop: 6, marginBottom: 4 },
   eyebrow: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
   identity: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  name: { fontFamily, fontSize: 24, fontWeight: '800', color: colors.ink, letterSpacing: -0.3 },
-  kind: { fontFamily, fontSize: 14, color: colors.ink3, marginTop: 1 },
+  name: { fontFamily, fontSize: 22, fontWeight: '800', color: colors.ink, letterSpacing: -0.3 },
+  kind: { fontFamily, fontSize: 15, color: colors.ink3, marginTop: 1 },
   card: {
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -163,8 +163,8 @@ const s = StyleSheet.create({
   cardTitle: { fontFamily, fontSize: 15, fontWeight: '700', color: colors.ink, marginBottom: 6 },
   detail: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, paddingVertical: 13 },
   detailDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.line },
-  detailLabel: { fontFamily, fontSize: 14, color: colors.ink2 },
-  detailValue: { flexShrink: 1, fontFamily, fontSize: 14, fontWeight: '700', color: colors.ink, textAlign: 'right' },
+  detailLabel: { fontFamily, fontSize: 15, color: colors.ink2 },
+  detailValue: { flexShrink: 1, fontFamily, fontSize: 15, fontWeight: '700', color: colors.ink, textAlign: 'right' },
   link: {
     flexDirection: 'row',
     alignItems: 'center',

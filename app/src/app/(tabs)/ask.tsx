@@ -193,10 +193,10 @@ const s = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 10 },
   },
-  markText: { fontFamily, fontSize: 21.6, fontWeight: '800', color: colors.accent },
+  markText: { fontFamily, fontSize: 22, fontWeight: '800', color: colors.accent },
   welcomeTitle: {
     fontFamily,
-    fontSize: 23,
+    fontSize: 22,
     fontWeight: '800',
     lineHeight: 28,
     letterSpacing: -0.9,
@@ -220,7 +220,7 @@ const s = StyleSheet.create({
   userText: { fontFamily, fontSize: 15, lineHeight: 22.8, color: colors.ink },
   reply: { fontFamily, fontSize: 16, lineHeight: 26.4, color: '#303746' },
   thinking: { alignSelf: 'flex-start', paddingVertical: 4 },
-  error: { fontFamily, fontSize: 14, color: colors.bad },
+  error: { fontFamily, fontSize: 15, color: colors.bad },
   suggestionsBar: { flexGrow: 0 },
   suggestions: { paddingTop: 7, paddingHorizontal: 14, paddingBottom: 10, gap: 8 },
   suggestion: {

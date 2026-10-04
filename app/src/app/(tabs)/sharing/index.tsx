@@ -152,7 +152,7 @@ const s = StyleSheet.create({
     marginBottom: 6,
   },
   eyebrow: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
-  title: { fontFamily, fontSize: 26, fontWeight: '800', color: colors.ink, textAlign: 'center', letterSpacing: -0.4, lineHeight: 31 },
+  title: { fontFamily, fontSize: 28, fontWeight: '800', color: colors.ink, textAlign: 'center', letterSpacing: -0.4, lineHeight: 35 },
   body: { fontFamily, fontSize: 15, lineHeight: 22, color: colors.ink2, textAlign: 'center', paddingHorizontal: 12 },
   card: {
     alignItems: 'center',
@@ -193,7 +193,7 @@ const s = StyleSheet.create({
     paddingVertical: 10,
     alignItems: 'center',
   },
-  rowActionText: { fontFamily, fontSize: 14, fontWeight: '700', color: colors.bad },
+  rowActionText: { fontFamily, fontSize: 15, fontWeight: '700', color: colors.bad },
   rowName: { fontFamily, fontSize: 15, fontWeight: '700', color: colors.ink },
   rowDetail: { fontFamily, fontSize: 13, color: colors.ink3, marginTop: 1 },
 });

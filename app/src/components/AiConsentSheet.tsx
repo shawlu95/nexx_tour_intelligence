@@ -98,7 +98,7 @@ const s = StyleSheet.create({
   iconText: { fontFamily, fontSize: 20, fontWeight: '800', color: colors.accent },
   eyebrow: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
   title: { fontFamily, fontSize: 22, fontWeight: '800', color: colors.ink, textAlign: 'center', letterSpacing: -0.3 },
-  copy: { fontFamily, fontSize: 14, lineHeight: 20, color: colors.ink2, textAlign: 'center', paddingHorizontal: 8 },
+  copy: { fontFamily, fontSize: 15, lineHeight: 20, color: colors.ink2, textAlign: 'center', paddingHorizontal: 8 },
   small: { fontFamily, fontSize: 12, lineHeight: 17, color: colors.ink3, textAlign: 'center' },
   error: { fontFamily, fontSize: 13, color: colors.bad, textAlign: 'center' },
   primary: {
@@ -119,5 +119,5 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   secondaryText: { fontFamily, fontSize: 16, fontWeight: '700', color: colors.ink },
-  link: { fontFamily, fontSize: 14, fontWeight: '600', color: colors.accent, textDecorationLine: 'underline', marginTop: 4 },
+  link: { fontFamily, fontSize: 15, fontWeight: '600', color: colors.accent, textDecorationLine: 'underline', marginTop: 4 },
 });

@@ -56,7 +56,7 @@ const s = StyleSheet.create({
     marginBottom: 8,
   },
   eyebrow: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
-  title: { fontFamily, fontSize: 30, fontWeight: '800', color: colors.ink, letterSpacing: -0.5 },
+  title: { fontFamily, fontSize: 28, fontWeight: '800', color: colors.ink, letterSpacing: -0.5 },
   copy: { fontFamily, fontSize: 16, lineHeight: 23, color: colors.ink2 },
   footer: { gap: 12 },
   note: { fontFamily, fontSize: 13, lineHeight: 18, color: colors.ink3, textAlign: 'center' },

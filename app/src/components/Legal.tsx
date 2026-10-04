@@ -114,13 +114,13 @@ export function LegalModal({ doc, onClose }: { doc: LegalDocName | null; onClose
 
 const s = StyleSheet.create({
   modal: { flex: 1, backgroundColor: colors.bg },
-  modalBar: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 20, paddingVertical: 12 },
+  modalBar: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 16, paddingVertical: 12 },
   done: { fontFamily, fontSize: 17, fontWeight: '600', color: colors.accent },
-  modalBody: { padding: 20, paddingTop: 4 },
+  modalBody: { paddingHorizontal: 16, paddingBottom: 24, paddingTop: 4 },
   root: { gap: 18 },
   heading: { gap: 6 },
   eyebrow: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.warn },
-  title: { fontFamily, fontSize: 26, fontWeight: '800', color: colors.ink, letterSpacing: -0.3 },
+  title: { fontFamily, fontSize: 28, fontWeight: '800', color: colors.ink, letterSpacing: -0.3 },
   updated: { fontFamily, fontSize: 13, color: colors.ink3 },
   section: { gap: 6 },
   sectionTitle: { fontFamily, fontSize: 16, fontWeight: '700', color: colors.ink },

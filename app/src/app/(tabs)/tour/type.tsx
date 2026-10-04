@@ -118,7 +118,7 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.surface },
   header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 14, backgroundColor: colors.surface },
   stage: { flex: 1, backgroundColor: colors.stage },
-  stageContent: { paddingHorizontal: 22, paddingTop: 16, paddingBottom: 30 },
+  stageContent: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 30 },
   topRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
   backButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
   backSpacer: { width: 36 },
@@ -126,8 +126,8 @@ const s = StyleSheet.create({
   placeTitle: { fontFamily, fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
   placeSub: { fontFamily, fontSize: 13, color: colors.stage2 },
   eyebrow: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.56, color: '#91A8FA' },
-  title: { fontFamily, fontSize: 26, fontWeight: '800', letterSpacing: -0.6, color: '#FFFFFF', marginTop: 8 },
-  body: { fontFamily, fontSize: 14, lineHeight: 21, color: colors.stage2, marginTop: 8 },
+  title: { fontFamily, fontSize: 28, fontWeight: '800', letterSpacing: -0.6, color: '#FFFFFF', marginTop: 8 },
+  body: { fontFamily, fontSize: 15, lineHeight: 21, color: colors.stage2, marginTop: 8 },
   label: { fontFamily, fontSize: 13, fontWeight: '700', color: '#FFFFFF', marginTop: 26, marginBottom: 8 },
   input: {
     minHeight: 150,
@@ -144,7 +144,7 @@ const s = StyleSheet.create({
   },
   organize: {
     marginTop: 18,
-    height: 52,
+    minHeight: 52,
     borderRadius: 16,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',

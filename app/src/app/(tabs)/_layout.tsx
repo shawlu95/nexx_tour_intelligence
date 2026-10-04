@@ -85,7 +85,7 @@ const s = StyleSheet.create({
     borderTopWidth: 1,
     overflow: 'visible',
   },
-  label: { fontFamily, fontSize: 11, fontWeight: '700' },
+  label: { fontFamily, fontSize: 12, fontWeight: '700' },
   askButton: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 4 },
   orb: {
     position: 'absolute',
@@ -103,5 +103,5 @@ const s = StyleSheet.create({
     shadowRadius: 9,
     shadowOffset: { width: 0, height: 5 },
   },
-  askLabel: { fontFamily, fontSize: 11, fontWeight: '700', color: colors.accent },
+  askLabel: { fontFamily, fontSize: 12, fontWeight: '700', color: colors.accent },
 });
