@@ -12,6 +12,7 @@ import { Banner, colors, fontFamily, Screen } from '../../../../components/ui';
 import { cityState, displayAddress } from '../../../../lib/address';
 import { deleteProperty, fetchHome, type HomeVisit } from '../../../../lib/api';
 import { fetchRankingState, latestRanking, type RankedHome } from '../../../../lib/ranking';
+import { usePreviewAgents } from '../../../../lib/sharingPreview';
 import { useThumbnail } from '../../../../lib/thumbnail';
 import type { Property } from '../../../../lib/types';
 
@@ -49,6 +50,8 @@ export default function HomePage() {
   const [offline, setOffline] = useState(false);
   const [error, setError] = useState('');
   const [historyOpen, setHistoryOpen] = useState(false);
+  // Sharing is UI only for now (lib/sharingPreview): an invitation is always pending.
+  const invitePending = usePreviewAgents().length > 0;
   const [asking, setAsking] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
@@ -214,13 +217,22 @@ export default function HomePage() {
         </View>
       ) : null}
 
-      <Text style={s.agentTitle}>Agent notes</Text>
+      <View style={s.agentHeading}>
+        <Text style={s.agentTitle}>Agent notes</Text>
+        {invitePending ? <Text style={s.agentAccess}>Invitation pending</Text> : null}
+      </View>
       <View style={s.agentCard}>
-        <Text style={s.agentHead}>Your agent’s perspective, here.</Text>
-        <Text style={s.agentCopy}>Once you share, your agent can review your ranking and add their own notes here.</Text>
-        <Pressable accessibilityRole="button" onPress={() => router.navigate('/sharing')} style={s.agentLink}>
-          <Text style={s.agentLinkText}>Share with your agent</Text>
-        </Pressable>
+        {invitePending ? (
+          <>
+            <Text style={s.agentHead}>Waiting for your agent</Text>
+            <Text style={s.agentCopy}>Notes can appear here after your agent accepts. Your reaction remains yours.</Text>
+          </>
+        ) : (
+          <>
+            <Text style={s.agentHead}>Your agent’s perspective, here.</Text>
+            <Text style={s.agentCopy}>Once you share, your agent can review your ranking and add their own notes here.</Text>
+          </>
+        )}
       </View>
 
       <Pressable accessibilityRole="button" onPress={confirmDelete} style={s.delete} hitSlop={8}>
@@ -298,19 +310,19 @@ const s = StyleSheet.create({
   historyKind: { fontFamily, fontSize: 12, color: colors.ink3, marginTop: 2 },
   historyLabel: { fontFamily, fontSize: 12, fontWeight: '600', letterSpacing: 1, color: '#949DAD', marginTop: 8 },
   historyText: { fontFamily, fontSize: 15, lineHeight: 21, color: colors.ink, marginTop: 4 },
-  agentTitle: { fontFamily, fontSize: 15, fontWeight: '700', color: colors.ink, marginTop: 8 },
+  agentHeading: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', paddingHorizontal: 2, marginTop: 8 },
+  agentTitle: { fontFamily, fontSize: 15, fontWeight: '700', color: colors.ink },
+  agentAccess: { fontFamily, fontSize: 12, color: colors.ink3 },
   agentCard: {
     borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: '#C9D1DE',
-    borderRadius: 14,
+    borderColor: '#CBD4E2',
+    borderRadius: 16,
     padding: 16,
-    backgroundColor: 'rgba(255,255,255,0.6)',
+    backgroundColor: '#F8FAFF',
   },
-  agentHead: { fontFamily, fontSize: 15, fontWeight: '700', color: colors.ink },
+  agentHead: { fontFamily, fontSize: 15, fontWeight: '600', color: colors.ink },
   agentCopy: { fontFamily, fontSize: 13, lineHeight: 19, color: colors.ink3, marginTop: 6 },
-  agentLink: { alignSelf: 'center', minHeight: 44, justifyContent: 'center', marginTop: 8 },
-  agentLinkText: { fontFamily, fontSize: 13, fontWeight: '700', color: colors.accent },
   delete: { alignSelf: 'center', paddingVertical: 10, marginTop: 4 },
   deleteText: { fontFamily, fontSize: 13, fontWeight: '600', color: colors.ink3 },
 });

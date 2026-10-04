@@ -1,7 +1,6 @@
 // Ranking, from the updated mockup (the reorderable list is the page itself): the headline, a compact list (rank, thumbnail,
 // address and label, NORA score, drag grip), the first home open with its
-// summary, tags and "Open this note", then "Share with your agent" and "Record
-// the next home". NORA re-ranks by itself when there's a new home or new
+// summary, tags and "Open this note", then "Record the next home". NORA re-ranks by itself when there's a new home or new
 // discussion; after "Save and update ranking" a banner confirms the saved visit.
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
@@ -197,8 +196,7 @@ export default function Ranking() {
     <View style={s.footer}>
       {state && enoughHomes ? (
         <View style={s.actions}>
-          <Button title="Share with your agent" onPress={() => router.navigate('/sharing')} />
-          <Button kind="secondary" title="Record the next home" onPress={() => router.push('/tour/locate')} />
+          <Button title="Record the next home" onPress={() => router.push('/tour/locate')} />
         </View>
       ) : null}
       {error ? <Banner tone="error">{error}</Banner> : null}
