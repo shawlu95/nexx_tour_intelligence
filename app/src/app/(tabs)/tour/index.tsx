@@ -128,7 +128,7 @@ export default function Tour() {
             <Pressable
               key={h.id}
               accessibilityRole="button"
-              onPress={() => router.push(`/properties/${h.id}`)}
+              onPress={() => router.push(`/tour/home/${h.id}`)}
               style={({ pressed }) => [s.row, pressed && { opacity: 0.8 }]}
             >
               <HomeThumb home={h} size={51} />

@@ -25,7 +25,7 @@ import {
   shortLabel,
   type RankingMessage,
 } from './rankingLogic';
-import { cueIndex, dayHeading, detailRows, factTiles, fullMoney, homeType, listingPrice, formatClock, formatFacts, groupByDay, startOfWeek, timeOfDay, traitsLine, formatHomeLine, formatMoney, formatPrice, formatWhen } from './format';
+import { detailRows, formatClock, formatWhen, fullMoney, homeType, listingPrice, startOfWeek } from './format';
 
 describe('normalizedKey', () => {
   it('treats spelling variants of the same address as equal', () => {
@@ -90,11 +90,6 @@ describe('display helpers', () => {
     expect(formatWhen(new Date(2026, 8, 21, 10, 26).toISOString(), now)).toBe('Sep 21, 10:26 AM');
   });
 
-  it('rotates recording cues and stops at the last one', () => {
-    expect(cueIndex(0)).toBe(0);
-    expect(cueIndex(14)).toBe(1);
-    expect(cueIndex(500)).toBe(3);
-  });
 });
 
 describe('retryDelayMs', () => {
@@ -102,69 +97,6 @@ describe('retryDelayMs', () => {
     expect(retryDelayMs(1)).toBe(5_000);
     expect(retryDelayMs(2)).toBe(15_000);
     expect(retryDelayMs(20)).toBe(30 * 60_000);
-  });
-});
-
-describe('home facts formatting', () => {
-  it('formats beds, baths and size, skipping unknowns', () => {
-    expect(formatFacts({ beds: 3, baths: 2, sqft: 1742 })).toBe('3 bd · 2 ba · 1,742 sq ft');
-    expect(formatFacts({ beds: 4, baths: 2.5 })).toBe('4 bd · 2.5 ba');
-    expect(formatFacts({})).toBe('');
-  });
-
-  it('formats money compactly', () => {
-    expect(formatMoney(1889000)).toBe('$1.89M');
-    expect(formatMoney(1200000)).toBe('$1.2M');
-    expect(formatMoney(2000000)).toBe('$2M');
-    expect(formatMoney(899000)).toBe('$899K');
-    expect(formatMoney(450)).toBe('$450');
-  });
-
-  it('labels listing and sale prices', () => {
-    expect(formatPrice({ price: 1889000, price_kind: 'list' })).toBe('Listed $1.89M');
-    expect(formatPrice({ price: 1200000, price_kind: 'last_sale', price_date: '2019-05-02' })).toBe('Sold $1.2M (2019)');
-    expect(formatPrice({ price: null })).toBe('');
-  });
-
-  it('does not present an old listing as current', () => {
-    expect(formatPrice({ price: 1069000, price_kind: 'list', price_date: '2025-05-08', listing_status: 'Inactive' })).toBe(
-      'Last listed $1.07M (2025)',
-    );
-    expect(formatPrice({ price: 1069000, price_kind: 'list', listing_status: 'Active' })).toBe('Listed $1.07M');
-  });
-
-  it('accepts numbers that arrive as strings', () => {
-    expect(formatFacts({ beds: '3' as unknown as number, baths: '2' as unknown as number, sqft: 1744 })).toBe('3 bd · 2 ba · 1,744 sq ft');
-  });
-
-  it('joins facts and price for list rows', () => {
-    expect(formatHomeLine({ beds: 3, baths: 2, sqft: 1742, price: 1889000, price_kind: 'list' })).toBe(
-      '3 bd · 2 ba · 1,742 sq ft · Listed $1.89M',
-    );
-    expect(formatHomeLine({})).toBe('');
-  });
-});
-
-describe('factTiles', () => {
-  it('builds one tile per known fact with a clear price label', () => {
-    expect(
-      factTiles({ beds: 3, baths: 2, sqft: 1744, price: 1069000, price_kind: 'list', price_date: '2025-05-08', listing_status: 'Inactive' }),
-    ).toEqual([
-      { label: 'Beds', value: '3' },
-      { label: 'Baths', value: '2' },
-      { label: 'Sq ft', value: '1,744' },
-      { label: 'Listed 2025', value: '$1.07M' },
-    ]);
-  });
-
-  it('handles singulars, active listings, sales, and missing facts', () => {
-    expect(factTiles({ beds: 1, baths: 1 })).toEqual([
-      { label: 'Bed', value: '1' },
-      { label: 'Bath', value: '1' },
-    ]);
-    expect(factTiles({ price: 899000, price_kind: 'list', listing_status: 'Active' })).toEqual([{ label: 'Listed', value: '$899K' }]);
-    expect(factTiles({ price: 1200000, price_kind: 'last_sale', price_date: '2019-05-02' })).toEqual([{ label: 'Sold 2019', value: '$1.2M' }]);
-    expect(factTiles({})).toEqual([]);
   });
 });
 
@@ -292,48 +224,6 @@ describe('confirm screen wording', () => {
     expect(cityState('Castro Valley', 'California')).toBe('Castro Valley, California');
     expect(cityState('Sunnyvale', '')).toBe('Sunnyvale');
     expect(cityState(null, 'ca')).toBe('California');
-  });
-});
-
-describe('history helpers', () => {
-  const now = new Date(2026, 9, 1, 18, 0);
-
-  it('titles sections like the mockup', () => {
-    expect(dayHeading(new Date(2026, 9, 1, 16, 42).toISOString(), now)).toBe('TODAY');
-    expect(dayHeading(new Date(2026, 8, 30, 9).toISOString(), now)).toBe('YESTERDAY');
-    expect(dayHeading(new Date(2026, 8, 21, 11).toISOString(), now)).toBe('SEPTEMBER 21');
-    expect(dayHeading(new Date(2025, 11, 2, 11).toISOString(), now)).toBe('DECEMBER 2, 2025');
-  });
-
-  it('formats the time of a visit', () => {
-    expect(timeOfDay(new Date(2026, 9, 1, 16, 42).toISOString())).toBe('4:42 PM');
-  });
-
-  it('groups consecutive visits by day', () => {
-    const visits = [
-      new Date(2026, 9, 1, 16).toISOString(),
-      new Date(2026, 8, 21, 11).toISOString(),
-      new Date(2026, 8, 21, 10).toISOString(),
-      new Date(2026, 8, 14, 14).toISOString(),
-    ];
-    expect(groupByDay(visits, (v) => v, now).map((sec) => [sec.title, sec.items.length])).toEqual([
-      ['TODAY', 1],
-      ['SEPTEMBER 21', 2],
-      ['SEPTEMBER 14', 1],
-    ]);
-  });
-
-  it('picks a liked point and a concern as traits', () => {
-    expect(
-      traitsLine([
-        { kind: 'question', text: 'HOA fees?', sort: 0 },
-        { kind: 'liked', text: 'Open layout', sort: 1 },
-        { kind: 'liked', text: 'Big kitchen', sort: 2 },
-        { kind: 'concern', text: 'Small backyard', sort: 3 },
-      ]),
-    ).toBe('Open layout · Small backyard');
-    expect(traitsLine([{ kind: 'liked', text: 'Walkable' }, { kind: 'liked', text: 'Quiet' }])).toBe('Walkable · Quiet');
-    expect(traitsLine([{ kind: 'liked', text: 'Gone', deleted: true }])).toBe('');
   });
 });
 

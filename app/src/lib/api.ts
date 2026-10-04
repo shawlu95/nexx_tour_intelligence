@@ -83,6 +83,72 @@ export function fetchProperty(id: string): Promise<Cached<{ property: Property; 
   });
 }
 
+export interface HomeVisit {
+  id: string;
+  recorded_at: string;
+  duration_seconds: number;
+  status: Visit['status'];
+  note: { id: string; overall: string; items: { kind: NoteItem['kind']; text: string }[] } | null;
+  /** What the buyer actually said or typed. */
+  transcript: string | null;
+}
+
+/** A home's page: the property and every visit (newest first) with its note and transcript. */
+export function fetchHome(id: string): Promise<Cached<{ property: Property; visits: HomeVisit[] }>> {
+  return withCache(`home:${id}`, async () => {
+    const [p, v] = await Promise.all([
+      supabase.from('properties').select('*').eq('id', id).single(),
+      supabase
+        .from('visits')
+        .select('id, recorded_at, duration_seconds, status, notes(id, overall, note_items(kind, text, deleted, sort)), transcripts(full_text)')
+        .eq('property_id', id)
+        .order('recorded_at', { ascending: false }),
+    ]);
+    if (p.error) throw p.error;
+    if (v.error) throw v.error;
+    type Raw = {
+      id: string;
+      recorded_at: string;
+      duration_seconds: number;
+      status: Visit['status'];
+      notes: RawNote | RawNote[] | null;
+      transcripts: { full_text: string } | { full_text: string }[] | null;
+    };
+    type RawNote = { id: string; overall: string; note_items: { kind: NoteItem['kind']; text: string; deleted: boolean; sort: number }[] };
+    const one = <T,>(x: T | T[] | null): T | null => (Array.isArray(x) ? (x[0] ?? null) : x);
+    const visits = ((v.data ?? []) as unknown as Raw[]).map((r) => {
+      const n = one(r.notes);
+      return {
+        id: r.id,
+        recorded_at: r.recorded_at,
+        duration_seconds: r.duration_seconds,
+        status: r.status,
+        note: n
+          ? {
+              id: n.id,
+              overall: n.overall,
+              items: (n.note_items ?? [])
+                .filter((i) => !i.deleted)
+                .sort((a, b) => a.sort - b.sort)
+                .map((i) => ({ kind: i.kind, text: i.text })),
+            }
+          : null,
+        transcript: one(r.transcripts)?.full_text ?? null,
+      };
+    });
+    return { property: p.data as Property, visits };
+  });
+}
+
+/**
+ * Edit reaction: NORA reads the buyer's rewritten reaction into Liked / Concerns
+ * bubbles. With save, the text and the bubbles replace the note's.
+ */
+export async function editReaction(visitId: string, text: string, save = false): Promise<{ kind: NoteItem['kind']; text: string }[]> {
+  const result = await callFunction<{ items: { kind: NoteItem['kind']; text: string }[] }>('edit-reaction', { visit_id: visitId, text, save });
+  return result.items;
+}
+
 export function fetchVisit(id: string): Promise<Cached<VisitDetail | null>> {
   return withCache(`visit:${id}`, async () => {
     const { data: visit, error } = await supabase

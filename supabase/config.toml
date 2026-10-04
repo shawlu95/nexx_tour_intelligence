@@ -15,3 +15,6 @@ verify_jwt = false
 
 [functions.rank-homes]
 verify_jwt = false
+
+[functions.edit-reaction]
+verify_jwt = false

@@ -344,7 +344,7 @@ function NoteReady({ detail, fit }: { detail: VisitDetail; fit: RankedHome | nul
         onPress={() => router.navigate({ pathname: '/ranking', params: { saved: home.id } })}
         style={s.save}
       />
-      <Pressable accessibilityRole="button" onPress={() => router.push(`/properties/${home.id}`)} style={s.review} hitSlop={8}>
+      <Pressable accessibilityRole="button" onPress={() => router.push(`/tour/home/${home.id}`)} style={s.review} hitSlop={8}>
         <Text style={s.reviewText}>Review this note</Text>
       </Pressable>
     </Screen>
