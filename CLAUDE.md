@@ -12,9 +12,9 @@ Voice note-taking app for home buyers. After leaving an open house, the buyer re
 
 | Path | Contents |
 |---|---|
-| `app/` | Expo SDK 57 / React Native 0.86 / TypeScript / Expo Router. Routes in `app/src/app/` (tabs: `tour/` with its own stack for locate → record, `ranking`, `homes` = History, `sharing/`, `profile`), logic in `app/src/lib/`, UI in `app/src/components/`. Screens follow the mockup at nexx-tour-intelligence.franksun0707.chatgpt.site. |
+| `app/` | Expo SDK 57 / React Native 0.86 / TypeScript / Expo Router. Routes in `app/src/app/` (tabs: `tour/` with its own stack: index = Tour history, locate → record/type → `note/[id]`, `home/[id]` = a home's page; `ranking`; `ask` = Ask NORA, the raised centre tab; `sharing/`; `profile/`. Root stack: `reaction/[visitId]` = Edit reaction; `visit/[id]` and `properties/[id]` only redirect), logic in `app/src/lib/`, UI in `app/src/components/`. Screens follow the mockup at nexx-tour-intelligence.franksun0707.chatgpt.site. |
 | `supabase/migrations/` | Schema, row-level security, storage bucket, `get_shared_note` RPC, `run_sweep` + pg_cron schedule |
-| `supabase/functions/` | Deno Edge Functions: `process-visit`, `sweep`, `delete-account`, `rank-homes`; shared code in `_shared/` |
+| `supabase/functions/` | Deno Edge Functions: `process-visit`, `sweep`, `delete-account`, `rank-homes`, `edit-reaction`; shared code in `_shared/` |
 | `share-web/` | Static page agents open from a share link (`index.html`, `config.js` is git-ignored) |
 | `app/modules/look-around/` | Local Expo native module (iOS, Swift) that makes home thumbnails with Apple Look Around or a map snapshot. Native changes need a rebuild. |
 
@@ -32,7 +32,7 @@ npx expo run:ios            # Simulator build (needs Xcode)
 
 # Supabase (project is already linked)
 supabase db push --yes
-supabase functions deploy process-visit sweep delete-account --use-api
+supabase functions deploy process-visit sweep delete-account rank-homes edit-reaction --use-api
 supabase db query --linked "<sql>"
 ```
 
