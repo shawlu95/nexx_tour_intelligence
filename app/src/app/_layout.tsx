@@ -1,8 +1,10 @@
+import { getForegroundPermissionsAsync } from 'expo-location';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { LocationSetup } from '../components/LocationSetup';
 import SignIn from '../components/SignIn';
 import { colors, Loading } from '../components/ui';
 import { AuthProvider, useAuth } from '../lib/auth';
@@ -12,6 +14,15 @@ import { startQueueTriggers } from '../lib/sync';
 function Root() {
   const { session, loading } = useAuth();
   const userId = session?.user.id;
+  // The one-time location explanation, while the permission hasn't been asked yet.
+  const [locationSetup, setLocationSetup] = useState<'checking' | 'needed' | 'done'>('checking');
+
+  useEffect(() => {
+    if (!userId) return;
+    getForegroundPermissionsAsync()
+      .then((p) => setLocationSetup(p.status === 'undetermined' ? 'needed' : 'done'))
+      .catch(() => setLocationSetup('done'));
+  }, [userId]);
 
   useEffect(() => {
     if (!userId) return;
@@ -26,6 +37,8 @@ function Root() {
 
   if (loading) return <Loading />;
   if (!session) return <SignIn />;
+  if (locationSetup === 'checking') return <Loading />;
+  if (locationSetup === 'needed') return <LocationSetup onDone={() => setLocationSetup('done')} />;
 
   return (
     <Stack
