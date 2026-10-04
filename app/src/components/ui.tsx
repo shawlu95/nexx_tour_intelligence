@@ -15,6 +15,8 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { useWorkspacePaused } from '../lib/sharingPreview';
 
 export const colors = {
@@ -215,6 +217,16 @@ export function TabHeader({ title }: { title?: string }) {
   );
 }
 
+/** The mockup's small "‹ Back" link at the top of screens inside a tab. */
+export function BackLink({ onPress = () => router.back() }: { onPress?: () => void }) {
+  return (
+    <Pressable accessibilityRole="link" onPress={onPress} hitSlop={10} style={styles.back}>
+      <SymbolView name="chevron.left" tintColor={colors.ink2} size={12} type="monochrome" />
+      <Text style={styles.backText}>Back</Text>
+    </Pressable>
+  );
+}
+
 export function Loading() {
   return (
     <View style={[styles.flex, styles.center]}>
@@ -266,4 +278,6 @@ export const styles = StyleSheet.create({
   wordmark: { fontSize: 16, fontWeight: '800', letterSpacing: 4, color: colors.ink },
   pill: { borderRadius: 999, paddingVertical: 4, paddingHorizontal: 9, alignSelf: 'flex-start' },
   pillText: { fontSize: 12, fontWeight: '600' },
+  back: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' },
+  backText: { fontSize: 15, fontWeight: '600', color: colors.ink2 },
 });

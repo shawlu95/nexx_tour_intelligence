@@ -1,8 +1,10 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { sendEmailCode, signInWithApple, signInWithGoogle, verifyEmailCode } from '../lib/auth';
 import { FREE_SIGNING } from '../lib/config';
+import { LegalDoc, type LegalDocName } from './Legal';
 import { Banner, Body, Button, colors, Field, Screen, Title } from './ui';
 
 type Step = 'choose' | 'email' | 'code';
@@ -20,6 +22,7 @@ export default function SignIn() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [appleAvailable, setAppleAvailable] = useState(false);
+  const [legal, setLegal] = useState<LegalDocName | null>(null);
 
   useEffect(() => {
     if (FREE_SIGNING) return;
@@ -115,8 +118,28 @@ export default function SignIn() {
           </View>
         )}
 
-        <Text style={s.legal}>Your notes are private. Nothing is shared unless you send a link.</Text>
+        <Text style={s.legal}>
+          By continuing, you agree to the{' '}
+          <Text style={s.legalLink} accessibilityRole="link" onPress={() => setLegal('terms')}>
+            Terms
+          </Text>{' '}
+          and acknowledge the{' '}
+          <Text style={s.legalLink} accessibilityRole="link" onPress={() => setLegal('privacy')}>
+            Privacy Policy
+          </Text>
+          . No agent can see your notes until you choose to share them.
+        </Text>
       </Screen>
+      <Modal visible={legal !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setLegal(null)}>
+        <SafeAreaView style={s.modal} edges={['top', 'bottom']}>
+          <View style={s.modalBar}>
+            <Pressable accessibilityRole="button" onPress={() => setLegal(null)} hitSlop={10}>
+              <Text style={s.done}>Done</Text>
+            </Pressable>
+          </View>
+          <ScrollView contentContainerStyle={s.modalBody}>{legal ? <LegalDoc doc={legal} /> : null}</ScrollView>
+        </SafeAreaView>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -128,5 +151,10 @@ const s = StyleSheet.create({
   headline: { fontSize: 32 },
   stack: { gap: 10 },
   apple: { height: 50, width: '100%' },
-  legal: { fontSize: 13, color: colors.ink3, textAlign: 'center', marginTop: 12 },
+  legal: { fontSize: 13, lineHeight: 19, color: colors.ink3, textAlign: 'center', marginTop: 12 },
+  legalLink: { color: colors.accent, fontWeight: '600', textDecorationLine: 'underline' },
+  modal: { flex: 1, backgroundColor: colors.bg },
+  modalBar: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 20, paddingVertical: 12 },
+  done: { fontSize: 17, fontWeight: '600', color: colors.accent },
+  modalBody: { padding: 20, paddingTop: 4 },
 });
