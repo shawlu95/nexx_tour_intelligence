@@ -4,7 +4,8 @@
 import { SymbolView, type SFSymbol } from 'expo-symbols';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { DesignSheet } from '../../../components/DesignSheet';
 import { Avatar } from '../../../components/Avatar';
 import { tapWarning } from '../../../lib/haptics';
 import { Button, colors, fontFamily, Screen, StatusPill, TabHeader } from '../../../components/ui';
@@ -29,37 +30,7 @@ export default function Profile() {
     if (user) listPending(user.id).then((p) => setUnsent(p.filter((v) => v.stage !== 'submitted').length));
   }, [user]);
 
-  function confirmSignOut() {
-    Alert.alert(
-      'Sign out?',
-      unsent > 0
-        ? `${unsent} recording${unsent === 1 ? " hasn't" : "s haven't"} uploaded yet and will be lost if you sign out now.`
-        : 'Your notes stay saved in your account.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign Out', style: unsent > 0 ? 'destructive' : 'default', onPress: () => void signOut() },
-      ],
-    );
-  }
-
-  function confirmDeactivate() {
-    Alert.alert(
-      'Deactivate your account?',
-      'Your workspace and agent access will pause. Your notes and account data are kept so you can reactivate later.',
-      [
-        { text: 'Keep Account Active', style: 'cancel' },
-        {
-          text: 'Deactivate',
-          style: 'destructive',
-          onPress: () => {
-            tapWarning();
-            setWorkspacePaused(true);
-            setToast('Account deactivated · agent access paused');
-          },
-        },
-      ],
-    );
-  }
+  const [asking, setAsking] = useState<'signout' | 'deactivate' | null>(null);
 
   const name = displayNameOf(user);
   const provider = (user?.app_metadata?.provider as string | undefined) ?? 'email';
@@ -91,7 +62,7 @@ export default function Profile() {
       </View>
 
       <LinkRow icon="checkmark.shield" label="Privacy & data" onPress={() => router.push('/profile/privacy')} />
-      <LinkRow icon="rectangle.portrait.and.arrow.right" label="Sign out" onPress={confirmSignOut} />
+      <LinkRow icon="rectangle.portrait.and.arrow.right" label="Sign out" onPress={() => setAsking('signout')} />
 
       <View style={s.status}>
         <Text style={s.cardTitle}>Account status</Text>
@@ -110,10 +81,44 @@ export default function Profile() {
             style={s.reactivate}
           />
         ) : (
-          <Button kind="danger" title="Deactivate account" onPress={confirmDeactivate} />
+          <Button kind="danger" title="Deactivate account" onPress={() => setAsking('deactivate')} />
         )}
       </View>
 
+      <DesignSheet
+        visible={asking === 'signout'}
+        tone={unsent > 0 ? 'danger' : 'primary'}
+        icon="rectangle.portrait.and.arrow.right"
+        title="Sign out?"
+        copy={
+          unsent > 0
+            ? `${unsent} recording${unsent === 1 ? " hasn't" : "s haven't"} uploaded yet and will be lost if you sign out now.`
+            : 'Your notes stay saved in your account.'
+        }
+        primaryLabel="Sign out"
+        onPrimary={() => {
+          setAsking(null);
+          void signOut();
+        }}
+        secondaryLabel="Cancel"
+        onSecondary={() => setAsking(null)}
+      />
+      <DesignSheet
+        visible={asking === 'deactivate'}
+        tone="danger"
+        iconText="!"
+        title="Deactivate your account?"
+        copy="Your workspace and agent access will pause. Your notes and account data are kept so you can reactivate later."
+        primaryLabel="Deactivate account"
+        onPrimary={() => {
+          setAsking(null);
+          tapWarning();
+          setWorkspacePaused(true);
+          setToast('Account deactivated · agent access paused');
+        }}
+        secondaryLabel="Keep account active"
+        onSecondary={() => setAsking(null)}
+      />
       {toast ? (
         <View style={s.toast} pointerEvents="none" accessibilityLiveRegion="polite">
           <Text style={s.toastText}>{toast}</Text>

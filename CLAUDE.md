@@ -67,7 +67,7 @@ Run tests, typecheck, lint and expo-doctor before calling app work done.
 - Font sizes come from Apple's text styles: 12 caption, 13 footnote, 15 subheadline, 16 callout, 17 body/headline, 20/22/28/34 titles. Nothing under 12 pt except tab-bar labels (10 pt). Every text style sets `fontFamily` (DM Sans, embedded natively).
 - 16 pt side margins. Touch targets at least 44 pt (use `hitSlop` on small text links). Text containers use `minHeight`, not `height`, so Dynamic Type can grow them.
 - Pushed screens use the system navigation bar (`nativeHeader` in `components/ui.tsx`, `<Screen header>`); only a tab's first screen shows the NORA wordmark header (`<Screen tab>` + `TabHeader`). Recording and typing are full-screen modals; Edit Reaction is a modal sheet with Cancel/Save in its bar.
-- Confirmations and destructive choices use `Alert.alert` (destructive style, Cancel as the cancel button), not custom sheets. Custom sheets only where the content needs links (the AI consent sheet).
+- Confirmations and destructive choices use the mockup's dialog, `components/DesignSheet.tsx` (bottom sheet, or `layout="center"` for the revisit card; `tone="danger"` for destructive). **Never use the native `Alert.alert`**: the designer wants the mockup's dialogs.
 - Haptics through `lib/haptics.ts`: selection for choices, impact for start/drag, success when something is saved, warning before deleting.
 - Scroll views dismiss the keyboard on drag and use `automaticallyAdjustKeyboardInsets` instead of KeyboardAvoidingView where possible.
 

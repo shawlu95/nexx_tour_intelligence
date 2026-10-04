@@ -15,10 +15,11 @@ import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Easing, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { AiConsentSheet } from '../../../components/AiConsentSheet';
+import { DesignSheet } from '../../../components/DesignSheet';
 import { colors, fontFamily } from '../../../components/ui';
 import type { AddressDraft } from '../../../lib/address';
 import { useUserId } from '../../../lib/auth';
@@ -175,36 +176,6 @@ export default function Record() {
     router.back();
   }
 
-  // The system alerts for the recording's three questions. Handlers go through a ref so
-  // an alert always calls the current version.
-  const handlers = useRef({ finish, keepRecording, discard, begin });
-  useEffect(() => {
-    handlers.current = { finish, keepRecording, discard, begin };
-  });
-  useEffect(() => {
-    if (phase === 'stillRecording') {
-      Alert.alert(
-        'Still recording?',
-        `I haven’t heard anything for ${SILENCE_SECONDS} seconds. Keep recording, or end this recording without saving a blank note.`,
-        [
-          { text: 'End Recording', onPress: () => void handlers.current.finish() },
-          { text: 'Keep Recording', style: 'cancel', onPress: () => handlers.current.keepRecording() },
-        ],
-        { cancelable: false },
-      );
-    } else if (phase === 'confirmDiscard') {
-      Alert.alert('Discard this recording?', 'Nothing will be saved for this home.', [
-        { text: 'Keep Recording', style: 'cancel', onPress: () => setPhaseNow('recording') },
-        { text: 'Discard', style: 'destructive', onPress: () => void handlers.current.discard() },
-      ]);
-    } else if (phase === 'noSound') {
-      Alert.alert('I’m not hearing anything.', 'No note has been created. Try again, or cancel without saving a blank home.', [
-        { text: 'Cancel', style: 'cancel', onPress: () => router.back() },
-        { text: 'Try Again', onPress: () => void handlers.current.begin() },
-      ]);
-    }
-  }, [phase]);
-
   // Start right away, as in the mockup (after asking for AI permission if it's off);
   // stop and throw away if the screen goes away mid-recording.
   useEffect(() => {
@@ -312,6 +283,38 @@ export default function Record() {
               : `Listening · NORA checks in after ${SILENCE_SECONDS} seconds of silence`}
         </Text>
       </View>
+      <DesignSheet
+        visible={phase === 'stillRecording'}
+        iconText={String(SILENCE_SECONDS)}
+        title="Still recording?"
+        copy={`I haven’t heard anything for ${SILENCE_SECONDS} seconds. Keep recording, or end this recording without saving a blank note.`}
+        primaryLabel="Keep recording"
+        onPrimary={keepRecording}
+        secondaryLabel="End recording"
+        onSecondary={() => void finish()}
+        onDismiss={keepRecording}
+      />
+      <DesignSheet
+        visible={phase === 'confirmDiscard'}
+        tone="danger"
+        iconText="!"
+        title="Discard this recording?"
+        copy="Nothing will be saved for this home."
+        primaryLabel="Discard"
+        onPrimary={() => void discard()}
+        secondaryLabel="Keep recording"
+        onSecondary={() => setPhaseNow('recording')}
+      />
+      <DesignSheet
+        visible={phase === 'noSound'}
+        icon="waveform"
+        title="I’m not hearing anything."
+        copy="No note has been created. Try again, or cancel without saving a blank home."
+        primaryLabel="Try again"
+        onPrimary={() => void begin()}
+        secondaryLabel="Cancel"
+        onSecondary={() => router.back()}
+      />
       <AiConsentSheet
         visible={askConsent}
         onDone={() => {

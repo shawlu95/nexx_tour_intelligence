@@ -4,7 +4,8 @@ import * as Location from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { SymbolView, type SFSymbol } from 'expo-symbols';
-import { Alert, Animated, Easing, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { DesignSheet } from '../../../components/DesignSheet';
 import { FactsRow, PriceLine, PropertyDetails, SourceLine } from '../../../components/PropertyFacts';
 import { Button, colors, fontFamily, Screen } from '../../../components/ui';
 import {
@@ -166,6 +167,7 @@ function Confirm({ found }: { found: Found }) {
   // A new home has no facts until its first note is processed.
   const facts = isSaved ? found.property : { facts_status: 'pending' as const };
   const [mode, setMode] = useState<'record' | 'type'>('record');
+  const [revisit, setRevisit] = useState<{ count: number; last: string | null } | null>(null);
   const [fade] = useState(() => new Animated.Value(0));
   useEffect(() => {
     Animated.timing(fade, { toValue: 1, duration: 220, useNativeDriver: true }).start();
@@ -177,6 +179,7 @@ function Confirm({ found }: { found: Found }) {
   }
 
   function go() {
+    setRevisit(null);
     const pathname = mode === 'record' ? '/tour/record' : '/tour/type';
     if (found.kind === 'existing') {
       router.push({ pathname, params: { propertyId: found.property.id, label: displayAddress(found.property), place } });
@@ -192,16 +195,7 @@ function Confirm({ found }: { found: Found }) {
       const { data } = await fetchProperty(found.property.id);
       const visits = data.visits.filter((v) => v.status !== 'failed');
       if (visits.length === 0) return go();
-      const count = visits.length;
-      const last = visits[0]?.recorded_at;
-      Alert.alert(
-        'Revisiting this home?',
-        `${address}\n${count} ${count === 1 ? 'visit' : 'visits'} saved${last ? ` · Last visit ${longWhen(last)}` : ''}\n\nThis will be visit ${count + 1}. NORA will combine your new reaction with your earlier notes. Each visit stays saved.`,
-        [
-          { text: 'Different Home or Unit', onPress: () => router.push('/tour/pick') },
-          { text: 'Yes, Add a Visit', style: 'cancel', onPress: go },
-        ],
-      );
+      setRevisit({ count: visits.length, last: visits[0]?.recorded_at ?? null });
     } catch {
       go();
     }
@@ -248,6 +242,30 @@ function Confirm({ found }: { found: Found }) {
         {isSaved ? <Text style={s.together}>One home. All your reactions, together.</Text> : null}
       </View>
 
+      <DesignSheet
+        visible={revisit !== null}
+        layout="center"
+        icon="arrow.counterclockwise"
+        eyebrow="WELCOME BACK"
+        title="Revisiting this home?"
+        primaryLabel="Yes, add a visit"
+        onPrimary={go}
+        secondaryLabel="Different home or unit"
+        secondaryAsLink
+        onSecondary={() => {
+          setRevisit(null);
+          router.push('/tour/pick');
+        }}
+      >
+        <Text style={s.revisitAddress}>{address}</Text>
+        <Text style={s.revisitMeta}>
+          {revisit?.count} {revisit?.count === 1 ? 'visit' : 'visits'} saved
+          {revisit?.last ? ` · Last visit ${longWhen(revisit.last)}` : ''}
+        </Text>
+        <Text style={s.revisitCopy}>
+          This will be visit {(revisit?.count ?? 0) + 1}. NORA will combine your new reaction with your earlier notes. Each visit stays saved.
+        </Text>
+      </DesignSheet>
     </Animated.View>
   );
 }
@@ -340,5 +358,8 @@ const s = StyleSheet.create({
   startNote: { minHeight: 44 },
   change: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   changeText: { fontFamily, fontSize: 15, fontWeight: '700', color: colors.accent, textAlign: 'center' },
+  revisitAddress: { fontFamily, fontSize: 15, fontWeight: '700', color: colors.ink, marginTop: 2 },
+  revisitMeta: { fontFamily, fontSize: 12, color: colors.ink3, textAlign: 'center' },
+  revisitCopy: { fontFamily, fontSize: 15, lineHeight: 21, color: colors.ink2, textAlign: 'center', marginTop: 6, marginBottom: 4 },
   together: { fontFamily, fontSize: 12, color: colors.ink3, textAlign: 'center' },
 });

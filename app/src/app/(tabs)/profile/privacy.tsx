@@ -5,8 +5,9 @@ import { getForegroundPermissionsAsync } from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, AppState, Linking, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { AppState, Linking, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { AI_CONSENT_COPY } from '../../../components/AiConsentSheet';
+import { DesignSheet } from '../../../components/DesignSheet';
 import { tapWarning } from '../../../lib/haptics';
 import { colors, fontFamily, Screen } from '../../../components/ui';
 import { deleteAccount } from '../../../lib/api';
@@ -48,32 +49,26 @@ export default function PrivacyAndData() {
     return () => sub.remove();
   }, [refresh]);
 
+  const [asking, setAsking] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+
   function confirmDelete() {
     if (deleting) return;
     tapWarning();
-    Alert.alert(
-      'Delete your account and data?',
-      `This permanently deletes your profile, tour notes, transcripts, summaries and rankings, and turns off every share link.${
-        unsent > 0 ? ` ${unsent} recording${unsent === 1 ? " that hasn't" : "s that haven't"} uploaded yet will be lost too.` : ''
-      } This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete Account',
-          style: 'destructive',
-          onPress: async () => {
-            setDeleting(true);
-            try {
-              await deleteAccount();
-              await signOut();
-            } catch (e) {
-              setDeleting(false);
-              Alert.alert("Couldn't delete your account", e instanceof Error ? e.message : 'Try again.');
-            }
-          },
-        },
-      ],
-    );
+    setDeleteError('');
+    setAsking(true);
+  }
+
+  async function deleteEverything() {
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await deleteAccount();
+      await signOut();
+    } catch (e) {
+      setDeleting(false);
+      setDeleteError(e instanceof Error ? e.message : "Couldn't delete your account. Try again.");
+    }
   }
 
   return (
@@ -172,6 +167,21 @@ export default function PrivacyAndData() {
       </View>
       <Text style={s.footer}>NORA is designed without advertising or cross-app tracking.</Text>
 
+      <DesignSheet
+        visible={asking}
+        tone="danger"
+        iconText="!"
+        title="Delete your account and data?"
+        copy={`This permanently deletes your profile, tour notes, transcripts, summaries and rankings, and turns off every share link.${
+          unsent > 0 ? ` ${unsent} recording${unsent === 1 ? " that hasn't" : "s that haven't"} uploaded yet will be lost too.` : ''
+        } This cannot be undone.`}
+        primaryLabel="Delete account and data"
+        onPrimary={() => void deleteEverything()}
+        secondaryLabel="Cancel"
+        onSecondary={() => setAsking(false)}
+        busy={deleting}
+        error={deleteError}
+      />
     </Screen>
   );
 }
