@@ -147,6 +147,7 @@ export default function SignIn() {
               <>
                 <Text style={s.fieldLabel}>Email address</Text>
                 <TextInput
+                  key="email"
                   accessibilityLabel="Email address"
                   style={s.input}
                   value={email}
@@ -180,14 +181,16 @@ export default function SignIn() {
               <>
                 <Text style={s.fieldLabel}>Verification code</Text>
                 <TextInput
+                  key="code"
                   accessibilityLabel="Verification code"
-                  style={[s.input, s.codeInput]}
+                  // Wide digits only once typed: the placeholder stays normal text.
+                  style={[s.input, code.length > 0 && s.codeInput]}
                   value={code}
                   onChangeText={(t) => setCode(t.replace(/\D/g, '').slice(0, 10))}
                   keyboardType="number-pad"
                   autoComplete="one-time-code"
                   textContentType="oneTimeCode"
-                  placeholder="Code from the email"
+                  placeholder="Enter code"
                   placeholderTextColor="#8C95A6"
                   autoFocus
                 />
