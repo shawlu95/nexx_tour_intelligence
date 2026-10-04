@@ -66,3 +66,15 @@ export function useWorkspacePaused(): boolean {
     () => paused,
   );
 }
+
+/**
+ * The workspace badge: "Paused" after deactivation, "Invite pending" (yellow)
+ * while an agent invitation is waiting, otherwise "Private" (green).
+ */
+export function useWorkspaceStatus(): { label: string; tone: 'good' | 'warn' | 'neutral' } {
+  const paused = useWorkspacePaused();
+  const pending = usePreviewAgents().length > 0;
+  if (paused) return { label: 'Paused', tone: 'neutral' };
+  if (pending) return { label: 'Invite pending', tone: 'warn' };
+  return { label: 'Private', tone: 'good' };
+}

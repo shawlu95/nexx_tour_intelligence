@@ -11,13 +11,14 @@ import { tapWarning } from '../../../lib/haptics';
 import { Button, colors, fontFamily, Screen, StatusPill, TabHeader } from '../../../components/ui';
 import { displayNameOf, signOut, useAuth } from '../../../lib/auth';
 import { listPending } from '../../../lib/localdb';
-import { setWorkspacePaused, useWorkspacePaused } from '../../../lib/sharingPreview';
+import { setWorkspacePaused, useWorkspacePaused, useWorkspaceStatus } from '../../../lib/sharingPreview';
 
 export default function Profile() {
   const { session } = useAuth();
   const user = session?.user;
   const [unsent, setUnsent] = useState(0);
   const paused = useWorkspacePaused(); // UI-only preview of deactivation
+  const workspace = useWorkspaceStatus();
   const [toast, setToast] = useState('');
 
   useEffect(() => {
@@ -58,7 +59,7 @@ export default function Profile() {
         <Text style={s.cardTitle}>Account details</Text>
         <Detail label="Email" value={user?.email ?? '—'} />
         <Detail label="Sign-in method" value={signInMethod} />
-        <Detail label="Workspace" value={paused ? 'Paused' : 'Private'} last />
+        <Detail label="Workspace" value={workspace.label} last />
       </View>
 
       <LinkRow icon="checkmark.shield" label="Privacy & data" onPress={() => router.push('/profile/privacy')} />
