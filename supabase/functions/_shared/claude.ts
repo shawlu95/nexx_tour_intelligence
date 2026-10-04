@@ -89,6 +89,7 @@ const RANK_MODE = `This is a Ranking turn. Output:
 - headline: one short sentence naming the best fit, under 10 words (e.g. "Laredo Rd is your best fit").
 - ranking: every home exactly once, rank 1 = best fit.
   - label: 2 to 4 words that sum up why it's at that rank (e.g. "Best overall fit", "Strong contender", "Great location", "Too much renovation"). No full sentences.
+  - note: one short sentence, under 10 words, on what most affects this home's fit (e.g. "Power-line impact needs research.", "Quiet street outweighs the small yard.").
   - pros: up to 3 short tags, 1 to 3 words each, the strengths that matter to this buyer (e.g. "Big yard", "Bright kitchen").
   - cons: up to 3 short tags, the weaknesses that matter to this buyer (e.g. "Small backyard", "Power lines").
   - score: 0 to 10, one decimal, how well the home fits this buyer's priorities. It's a rough guide for comparison, not a precise measure: 10 = matches everything that matters, 5 = mixed, 0 = fails a must-have. Scores must not increase down the ranking. Make the gaps meaningful: homes that are a close call get close scores (8.4 vs 8.1); a clear difference gets a big gap (8.4 vs 5.2).

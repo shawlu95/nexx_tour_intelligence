@@ -137,7 +137,7 @@ export default function Record() {
     });
     void runQueue({ force: true });
     router.dismissTo('/tour');
-    router.push(`/visit/${visitId}`);
+    router.push(`/tour/note/${visitId}`);
   }, [stopRecorder, userId, params.propertyId, params.label, draft, meterSeen, heardVoice]);
 
   // Ten seconds without speech: ask "Still recording?" while the recorder keeps going.

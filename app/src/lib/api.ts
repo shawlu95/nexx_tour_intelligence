@@ -1,7 +1,7 @@
 // Reads and writes against Supabase. Reads fall back to the on-phone cache when offline.
 import { cacheGet, cacheSet } from './localdb';
 import { callFunction, supabase } from './supabase';
-import type { ItemKind, Note, NoteItem, Property, ShareLink, Visit } from './types';
+import type { Note, NoteItem, Property, ShareLink, Visit } from './types';
 
 export type PropertyCard = Pick<
   Property,
@@ -126,37 +126,12 @@ export async function retryVisit(visitId: string, regenerate = false) {
 
 // --- Note edits -------------------------------------------------------------
 
-export async function updateItemText(itemId: string, text: string) {
-  const { error } = await supabase.from('note_items').update({ text, edited: true }).eq('id', itemId);
-  if (error) throw error;
-}
-
-export async function deleteItem(itemId: string) {
-  const { error } = await supabase.from('note_items').update({ deleted: true }).eq('id', itemId);
-  if (error) throw error;
-}
-
-export async function addItem(noteId: string, kind: ItemKind, text: string, sort: number): Promise<NoteItem> {
-  const { data, error } = await supabase
-    .from('note_items')
-    .insert({ note_id: noteId, kind, text, origin: 'buyer', sort })
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as NoteItem;
-}
-
 /** Saves the buyer's answer to the note's follow-up question ('skipped' to dismiss it). */
 export async function answerClarify(noteId: string, answer: string) {
   const { error } = await supabase
     .from('notes')
     .update({ clarify_answer: answer, clarify_answered_at: new Date().toISOString() })
     .eq('id', noteId);
-  if (error) throw error;
-}
-
-export async function updatePersonalNote(noteId: string, personalNote: string) {
-  const { error } = await supabase.from('notes').update({ personal_note: personalNote, edited_by_buyer: true }).eq('id', noteId);
   if (error) throw error;
 }
 
@@ -188,15 +163,6 @@ export async function revokeShareLink(linkId: string) {
 }
 
 // --- Deleting ---------------------------------------------------------------
-
-export async function deleteVisit(visit: Pick<Visit, 'id' | 'audio_path'>) {
-  if (visit.audio_path) {
-    const { error } = await supabase.storage.from('audio').remove([visit.audio_path]);
-    if (error) throw error;
-  }
-  const { error } = await supabase.from('visits').delete().eq('id', visit.id);
-  if (error) throw error;
-}
 
 export async function deleteProperty(propertyId: string) {
   const { data, error } = await supabase.from('visits').select('audio_path').eq('property_id', propertyId);

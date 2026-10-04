@@ -37,7 +37,7 @@ export async function registerForPush(userId: string): Promise<void> {
 export function listenForNotificationTaps(): () => void {
   const open = (data: unknown) => {
     const visitId = (data as { visitId?: string } | undefined)?.visitId;
-    if (visitId) router.push(`/visit/${visitId}`);
+    if (visitId) router.push(`/tour/note/${visitId}`);
   };
   const last = Notifications.getLastNotificationResponse();
   if (last) open(last.notification.request.content.data);

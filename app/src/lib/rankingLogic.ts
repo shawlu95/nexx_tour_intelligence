@@ -16,6 +16,8 @@ export interface RankedHome {
   cons?: string[];
   /** Rankings saved before labels existed carry a sentence here instead. */
   reason?: string;
+  /** One short sentence on what most affects the fit ("Power-line impact needs research."). */
+  note?: string;
 }
 
 export interface Priority {

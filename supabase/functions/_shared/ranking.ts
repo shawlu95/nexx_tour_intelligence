@@ -22,6 +22,8 @@ export interface RankedHome {
   /** Short tags, 1–3 words each, at most 3. */
   pros: string[];
   cons: string[];
+  /** One short sentence on what most affects the fit, e.g. "Power-line impact needs research." */
+  note: string;
 }
 
 export interface Priority {
@@ -69,12 +71,13 @@ export const RANK_SCHEMA = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['property_id', 'rank', 'score', 'label', 'pros', 'cons'],
+        required: ['property_id', 'rank', 'score', 'label', 'note', 'pros', 'cons'],
         properties: {
           property_id: { type: 'string' },
           rank: { type: 'integer' },
           score: { type: 'number' },
           label: { type: 'string' },
+          note: { type: 'string' },
           pros: { type: 'array', items: { type: 'string' } },
           cons: { type: 'array', items: { type: 'string' } },
         },
@@ -222,12 +225,13 @@ export function normalizeRanking(raw: (Partial<RankedHome> & { property_id: stri
       rank: 0,
       score: cleanScore(r.score),
       label: shortText(r.label, 32),
+      note: shortText(r.note, 90),
       pros: tags(r.pros),
       cons: tags(r.cons),
     });
   }
   for (const id of homeIds) {
-    if (!seen.has(id)) kept.push({ property_id: id, rank: 0, score: null, label: '', pros: [], cons: [] });
+    if (!seen.has(id)) kept.push({ property_id: id, rank: 0, score: null, label: '', note: '', pros: [], cons: [] });
   }
   let ceiling = 10;
   return kept.map((r, i) => {

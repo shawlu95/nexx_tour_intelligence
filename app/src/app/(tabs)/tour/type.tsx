@@ -43,7 +43,7 @@ export default function TypeNote() {
     });
     void runQueue({ force: true });
     router.dismissTo('/tour');
-    router.push(`/visit/${visitId}`);
+    router.push(`/tour/note/${visitId}`);
   }
 
   async function organize() {
