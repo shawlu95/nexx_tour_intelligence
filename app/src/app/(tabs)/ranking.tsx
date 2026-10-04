@@ -1,11 +1,15 @@
-import { router, useFocusEffect } from 'expo-router';
+// Ranking, from the updated mockup: the headline, a compact list (rank, thumbnail,
+// address and label, NORA score, drag grip), the first home open with its
+// summary, tags and "Open this note", then "Share with your agent" and "Record
+// the next home". NORA re-ranks by itself when there's a new home or new
+// discussion; after "Save and update ranking" a banner confirms the saved visit.
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { NestedReorderableList, reorderItems, ScrollViewContainer, useReorderableDrag } from 'react-native-reorderable-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SymbolView } from 'expo-symbols';
 import { HomeThumb } from '../../components/HomeThumb';
-import { Banner, Body, Button, colors, Eyebrow, fontFamily, TabHeader } from '../../components/ui';
+import { Banner, Body, Button, colors, fontFamily, TabHeader } from '../../components/ui';
 import { displayAddress } from '../../lib/address';
 import type { PropertyCard } from '../../lib/api';
 import {
@@ -20,18 +24,23 @@ import {
   saveOverride,
   sendRankingTurn,
   shortLabel,
-  type Fit,
   type RankedHome,
   type RankingState,
 } from '../../lib/ranking';
 
+/** A home NORA hasn't ranked yet, shown at the end of the list until the next ranking. */
+function unranked(id: string, rank: number): RankedHome {
+  return { property_id: id, rank, fit: 'weak', label: '' };
+}
+
 export default function Ranking() {
+  const { saved } = useLocalSearchParams<{ saved?: string }>();
   const [state, setState] = useState<RankingState | null>(null);
   const [loadError, setLoadError] = useState('');
   const [ranking, setRanking] = useState(false);
   const [error, setError] = useState('');
   const [open, setOpen] = useState<string | null>(null);
-  const started = useRef(false);
+  const autoRanked = useRef('');
 
   const rank = useCallback(async () => {
     setRanking(true);
@@ -52,11 +61,13 @@ export default function Ranking() {
       const s = await fetchRankingState();
       setState(s);
       setLoadError('');
-      // Rank right away on first visit, or once if the latest ranking predates short labels.
+      // Re-rank by itself when the ranking is missing, out of date, or predates scores and labels.
       const current = latestRanking(s.messages);
       const outdated = !!current && !current.ranking!.some((r) => r.label && typeof r.score === 'number');
-      if (!started.current && !s.offline && (!current || outdated) && s.rankableIds.length >= 2) {
-        started.current = true;
+      const stale = !current || outdated || newHomesSince(current, s.rankableIds).length > 0 || discussedSinceRanking(s.messages);
+      const key = `${current?.id ?? 'none'}:${s.rankableIds.length}:${s.messages.length}`;
+      if (stale && !s.offline && s.rankableIds.length >= 2 && autoRanked.current !== key) {
+        autoRanked.current = key;
         void rank();
       }
     } catch {
@@ -69,20 +80,29 @@ export default function Ranking() {
       void load();
     }, [load]),
   );
+  // The saved banner belongs to the visit that was just saved; drop it when leaving.
+  useFocusEffect(
+    useCallback(() => () => saved && router.setParams({ saved: undefined }), [saved]),
+  );
 
   const latest = state ? latestRanking(state.messages) : null;
-  const fresh = state && latest ? newHomesSince(latest, state.rankableIds) : [];
-  const discussed = state ? discussedSinceRanking(state.messages) : false;
-  const enoughHomes = (state?.rankableIds.length ?? 0) >= 2;
   const noraList = latest?.ranking ?? [];
-  // The buyer's dragged order wins over NORA's until they revert or re-rank.
+  const fresh = state && latest ? newHomesSince(latest, state.rankableIds) : (state?.rankableIds ?? []);
+  // The buyer's dragged order wins over NORA's until they restore it or NORA re-ranks.
   const override = state?.override ?? null;
-  const list = applyOverride(noraList, override);
+  const ordered = applyOverride(noraList, override);
+  const list = [...ordered, ...fresh.map((id, i) => unranked(id, ordered.length + i + 1))];
   const reordered = differsFrom(noraList, override);
-  const expanded = open ?? list[0]?.property_id ?? null;
+  // The first home starts open; '' means the buyer closed every row. A home that left the list can't stay open.
+  const expanded =
+    open === '' ? null : open && list.some((r) => r.property_id === open) ? open : (list[0]?.property_id ?? null);
+  const enoughHomes = (state?.rankableIds.length ?? 0) >= 2;
+  const topHome = list[0] ? state?.homes.get(list[0].property_id) : undefined;
+  const headline = reordered && topHome ? `${topHome.address_line} is your #1` : latest?.content || 'Your homes, best fit first';
 
   async function reorder(next: RankedHome[]) {
-    const ids = next.map((r) => r.property_id);
+    // Homes NORA hasn't ranked yet always stay at the end.
+    const ids = next.filter((r) => noraList.some((n) => n.property_id === r.property_id)).map((r) => r.property_id);
     const previous = state?.override ?? null;
     setState((st) => (st ? { ...st, override: ids } : st));
     setError('');
@@ -94,7 +114,7 @@ export default function Ranking() {
     }
   }
 
-  async function revert() {
+  async function restore() {
     const previous = state?.override ?? null;
     setState((st) => (st ? { ...st, override: null } : st));
     try {
@@ -105,196 +125,181 @@ export default function Ranking() {
     }
   }
 
-  const topHome = list[0] ? state?.homes.get(list[0].property_id) : undefined;
-
   return (
     // ScrollViewContainer lets the nested ranking list take over vertical drags.
     <SafeAreaView style={s.root} edges={['top', 'left', 'right']}>
       <ScrollViewContainer contentContainerStyle={s.screen} keyboardShouldPersistTaps="handled">
-      <TabHeader />
+        <TabHeader />
 
-      {loadError ? <Banner tone="error">{loadError}</Banner> : null}
-      {state?.offline ? <Banner>{"You're offline. Showing your last ranking."}</Banner> : null}
-      {!state && !loadError ? <ActivityIndicator color={colors.accent} /> : null}
+        {loadError ? <Banner tone="error">{loadError}</Banner> : null}
+        {state?.offline ? <Banner>{"You're offline. Showing your last ranking."}</Banner> : null}
+        {!state && !loadError ? <ActivityIndicator color={colors.accent} /> : null}
 
-      {state && !enoughHomes ? (
-        <View style={s.empty}>
-          <Eyebrow>Your ranking</Eyebrow>
-          <Text style={s.headline}>Tour a couple of homes first</Text>
-          <Body muted>Record your reaction to at least two homes, and NORA will rank them from your notes and the home facts.</Body>
-          <Button title="Record a home" onPress={() => router.push('/tour/locate')} />
-        </View>
-      ) : null}
+        {state && !enoughHomes ? (
+          <View style={s.empty}>
+            <Text style={s.eyebrow}>YOUR RANKING</Text>
+            <Text style={s.headline}>Tour a couple of homes first</Text>
+            <Body muted>Record your reaction to at least two homes, and NORA will rank them from your notes and the home facts.</Body>
+            <Button title="Record a home" onPress={() => router.push('/tour/locate')} />
+          </View>
+        ) : null}
 
-      {state && enoughHomes && !latest ? (
-        <View style={s.empty}>
-          <Eyebrow>Your ranking</Eyebrow>
-          {ranking ? (
-            <View style={s.thinking}>
-              <ActivityIndicator color={colors.accent} />
-              <Text style={s.thinkingText}>NORA is reading your notes and ranking your homes…</Text>
-            </View>
-          ) : (
-            <Button title="Rank my homes" onPress={rank} />
-          )}
-        </View>
-      ) : null}
-
-      {state && latest ? (
-        <>
-          <View style={s.heading}>
-            <View style={s.headingRow}>
-              <Eyebrow>{reordered ? 'Your order' : 'Your ranking'}</Eyebrow>
+        {state && enoughHomes ? (
+          <>
+            <View style={s.heading}>
+              <View style={s.flex}>
+                <Text style={s.eyebrow}>YOUR RANKING</Text>
+                <Text style={s.headline} accessibilityRole="header">
+                  {latest ? headline : 'Ranking your homes…'}
+                </Text>
+              </View>
               <View style={s.count}>
                 <Text style={s.countText}>{list.length} homes</Text>
               </View>
             </View>
-            <Text style={s.headline} accessibilityRole="header">
-              {reordered && topHome ? `${topHome.address_line} is your #1` : latest.content || 'Your homes, best fit first'}
-            </Text>
             <Text style={s.helper}>Tap a home for details. Drag the grip to make this list your own; NORA scores stay unchanged.</Text>
+
             {reordered ? (
-              <Pressable accessibilityRole="button" onPress={revert} hitSlop={8} style={s.revert}>
-                <SymbolView name="arrow.uturn.backward" tintColor={colors.ink3} size={12} type="monochrome" />
-                <Text style={s.revertText}>Restore NORA ranking</Text>
-              </Pressable>
+              <View style={s.yourOrder}>
+                <View style={s.flex}>
+                  <Text style={s.yourOrderTitle}>Your order</Text>
+                  <Text style={s.yourOrderCopy}>NORA scores are unchanged</Text>
+                </View>
+                <Pressable accessibilityRole="button" onPress={restore} hitSlop={8}>
+                  <Text style={s.restore}>Restore NORA ranking</Text>
+                </Pressable>
+              </View>
             ) : null}
-          </View>
 
-          {fresh.length > 0 || discussed ? (
-            <View style={s.update}>
-              <Text style={s.updateText}>
-                {fresh.length > 0
-                  ? fresh.length === 1
-                    ? "You've recorded a new home since this ranking."
-                    : `You've recorded ${fresh.length} new homes since this ranking.`
-                  : 'You discussed new preferences since this ranking.'}
-              </Text>
-              <Button title="Update ranking" onPress={rank} loading={ranking} />
-            </View>
-          ) : null}
+            {saved ? (
+              <View style={s.savedBanner} accessibilityLiveRegion="polite">
+                <Text style={s.savedText}>1 visit saved · Reaction saved</Text>
+              </View>
+            ) : null}
+            {ranking ? (
+              <View style={s.updating}>
+                <ActivityIndicator size="small" color={colors.accent} />
+                <Text style={s.updatingText}>NORA is updating your ranking…</Text>
+              </View>
+            ) : null}
 
-          <View style={[s.list, ranking && { opacity: 0.5 }]}>
-            <NestedReorderableList
-              // The page scrolls, not the list. Without this React Native warns about a
-              // scrollable list nested in a ScrollView.
-              scrollEnabled={false}
-              data={list}
-              keyExtractor={(r) => r.property_id}
-              onReorder={({ from, to }) => reorder(reorderItems(list, from, to))}
-              renderItem={({ item: r, index }) => (
-                <RankRow
-                  item={r}
-                  home={state.homes.get(r.property_id)}
-                  first={index === 0}
-                  expanded={expanded === r.property_id}
-                  onToggle={() => setOpen(expanded === r.property_id ? '' : r.property_id)}
+            {list.length > 0 ? (
+              <View style={[s.list, ranking && { opacity: 0.6 }]}>
+                <NestedReorderableList
+                  // The page scrolls, not the list. Without this React Native warns about a
+                  // scrollable list nested in a ScrollView.
+                  scrollEnabled={false}
+                  data={list}
+                  keyExtractor={(r) => r.property_id}
+                  onReorder={({ from, to }) => reorder(reorderItems(list, from, to))}
+                  renderItem={({ item: r, index }) => (
+                    <RankRow
+                      item={r}
+                      home={state.homes.get(r.property_id)}
+                      summary={state.summaries?.[r.property_id]}
+                      justAdded={r.property_id === saved}
+                      first={index === 0}
+                      expanded={expanded === r.property_id}
+                      onToggle={() => setOpen(expanded === r.property_id ? '' : r.property_id)}
+                    />
+                  )}
                 />
-              )}
-            />
-          </View>
+              </View>
+            ) : null}
 
-          <View style={s.actions}>
-            <Button title="Record the next home" onPress={() => router.push('/tour/locate')} />
-          </View>
-        </>
-      ) : null}
+            <View style={s.actions}>
+              <Button title="Share with your agent" onPress={() => router.navigate('/sharing')} />
+              <Button kind="secondary" title="Record the next home" onPress={() => router.push('/tour/locate')} />
+            </View>
+          </>
+        ) : null}
 
-      {error ? <Banner tone="error">{error}</Banner> : null}
+        {error ? <Banner tone="error">{error}</Banner> : null}
       </ScrollViewContainer>
     </SafeAreaView>
   );
 }
 
-const FIT: Record<Fit, { label: string; color: string }> = {
-  strong: { label: 'Strong', color: colors.good },
-  good: { label: 'Good', color: colors.accent },
-  weak: { label: 'Weak', color: colors.ink3 },
-};
-
 function RankRow({
   item,
   home,
+  summary,
+  justAdded,
   first,
   expanded,
   onToggle,
 }: {
   item: RankedHome;
   home: PropertyCard | undefined;
+  summary: string | undefined;
+  justAdded: boolean;
   first: boolean;
   expanded: boolean;
   onToggle: () => void;
 }) {
-  // Starts a drag of this row: a short hold on the number, or a long press anywhere.
-  // Not on touch-down: a swipe that starts on the number must still scroll the page, and
-  // a quick tap could leave the library's page-scroll lock on (it unlocks on finger-up).
+  // Drag from the grip (a short hold), or with a long press anywhere on the row.
   const drag = useReorderableDrag();
-  const label = shortLabel(item);
+  const score = formatScore(item);
+  const scored = score !== null;
+  const label = scored ? `${shortLabel(item)}${justAdded ? ' · just added' : ''}` : 'New home · not yet scored';
   const pros = item.pros ?? [];
   const cons = item.cons ?? [];
   const address = home ? displayAddress(home) : 'Home';
-  const score = formatScore(item);
-  const hasDetail = pros.length > 0 || cons.length > 0 || !!home;
   return (
     <View style={[s.row, !first && s.rowDivider]}>
-      <View style={s.rowTop}>
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded }}
-        accessibilityLabel={`Number ${item.rank}, ${address}${label ? `, ${label}` : ''}, ${score ? `score ${score} out of 10` : `${FIT[item.fit].label} fit`}`}
+        accessibilityLabel={`Number ${item.rank}, ${address}, ${label}, ${scored ? `score ${score} out of 10` : 'not scored yet'}`}
         onPress={onToggle}
         onLongPress={drag}
-        style={({ pressed }) => [s.rowMain, pressed && { opacity: 0.7 }]}
+        style={({ pressed }) => [s.trigger, pressed && { opacity: 0.7 }]}
       >
-        {/* The number is the drag handle ("Drag its number to change the order"). */}
-        <Pressable
-          onLongPress={drag}
-          delayLongPress={150}
-          hitSlop={8}
-          accessibilityRole="button"
-          accessibilityLabel={`Drag to move ${address}`}
-          style={[s.badge, item.rank === 1 && s.badgeFirst]}
-        >
-          <Text style={[s.badgeText, item.rank === 1 && s.badgeTextFirst]}>{item.rank}</Text>
-        </Pressable>
-        <HomeThumb home={home} size={48} />
+        <View style={[s.number, item.rank === 1 && s.numberFirst]}>
+          <Text style={[s.numberText, item.rank === 1 && s.numberTextFirst]}>{item.rank}</Text>
+        </View>
+        <HomeThumb home={home} size={42} />
         <View style={s.flex}>
           <Text style={s.address} numberOfLines={1}>
             {address}
           </Text>
-          {label ? (
-            <Text style={s.label} numberOfLines={2}>
-              {label}
-            </Text>
-          ) : null}
+          <Text style={s.label} numberOfLines={1}>
+            {label}
+          </Text>
         </View>
-        {score ? (
-          <Text style={[s.score, item.rank === 1 && { color: colors.accent }]}>{score}</Text>
-        ) : (
-          <Text style={[s.fit, { color: FIT[item.fit].color }]}>{FIT[item.fit].label}</Text>
-        )}
+        <Text style={s.score}>{score ?? '—'}</Text>
+        <Pressable
+          onLongPress={drag}
+          delayLongPress={120}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={`Drag to move ${address}`}
+          style={s.grip}
+        >
+          <Text style={s.gripText}>⋮⋮</Text>
+        </Pressable>
       </Pressable>
-      </View>
 
-      {expanded && hasDetail ? (
-        <View style={s.detail}>
+      {expanded ? (
+        <View style={s.notes}>
+          {summary ? <Text style={s.summary}>{summary}</Text> : null}
           {pros.length > 0 || cons.length > 0 ? (
             <View style={s.tags}>
               {pros.map((t) => (
-                <View key={`p-${t}`} style={[s.tag, s.tagPro]}>
-                  <Text style={[s.tagText, { color: colors.good }]}>{t}</Text>
-                </View>
+                <Text key={`p-${t}`} style={[s.tag, s.tagPro]}>
+                  {t}
+                </Text>
               ))}
               {cons.map((t) => (
-                <View key={`c-${t}`} style={[s.tag, s.tagCon]}>
-                  <Text style={[s.tagText, { color: colors.warn }]}>{t}</Text>
-                </View>
+                <Text key={`c-${t}`} style={[s.tag, s.tagCon]}>
+                  {t}
+                </Text>
               ))}
             </View>
           ) : null}
           {home ? (
-            <Pressable accessibilityRole="link" onPress={() => router.push(`/properties/${home.id}`)} hitSlop={8}>
-              <Text style={s.open}>Open home ›</Text>
+            <Pressable accessibilityRole="link" onPress={() => router.push(`/tour/home/${home.id}`)} hitSlop={8} style={s.openNote}>
+              <Text style={s.openNoteText}>Open this note</Text>
             </Pressable>
           ) : null}
         </View>
@@ -305,40 +310,51 @@ function RankRow({
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  screen: { padding: 20, gap: 18, flexGrow: 1 },
+  screen: { padding: 20, gap: 0, flexGrow: 1 },
   flex: { flex: 1 },
-  empty: { gap: 14, backgroundColor: colors.surface, borderRadius: 20, borderWidth: 1, borderColor: colors.line, padding: 20 },
-  thinking: { alignItems: 'center', gap: 12, paddingVertical: 12 },
-  thinkingText: { fontFamily, fontSize: 15, color: colors.ink2, textAlign: 'center' },
-  heading: { gap: 6 },
-  headingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  count: { backgroundColor: colors.sunk, borderRadius: 999, paddingVertical: 4, paddingHorizontal: 10 },
-  countText: { fontFamily, fontSize: 12, fontWeight: '600', color: colors.ink2 },
-  headline: { fontFamily, fontSize: 26, fontWeight: '800', color: colors.ink, letterSpacing: -0.4, lineHeight: 31 },
-  helper: { fontFamily, fontSize: 14, color: colors.ink3 },
-  update: { gap: 10, backgroundColor: colors.accentSoft, borderRadius: 16, padding: 16 },
-  updateText: { fontFamily, fontSize: 15, color: colors.accent, fontWeight: '600' },
-  list: { backgroundColor: colors.surface, borderRadius: 20, borderWidth: 1, borderColor: colors.line, overflow: 'hidden' },
-  row: { paddingHorizontal: 16, backgroundColor: colors.surface },
-  rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
-  rowTop: { flexDirection: 'row', alignItems: 'center' },
-  rowMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
-  revert: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', marginTop: 2 },
-  revertText: { fontFamily, fontSize: 13, color: colors.ink3, fontWeight: '600' },
-  badge: { width: 28, height: 28, borderRadius: 8, backgroundColor: colors.sunk, alignItems: 'center', justifyContent: 'center' },
-  badgeFirst: { backgroundColor: colors.ink },
-  badgeText: { fontFamily, fontSize: 13, fontWeight: '800', color: colors.ink2, fontVariant: ['tabular-nums'] },
-  badgeTextFirst: { color: '#FFFFFF' },
-  address: { fontFamily, fontSize: 15, fontWeight: '700', color: colors.ink },
-  label: { fontFamily, fontSize: 12, lineHeight: 16, color: colors.ink3, marginTop: 2 },
-  score: { fontFamily, fontSize: 14, fontWeight: '700', color: colors.ink, fontVariant: ['tabular-nums'], minWidth: 30, textAlign: 'right' },
-  fit: { fontFamily, fontSize: 13, fontWeight: '700' },
-  detail: { gap: 10, paddingBottom: 14, paddingLeft: 34 },
-  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  tag: { borderRadius: 999, paddingVertical: 4, paddingHorizontal: 9 },
-  tagPro: { backgroundColor: colors.goodSoft },
-  tagCon: { backgroundColor: colors.warnSoft },
-  tagText: { fontFamily, fontSize: 12, fontWeight: '600' },
-  open: { fontFamily, fontSize: 14, fontWeight: '600', color: colors.accent },
+  empty: { gap: 14, backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.line, padding: 20, marginTop: 16 },
+  heading: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16 },
+  eyebrow: { fontFamily, fontSize: 11, fontWeight: '700', letterSpacing: 1.41, color: colors.accent, marginBottom: 6 },
+  headline: { fontFamily, fontSize: 21, fontWeight: '700', lineHeight: 24.5, letterSpacing: -0.74, color: colors.ink },
+  count: { backgroundColor: colors.sunk, borderRadius: 13, paddingVertical: 6, paddingHorizontal: 9 },
+  countText: { fontFamily, fontSize: 11, color: '#5F6776' },
+  helper: { fontFamily, fontSize: 11.8, lineHeight: 16.6, color: colors.ink3, marginTop: 8, marginBottom: 14 },
+  yourOrder: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
+  yourOrderTitle: { fontFamily, fontSize: 13, fontWeight: '700', color: colors.ink },
+  yourOrderCopy: { fontFamily, fontSize: 11.5, color: colors.ink3, marginTop: 2 },
+  restore: { fontFamily, fontSize: 12.5, fontWeight: '700', color: colors.accent },
+  savedBanner: {
+    backgroundColor: colors.goodSoft,
+    borderWidth: 1,
+    borderColor: '#CFE5D8',
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 15,
+  },
+  savedText: { fontFamily, fontSize: 14, fontWeight: '700', lineHeight: 21, color: colors.good },
+  updating: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  updatingText: { fontFamily, fontSize: 12.5, color: colors.ink3 },
+  list: { backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: '#D4D9E3', overflow: 'hidden', marginBottom: 13 },
+  row: { backgroundColor: colors.surface },
+  rowDivider: { borderTopWidth: 1, borderTopColor: '#E6E9EF' },
+  trigger: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, paddingHorizontal: 11 },
+  number: { width: 25, height: 25, borderRadius: 7, backgroundColor: '#EFF2F6', alignItems: 'center', justifyContent: 'center' },
+  numberFirst: { backgroundColor: colors.stage },
+  numberText: { fontFamily, fontSize: 11, fontWeight: '700', color: colors.ink },
+  numberTextFirst: { color: '#FFFFFF' },
+  address: { fontFamily, fontSize: 12.6, fontWeight: '700', color: colors.ink },
+  label: { fontFamily, fontSize: 10.6, color: colors.ink3, marginTop: 2 },
+  score: { fontFamily, fontSize: 16.3, fontWeight: '700', lineHeight: 20.4, color: colors.accent, minWidth: 26, textAlign: 'right' },
+  grip: { width: 22, height: 32, alignItems: 'center', justifyContent: 'center' },
+  gripText: { fontFamily, fontSize: 14, letterSpacing: -4, color: '#828B99' },
+  notes: { paddingLeft: 92, paddingRight: 11, paddingBottom: 12, gap: 5 },
+  summary: { fontFamily, fontSize: 11.2, lineHeight: 15.9, color: '#555E6D', marginBottom: 4 },
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
+  tag: { fontFamily, fontSize: 10.2, fontWeight: '600', borderRadius: 12, overflow: 'hidden', paddingVertical: 5, paddingHorizontal: 7 },
+  tagPro: { backgroundColor: colors.goodSoft, color: colors.good },
+  tagCon: { backgroundColor: colors.badSoft, color: colors.bad },
+  openNote: { paddingVertical: 4, marginTop: 1, alignSelf: 'flex-start' },
+  openNoteText: { fontFamily, fontSize: 11, fontWeight: '700', color: colors.accent },
   actions: { gap: 10 },
 });

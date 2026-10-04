@@ -15,6 +15,8 @@ export interface RankingState {
   homes: Map<string, PropertyCard>;
   /** Homes with at least one finished note: the ones that can be ranked. */
   rankableIds: string[];
+  /** Each home's latest reaction summary, by property id. */
+  summaries: Record<string, string>;
   offline: boolean;
 }
 
@@ -29,12 +31,18 @@ export async function fetchRankingState(): Promise<RankingState> {
         .order('created_at', { ascending: true })
         .limit(200),
       supabase.from('buyer_priorities').select('priorities').maybeSingle(),
-      supabase.from('visits').select('property_id').eq('status', 'ready'),
+      supabase.from('visits').select('property_id, notes(overall)').eq('status', 'ready').order('recorded_at', { ascending: false }),
       supabase.from('ranking_overrides').select('property_ids').maybeSingle(),
     ]);
     if (m.error) throw m.error;
     if (v.error) throw v.error;
+    const summaries: Record<string, string> = {};
+    for (const r of (v.data ?? []) as unknown as { property_id: string; notes: { overall: string } | { overall: string }[] | null }[]) {
+      const note = Array.isArray(r.notes) ? r.notes[0] : r.notes;
+      if (note?.overall && !summaries[r.property_id]) summaries[r.property_id] = note.overall;
+    }
     const state = {
+      summaries,
       messages: (m.data ?? []) as RankingMessage[],
       priorities: (p.data?.priorities ?? []) as Priority[],
       rankableIds: [...new Set((v.data ?? []).map((r) => r.property_id as string))],
@@ -55,19 +63,6 @@ export async function sendRankingTurn(
   message?: string,
 ): Promise<{ messages: RankingMessage[]; priorities: Priority[] }> {
   return callFunction('rank-homes', { action, message });
-}
-
-/** "Start over": forgets the conversation and what NORA learned. */
-export async function resetRanking() {
-  const { data } = await supabase.auth.getSession();
-  const userId = data.session?.user.id;
-  if (!userId) throw new Error('Sign in again to continue.');
-  const a = await supabase.from('ranking_messages').delete().eq('user_id', userId);
-  if (a.error) throw a.error;
-  const b = await supabase.from('buyer_priorities').delete().eq('user_id', userId);
-  if (b.error) throw b.error;
-  const c = await supabase.from('ranking_overrides').delete().eq('user_id', userId);
-  if (c.error) throw c.error;
 }
 
 /** Saves the buyer's own order of their homes (property ids, best first). */

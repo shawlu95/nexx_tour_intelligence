@@ -53,7 +53,6 @@ export function newHomesSince(latest: RankingMessage | null, rankableIds: string
   return rankableIds.filter((id) => !seen.has(id));
 }
 
-
 /** True when the buyer has discussed with NORA since the latest ranking (so a re-rank would use new preferences). */
 export function discussedSinceRanking(messages: RankingMessage[]): boolean {
   const latest = latestRanking(messages);
@@ -95,10 +94,3 @@ export function differsFrom(ranking: RankedHome[], order: string[] | null): bool
   return applyOverride(ranking, order).some((r, i) => r.property_id !== ranking[i]?.property_id);
 }
 
-/** The list with the item at `from` moved to `to`. */
-export function moveItem<T>(list: T[], from: number, to: number): T[] {
-  const next = [...list];
-  const [item] = next.splice(from, 1);
-  next.splice(Math.max(0, Math.min(to, next.length)), 0, item);
-  return next;
-}
