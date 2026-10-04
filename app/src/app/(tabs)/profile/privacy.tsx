@@ -154,11 +154,6 @@ export default function PrivacyAndData() {
           }}
         />
         <DataRow
-          title="Manage agent access"
-          copy="Review or remove people who can see your activity."
-          onPress={() => router.navigate('/sharing')}
-        />
-        <DataRow
           title={deleting ? 'Deleting your account…' : 'Delete account and data'}
           copy="Permanently remove your account, notes and rankings, and turn off every share link."
           danger

@@ -90,7 +90,6 @@ export default function Profile() {
         <Detail label="Workspace" value={paused ? 'Paused' : 'Private'} last />
       </View>
 
-      <LinkRow icon="person.badge.plus" label="Manage agent access" onPress={() => router.navigate('/sharing')} />
       <LinkRow icon="checkmark.shield" label="Privacy & data" onPress={() => router.push('/profile/privacy')} />
       <LinkRow icon="rectangle.portrait.and.arrow.right" label="Sign out" onPress={confirmSignOut} />
 
