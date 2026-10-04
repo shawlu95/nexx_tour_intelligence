@@ -63,6 +63,14 @@ Run tests, typecheck, lint and expo-doctor before calling app work done.
 - **iOS 27 requires the UIScene life cycle.** Without it the app crashes at launch in `_UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption`. Expo SDK 57's template doesn't adopt it yet, so `withSceneLifecycle` in `app/app.config.ts` adds the scene manifest (delegate `EXExpoAppSceneDelegate`) and patches `AppDelegate.swift` on every prebuild. Don't remove it. It throws if the template changes shape; once Expo's template adopts scenes, drop the plugin.
 - When the app crashes on the phone, pull reports with `xcrun devicectl device copy from --device <udid> --domain-type systemCrashLogs --source / --destination <dir>` and read the `.ips` JSON (faulting thread frames).
 
+**iOS look and feel** (keep the mockup's design, behave like a native iOS app)
+- Font sizes come from Apple's text styles: 12 caption, 13 footnote, 15 subheadline, 16 callout, 17 body/headline, 20/22/28/34 titles. Nothing under 12 pt except tab-bar labels (10 pt). Every text style sets `fontFamily` (DM Sans, embedded natively).
+- 16 pt side margins. Touch targets at least 44 pt (use `hitSlop` on small text links). Text containers use `minHeight`, not `height`, so Dynamic Type can grow them.
+- Pushed screens use the system navigation bar (`nativeHeader` in `components/ui.tsx`, `<Screen header>`); only a tab's first screen shows the NORA wordmark header (`<Screen tab>` + `TabHeader`). Recording and typing are full-screen modals; Edit Reaction is a modal sheet with Cancel/Save in its bar.
+- Confirmations and destructive choices use `Alert.alert` (destructive style, Cancel as the cancel button), not custom sheets. Custom sheets only where the content needs links (the AI consent sheet).
+- Haptics through `lib/haptics.ts`: selection for choices, impact for start/drag, success when something is saved, warning before deleting.
+- Scroll views dismiss the keyboard on drag and use `automaticallyAdjustKeyboardInsets` instead of KeyboardAvoidingView where possible.
+
 **Deno / Edge Functions**
 - Deno refuses npm packages published less than 24 hours ago. Pin versions at least a day old. `@anthropic-ai/sdk` is pinned to `0.129.0` for this reason; it supports `fallbacks: 'default'` and `output_config.format`.
 - `supabase/functions/deno.json` sets `nodeModulesDir: none` so `deno check` ignores the root `node_modules`.

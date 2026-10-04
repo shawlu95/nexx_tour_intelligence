@@ -7,7 +7,7 @@ import { colors, fontFamily } from '../../components/ui';
 import { tapSelection } from '../../lib/haptics';
 
 function TabIcon({ name, color }: { name: SFSymbol; color: ColorValue }) {
-  return <SymbolView name={name} tintColor={color} size={21} type="monochrome" />;
+  return <SymbolView name={name} tintColor={color} size={24} type="monochrome" />;
 }
 
 /** The raised Ask NORA button: a 53 pt rounded square with a white rim, floating 17 pt above the bar. */
@@ -87,7 +87,8 @@ const s = StyleSheet.create({
     borderTopWidth: 1,
     overflow: 'visible',
   },
-  label: { fontFamily, fontSize: 12, fontWeight: '700' },
+  // iOS tab bar labels are 10 pt; the one exception to NORA's 12 pt floor.
+  label: { fontFamily, fontSize: 10, fontWeight: '600' },
   askButton: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 4 },
   orb: {
     position: 'absolute',
@@ -105,5 +106,5 @@ const s = StyleSheet.create({
     shadowRadius: 9,
     shadowOffset: { width: 0, height: 5 },
   },
-  askLabel: { fontFamily, fontSize: 12, fontWeight: '700', color: colors.accent },
+  askLabel: { fontFamily, fontSize: 10, fontWeight: '600', color: colors.accent },
 });

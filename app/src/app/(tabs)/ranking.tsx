@@ -166,7 +166,7 @@ export default function Ranking() {
                   <Text style={s.yourOrderTitle}>Your order</Text>
                   <Text style={s.yourOrderCopy}>NORA scores are unchanged</Text>
                 </View>
-                <Pressable accessibilityRole="button" onPress={restore} hitSlop={8}>
+                <Pressable accessibilityRole="button" onPress={restore} hitSlop={12}>
                   <Text style={s.restore}>Restore NORA ranking</Text>
                 </Pressable>
               </View>
@@ -303,7 +303,7 @@ function RankRow({
             </View>
           ) : null}
           {home ? (
-            <Pressable accessibilityRole="link" onPress={() => router.push(`/tour/home/${home.id}`)} hitSlop={8} style={s.openNote}>
+            <Pressable accessibilityRole="link" onPress={() => router.push(`/tour/home/${home.id}`)} hitSlop={12} style={s.openNote}>
               <Text style={s.openNoteText}>Open this note</Text>
             </Pressable>
           ) : null}

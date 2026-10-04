@@ -2,6 +2,7 @@
 // reaction" card, and Tour history: every toured home with a search box, each row
 // opening that home's page.
 import { router, useFocusEffect } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { HomeThumb } from '../../../components/HomeThumb';
@@ -140,6 +141,7 @@ export default function Tour() {
                   {[h.city, `last visit ${formatWhen(h.last_visited_at!)}`].filter(Boolean).join(' · ')}
                 </Text>
               </View>
+              <SymbolView name="chevron.right" tintColor="#B4BBC7" size={13} type="monochrome" weight="semibold" />
             </Pressable>
           ))}
 
