@@ -85,9 +85,11 @@ function HistoryRow({ visit, score, badge }: { visit: HistoryVisit; score: numbe
   const traits =
     visit.status === 'failed'
       ? "Couldn't write the note"
-      : visit.status !== 'ready'
-        ? 'Writing your note…'
-        : traitsLine(visit.notes?.note_items ?? []) || visit.notes?.overall || '';
+      : visit.status === 'needs_consent'
+        ? 'Waiting for AI permission'
+        : visit.status !== 'ready'
+          ? 'Writing your note…'
+          : traitsLine(visit.notes?.note_items ?? []) || visit.notes?.overall || '';
   const time = timeOfDay(visit.recorded_at);
   const scoreText = typeof score === 'number' ? score.toFixed(1) : '–';
   return (

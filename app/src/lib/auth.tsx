@@ -4,6 +4,7 @@ import * as Crypto from 'expo-crypto';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { resetAiConsent } from './consent';
 import { clearLocalData } from './localdb';
 import { supabase } from './supabase';
 
@@ -87,6 +88,7 @@ export async function signInWithGoogle(): Promise<boolean> {
 
 export async function signOut() {
   await clearLocalData();
+  resetAiConsent();
   await supabase.auth.signOut();
 }
 

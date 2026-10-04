@@ -264,6 +264,7 @@ Share links are created and revoked by the app directly in the database, under t
 
 **Security and privacy**
 
+- **AI consent (App Store guideline 5.1.2):** nothing goes to AssemblyAI or Anthropic until the buyer allows AI processing ("Let NORA organize it?" before their first note, or the switch in Profile → Privacy & data). The choice is stored as `profiles.ai_consent_at`, and `process-visit` and `rank-homes` check it before every AI call. A note saved while it's off waits as `needs_consent` and starts once the buyer allows it.
 - Data is encrypted in transit (HTTPS) and at rest (Supabase default).
 - Row-level security on every table. Service keys exist only inside Edge Functions.
 - Audio is never served back. The transcription service reads it through a signed URL that expires after 10 minutes, and the file is deleted once transcribed.

@@ -17,9 +17,11 @@ import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Linking, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AiConsentSheet } from '../../../components/AiConsentSheet';
 import { colors, TabHeader } from '../../../components/ui';
 import type { AddressDraft } from '../../../lib/address';
 import { useUserId } from '../../../lib/auth';
+import { loadAiConsent } from '../../../lib/consent';
 import { addPending } from '../../../lib/localdb';
 import { recordingsDir, runQueue } from '../../../lib/sync';
 
@@ -56,6 +58,7 @@ export default function Record() {
   const recState = useAudioRecorderState(recorder, 150);
   const [phase, setPhase] = useState<Phase>('starting');
   const [heardVoice, setHeardVoice] = useState(false);
+  const [askConsent, setAskConsent] = useState(false);
   const phaseRef = useRef<Phase>('starting');
   const setPhaseNow = (p: Phase) => {
     phaseRef.current = p;
@@ -160,9 +163,14 @@ export default function Record() {
     router.back();
   }
 
-  // Start right away, as in the mockup; stop and throw away if the screen goes away mid-recording.
+  // Start right away, as in the mockup (after asking for AI permission if it's off);
+  // stop and throw away if the screen goes away mid-recording.
   useEffect(() => {
-    const frame = requestAnimationFrame(() => void begin());
+    const frame = requestAnimationFrame(() => {
+      loadAiConsent()
+        .catch(() => null)
+        .then((on) => (on === false ? setAskConsent(true) : void begin()));
+    });
     return () => {
       cancelAnimationFrame(frame);
       if (phaseRef.current === 'recording' || phaseRef.current === 'confirmDiscard') {
@@ -268,6 +276,14 @@ export default function Record() {
               : 'Listening · your note stays private'}
         </Text>
       </View>
+      <AiConsentSheet
+        visible={askConsent}
+        onDone={() => {
+          // Either way the buyer can record; without permission the note waits until they allow it.
+          setAskConsent(false);
+          void begin();
+        }}
+      />
       <NotHearingDialog visible={phase === 'noSound'} onTryAgain={() => void begin()} onCancel={() => router.back()} />
     </SafeAreaView>
   );

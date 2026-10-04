@@ -7,6 +7,7 @@ import { NoteSections } from '../../components/NoteSections';
 import { Banner, Body, Button, Card, colors, Eyebrow, Loading, Screen, Title } from '../../components/ui';
 import { displayAddress } from '../../lib/address';
 import { deleteVisit, fetchVisit, retryVisit, updatePersonalNote, type VisitDetail } from '../../lib/api';
+import { setAiConsent } from '../../lib/consent';
 import { formatClock, formatWhen } from '../../lib/format';
 import { getPending, removePending, type PendingVisit } from '../../lib/localdb';
 import { onQueueChange, runQueue } from '../../lib/sync';
@@ -106,6 +107,31 @@ function Progress({
 }) {
   const [busy, setBusy] = useState(false);
   const status = detail?.visit.status;
+
+  if (status === 'needs_consent') {
+    return (
+      <Card>
+        <Text style={s.cardTitle}>Waiting for your permission</Text>
+        <Body>
+          AI note processing is off, so this recording hasn’t been sent to any AI provider. Allow it to transcribe and organize this note.
+        </Body>
+        <Button
+          title="Allow AI processing"
+          loading={busy}
+          onPress={async () => {
+            setBusy(true);
+            try {
+              await setAiConsent(true); // also starts this note
+              onRetried();
+            } catch (e) {
+              onError(e instanceof Error ? e.message : 'Could not turn on AI processing.');
+            }
+            setBusy(false);
+          }}
+        />
+      </Card>
+    );
+  }
 
   if (status === 'failed') {
     return (

@@ -123,7 +123,9 @@ export default function Home() {
                   address={v.properties ?? 'Unknown address'}
                   recordedAt={v.recorded_at}
                   state={v.status}
-                  summary={v.status === 'failed' ? v.error : v.notes?.overall}
+                  summary={
+                    v.status === 'failed' ? v.error : v.status === 'needs_consent' ? 'AI processing is off. Tap to allow it.' : v.notes?.overall
+                  }
                   score={summary?.scores[v.property_id]}
                   onPress={() => router.push(`/visit/${v.id}`)}
                 />

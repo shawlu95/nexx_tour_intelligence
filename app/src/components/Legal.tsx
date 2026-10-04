@@ -1,7 +1,8 @@
 // Privacy Policy and Terms, shown in the app (Profile → Privacy & data, and the
 // sign-in screen). Drafts: they must be reviewed by counsel, name the operating
 // entity and a privacy contact, and be published at a public URL before release.
-import { StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from './ui';
 
 export type LegalDocName = 'privacy' | 'terms';
@@ -95,7 +96,27 @@ export function LegalDoc({ doc }: { doc: LegalDocName }) {
   );
 }
 
+/** The Privacy Policy or Terms in a sheet, for places outside the Profile tab (sign-in, consent). */
+export function LegalModal({ doc, onClose }: { doc: LegalDocName | null; onClose: () => void }) {
+  return (
+    <Modal visible={doc !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <SafeAreaView style={s.modal} edges={['top', 'bottom']}>
+        <View style={s.modalBar}>
+          <Pressable accessibilityRole="button" onPress={onClose} hitSlop={10}>
+            <Text style={s.done}>Done</Text>
+          </Pressable>
+        </View>
+        <ScrollView contentContainerStyle={s.modalBody}>{doc ? <LegalDoc doc={doc} /> : null}</ScrollView>
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
 const s = StyleSheet.create({
+  modal: { flex: 1, backgroundColor: colors.bg },
+  modalBar: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 20, paddingVertical: 12 },
+  done: { fontSize: 17, fontWeight: '600', color: colors.accent },
+  modalBody: { padding: 20, paddingTop: 4 },
   root: { gap: 18 },
   heading: { gap: 6 },
   eyebrow: { fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.warn },

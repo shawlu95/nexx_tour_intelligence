@@ -64,7 +64,7 @@ export function runInBackground(promise: Promise<unknown>): void {
   if (runtime) runtime.waitUntil(guarded);
 }
 
-export type VisitStatus = 'uploading' | 'processing' | 'ready' | 'failed';
+export type VisitStatus = 'uploading' | 'processing' | 'ready' | 'failed' | 'needs_consent';
 
 export async function setStatus(
   db: SupabaseClient,
@@ -78,6 +78,15 @@ export async function setStatus(
     .eq('id', visitId);
   if (error) throw error;
 }
+
+/** True when the buyer has allowed AI processing (Privacy & data). Nothing goes to AssemblyAI or Anthropic otherwise. */
+export async function hasAiConsent(db: SupabaseClient, userId: string): Promise<boolean> {
+  const { data, error } = await db.from('profiles').select('ai_consent_at').eq('id', userId).maybeSingle();
+  if (error) throw error;
+  return !!data?.ai_consent_at;
+}
+
+export const AI_CONSENT_MESSAGE = 'AI note processing is off. Turn it on in Profile → Privacy & data.';
 
 /**
  * Deletes a visit's original audio once it has been transcribed (NORA keeps only the

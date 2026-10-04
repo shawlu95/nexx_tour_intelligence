@@ -1,6 +1,6 @@
 // Row shapes returned by Supabase (see supabase/migrations).
 
-export type VisitStatus = 'uploading' | 'processing' | 'ready' | 'failed';
+export type VisitStatus = 'uploading' | 'processing' | 'ready' | 'failed' | 'needs_consent';
 export type ItemKind = 'liked' | 'concern' | 'question';
 
 export interface Property {

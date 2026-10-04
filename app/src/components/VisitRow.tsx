@@ -13,6 +13,7 @@ const STATE_LABEL: Record<RowState, { label: string; tone: 'good' | 'warn' | 'ba
   uploading: { label: 'Uploading', tone: 'neutral' },
   processing: { label: 'Writing note', tone: 'warn' },
   failed: { label: 'Needs attention', tone: 'bad' },
+  needs_consent: { label: 'Waiting for permission', tone: 'warn' },
   ready: null,
 };
 

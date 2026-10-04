@@ -1,10 +1,9 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 import { sendEmailCode, signInWithApple, signInWithGoogle, verifyEmailCode } from '../lib/auth';
 import { FREE_SIGNING } from '../lib/config';
-import { LegalDoc, type LegalDocName } from './Legal';
+import { LegalModal, type LegalDocName } from './Legal';
 import { Banner, Body, Button, colors, Field, Screen, Title } from './ui';
 
 type Step = 'choose' | 'email' | 'code';
@@ -130,16 +129,7 @@ export default function SignIn() {
           . No agent can see your notes until you choose to share them.
         </Text>
       </Screen>
-      <Modal visible={legal !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setLegal(null)}>
-        <SafeAreaView style={s.modal} edges={['top', 'bottom']}>
-          <View style={s.modalBar}>
-            <Pressable accessibilityRole="button" onPress={() => setLegal(null)} hitSlop={10}>
-              <Text style={s.done}>Done</Text>
-            </Pressable>
-          </View>
-          <ScrollView contentContainerStyle={s.modalBody}>{legal ? <LegalDoc doc={legal} /> : null}</ScrollView>
-        </SafeAreaView>
-      </Modal>
+      <LegalModal doc={legal} onClose={() => setLegal(null)} />
     </KeyboardAvoidingView>
   );
 }
@@ -153,8 +143,4 @@ const s = StyleSheet.create({
   apple: { height: 50, width: '100%' },
   legal: { fontSize: 13, lineHeight: 19, color: colors.ink3, textAlign: 'center', marginTop: 12 },
   legalLink: { color: colors.accent, fontWeight: '600', textDecorationLine: 'underline' },
-  modal: { flex: 1, backgroundColor: colors.bg },
-  modalBar: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 20, paddingVertical: 12 },
-  done: { fontSize: 17, fontWeight: '600', color: colors.accent },
-  modalBody: { padding: 20, paddingTop: 4 },
 });

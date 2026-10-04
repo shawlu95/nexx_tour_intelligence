@@ -34,6 +34,8 @@ Last updated: 2026-10-03. Update this file at the end of each work session: move
 
 20. **Privacy & data, Privacy Policy and Terms (2026-10-03),** from the updated mockup, with App Store review in mind. Profile now has its own stack (`app/src/app/(tabs)/profile/`): `index` (account, Manage agent access, Privacy & data, Sign out, Deactivate), `privacy` (device permissions with their current state and a Settings button, Manage agent access, **Delete account and data**), `privacy-policy` and `terms`. The policy and terms (`components/Legal.tsx`) are marked "Draft for review" and name the real providers (Supabase, AssemblyAI, Anthropic, RentCast, Apple Maps). The sign-in screen links to both ("By continuing, you agree to the Terms…"). `WarningSheet` and `BackLink` are now shared components.
 
+21. **AI processing consent (2026-10-03).** Migration `20261003000000_ai_consent.sql`: `profiles.ai_consent_at` and a new visit status `needs_consent`. `process-visit` and `rank-homes` refuse to call AssemblyAI or Anthropic without consent (`hasAiConsent` in `_shared/runtime.ts`); a visit saved meanwhile waits as `needs_consent`. App: `lib/consent.ts`, the mockup's "Let NORA organize it?" sheet (`components/AiConsentSheet.tsx`) shown on the record screen when consent is off ("Not now" still records), an "AI note processing" switch in Privacy & data, and an "Allow AI processing" card on a waiting note. Turning consent on starts every waiting note. The existing account has no consent yet, so the first recording asks, and Ranking shows "AI note processing is off" until it's allowed.
+
 ## Done and verified
 
 | Area | Verified how |

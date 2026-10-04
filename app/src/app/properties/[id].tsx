@@ -54,7 +54,9 @@ export default function PropertyScreen() {
             showAddress={false}
             recordedAt={v.recorded_at}
             state={v.status}
-            summary={v.status === 'failed' ? v.error : v.notes?.overall}
+            summary={
+              v.status === 'failed' ? v.error : v.status === 'needs_consent' ? 'AI processing is off. Tap to allow it.' : v.notes?.overall
+            }
             onPress={() => router.push(`/visit/${v.id}`)}
           />
         ))}

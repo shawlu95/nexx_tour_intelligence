@@ -18,7 +18,7 @@ import {
   type Priority,
   type StoredRankedHome,
 } from '../_shared/ranking.ts';
-import { adminClient, corsHeaders, json, userIdFrom } from '../_shared/runtime.ts';
+import { adminClient, AI_CONSENT_MESSAGE, corsHeaders, hasAiConsent, json, userIdFrom } from '../_shared/runtime.ts';
 import { plainText } from '../_shared/text.ts';
 
 const MAX_MESSAGE_CHARS = 2000;
@@ -48,6 +48,7 @@ Deno.serve(async (req) => {
   if (message.length > MAX_MESSAGE_CHARS) return json({ error: 'That message is too long.' }, 400);
 
   const db = adminClient();
+  if (!(await hasAiConsent(db, userId))) return json({ error: AI_CONSENT_MESSAGE, code: 'ai_consent' }, 403);
 
   // Daily limit on model calls per buyer.
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();

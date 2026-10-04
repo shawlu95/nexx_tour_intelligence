@@ -7,6 +7,9 @@
 //     transcript while keeping the buyer's own edits
 //   - called by the sweep function (service key) to retry stuck or failed visits
 //
+// Nothing is sent to AssemblyAI or Anthropic unless the buyer has allowed AI
+// processing; otherwise the visit waits as `needs_consent` until they do.
+//
 // Replies 202 straight away and does the work in the background; the app follows
 // progress through the visit's status.
 import { writeNote } from '../_shared/claude.ts';
@@ -22,6 +25,7 @@ import {
   json,
   runInBackground,
   deleteVisitAudio,
+  hasAiConsent,
   setStatus,
   userIdFrom,
 } from '../_shared/runtime.ts';
@@ -58,6 +62,11 @@ Deno.serve(async (req) => {
   if (visit.status === 'ready' && !regenerate) return json({ status: 'ready' });
   const inFlight = visit.status === 'processing' && Date.now() - new Date(visit.status_updated_at).getTime() < STALE_MS;
   if (inFlight) return json({ status: 'processing' }, 202);
+
+  if (!(await hasAiConsent(db, visit.user_id))) {
+    if (visit.status !== 'needs_consent') await setStatus(db, visitId, 'needs_consent', { error: null });
+    return json({ status: 'needs_consent' });
+  }
 
   // Automatic retries stop after a few attempts; a buyer's tap always gets a fresh run.
   if (service && visit.attempts >= MAX_AUTOMATIC_ATTEMPTS) {

@@ -5,11 +5,13 @@ import { getForegroundPermissionsAsync } from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useState } from 'react';
-import { AppState, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { AppState, Linking, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { AI_CONSENT_COPY } from '../../../components/AiConsentSheet';
 import { WarningSheet } from '../../../components/WarningSheet';
 import { BackLink, colors, Screen, TabHeader } from '../../../components/ui';
 import { deleteAccount } from '../../../lib/api';
 import { signOut, useUserId } from '../../../lib/auth';
+import { setAiConsent, useAiConsent } from '../../../lib/consent';
 import { listPending } from '../../../lib/localdb';
 
 type PermissionState = 'granted' | 'denied' | 'undetermined';
@@ -24,6 +26,9 @@ export default function PrivacyAndData() {
   const [asking, setAsking] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+  const aiConsent = useAiConsent();
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState('');
 
   const refresh = useCallback(() => {
     getForegroundPermissionsAsync()
@@ -71,6 +76,37 @@ export default function PrivacyAndData() {
           state={microphone}
           last
         />
+      </View>
+
+      <View style={s.card}>
+        <View style={s.row}>
+          <View style={s.flex}>
+            <Text style={s.rowTitle}>AI note processing</Text>
+            <Text style={s.rowCopy}>{AI_CONSENT_COPY}</Text>
+          </View>
+          <Switch
+            accessibilityLabel="Allow AI note processing"
+            value={aiConsent === true}
+            disabled={aiConsent === null || aiBusy}
+            trackColor={{ true: colors.accent }}
+            onValueChange={async (on) => {
+              setAiBusy(true);
+              setAiError('');
+              try {
+                await setAiConsent(on);
+              } catch {
+                setAiError("Couldn't change this. Check your connection.");
+              }
+              setAiBusy(false);
+            }}
+          />
+        </View>
+        <Text style={s.aiNote}>
+          {aiConsent === false
+            ? 'Off: new notes are saved but not organized, and ranking is paused, until you turn this on.'
+            : 'Your transcript, summary and ranking stay in your account until you delete them.'}
+        </Text>
+        {aiError ? <Text style={s.aiError}>{aiError}</Text> : null}
       </View>
 
       <View style={s.card}>
@@ -203,6 +239,15 @@ const s = StyleSheet.create({
   rowTitle: { fontSize: 15, fontWeight: '700', color: colors.ink },
   rowState: { fontSize: 13, fontWeight: '600', color: colors.ink3 },
   rowCopy: { fontSize: 13, lineHeight: 18, color: colors.ink2, marginTop: 3 },
+  aiNote: {
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.ink3,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.line,
+    paddingVertical: 12,
+  },
+  aiError: { fontSize: 13, color: colors.bad, paddingBottom: 12 },
   settings: { backgroundColor: colors.accentSoft, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12 },
   settingsText: { fontSize: 14, fontWeight: '700', color: colors.accent },
   legalLinks: { flexDirection: 'row', justifyContent: 'center', gap: 24, marginTop: 4 },
