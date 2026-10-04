@@ -41,14 +41,19 @@ export async function transcribeUrl(audioUrl: string): Promise<Utterance[]> {
   }
   if (t.status !== 'completed') throw new Error(`AssemblyAI failed: ${t.error ?? t.status}`);
 
-  const text = t.text?.trim() ?? '';
-  if (!text) return [];
-  // Sentences with timings, for the transcript view. Fall back to the plain text.
-  const { sentences = [] } = await call<Sentences>(`/transcript/${t.id}/sentences`);
-  if (sentences.length > 0) {
-    return sentences.map((s) => ({ start: s.start / 1000, end: s.end / 1000, text: s.text }));
+  try {
+    const text = t.text?.trim() ?? '';
+    if (!text) return [];
+    // Sentences with timings, for the transcript view. Fall back to the plain text.
+    const { sentences = [] } = await call<Sentences>(`/transcript/${t.id}/sentences`);
+    if (sentences.length > 0) {
+      return sentences.map((s) => ({ start: s.start / 1000, end: s.end / 1000, text: s.text }));
+    }
+    return [{ start: 0, end: t.audio_duration ?? 0, text }];
+  } finally {
+    // Don't leave a copy at AssemblyAI: its transcript is kept until deleted.
+    await call(`/transcript/${t.id}`, { method: 'DELETE' }).catch((e) => console.warn('AssemblyAI delete failed', t.id, e));
   }
-  return [{ start: 0, end: t.audio_duration ?? 0, text }];
 }
 
 async function call<T>(path: string, init: RequestInit = {}): Promise<T> {

@@ -79,6 +79,17 @@ export async function setStatus(
   if (error) throw error;
 }
 
+/**
+ * Deletes a visit's original audio once it has been transcribed (NORA keeps only the
+ * transcript and note) and clears audio_path so nothing points at the file.
+ */
+export async function deleteVisitAudio(db: SupabaseClient, visitId: string, path: string): Promise<void> {
+  const { error } = await db.storage.from('audio').remove([path]);
+  if (error) throw new Error(`Could not delete audio: ${error.message}`);
+  const { error: uError } = await db.from('visits').update({ audio_path: null }).eq('id', visitId);
+  if (uError) throw uError;
+}
+
 /** Turns an internal error into the short message the app shows the buyer. */
 export function friendlyError(e: unknown): string {
   const message = e instanceof Error ? e.message : String(e);

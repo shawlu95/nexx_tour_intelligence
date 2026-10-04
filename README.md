@@ -29,7 +29,7 @@ The full product vision draws on the front-end mockup (nexx-tour-intelligence.fr
 | **Locate** | The buyer taps "Record a home." GPS suggests the property they just left ("812 Pastoria Ave, is this it?"). They confirm with one tap or type the address. |
 | **Record** | The buyer talks for 40–60 seconds. On-screen prompts help them cover the main things ("What stood out?", "Anything that worried you?", "Would you come back?"). Recording stops on its own at 2 minutes, and they can re-record if they fumble. |
 | **Process** | The clip is transcribed and summarized, usually in under 30 seconds. If the phone has no signal, the clip is saved and processed once it reconnects. |
-| **Review** | The note shows a short overall impression, then **Liked**, **Concerns**, and **Questions for my agent**. Each point shows the words it came from, and the full transcript and original recording are a tap away. |
+| **Review** | The note shows a short overall impression, then **Liked**, **Concerns**, and **Questions for my agent**. Each point shows the words it came from, and the full transcript is a tap away. |
 | **Remember** | Each property has a page with every visit to it. The buyer can browse past homes and search by address. |
 | **Share** | The buyer sends a note to their agent as a private link and chooses whether the transcript is included. |
 
@@ -61,11 +61,11 @@ Something belongs in the MVP only if leaving it out would break that job. Everyt
 | 3 | **Record a short reaction** | Prompts on screen and a timer that turns green at 40 seconds. Stops on its own at 2 minutes. Re-record before saving. The clip is saved on the phone first. |
 | 4 | **Reliable upload and processing** | Uploads queue and retry until they succeed, so a clip recorded with no signal is processed later. The note usually appears within 30 seconds, and a push notification arrives if the buyer has left the screen. |
 | 5 | **Structured note** | An overall impression plus **Liked**, **Concerns**, and **Questions for my agent**. |
-| 6 | **Check against the source** | Each point shows the quote it came from. The full transcript and the original recording are one tap away. |
+| 6 | **Check against the source** | Each point shows the quote it came from. The full transcript is one tap away. The original audio is deleted once it's transcribed. |
 | 7 | **Edit the note** | Change, add, or delete points, and add free-text personal notes. Edits are marked as the buyer's own and are never overwritten by regenerating the note. |
 | 8 | **Property list and property page** | Homes listed by most recent visit, with search by address. Each property page shows all its visits, newest first. |
 | 9 | **Share a note with the agent** | Creates a private, read-only web link and opens the phone's share sheet (text, email, WhatsApp). The buyer chooses whether to include the transcript and can revoke the link at any time. The agent doesn't need an account. |
-| 10 | **Delete data** | Delete a visit, a property, or the whole account, including the audio. This is required by the App Store and expected by users. |
+| 10 | **Delete data** | Delete a visit, a property, or the whole account, including transcripts and any audio not yet deleted. This is required by the App Store and expected by users. |
 | 11 | **Home facts and thumbnail** | Each home shows beds, baths, square feet and the listing (or last sale) price, looked up once from RentCast's public-record and listing data. A small street-level thumbnail is made on the phone with Apple Look Around (a map snapshot where there's no coverage), so homes in lists are easy to tell apart. |
 | 12 | **Ranking and Discuss** | A Ranking tab (laid out like the mockup) lists all the buyer's homes best fit first, each with a thumbnail, a rough 0–10 score (meant for relative comparison: close scores are a close call, a big gap is a clear difference), a 2–4 word label ("Best overall fit", "Too much renovation") and, when tapped, short pro and con tags, built from their notes and the home facts. **Ask Nora** opens a chat (the Discuss screen) where the buyer asks why a home ranks where it does and says what matters (yard vs. size, commute, budget); NORA refines a visible list of priorities and offers one-tap replies. **Update ranking** then re-ranks once with the new preferences. The buyer can also drag homes into their own order, which is saved, overrides NORA's order, and is passed to NORA as a strong preference at the next re-rank; a subtle "Revert to NORA's ranking" link restores NORA's order. |
 
@@ -150,7 +150,7 @@ flowchart LR
 | Account and profile | Supabase Auth + Postgres | Managed sign-in and session tokens |
 | Properties, visits, notes, share links | Postgres | Relational, queryable, protected by per-user access rules |
 | Transcript (with phrase timings) | Postgres, on its own table keyed by visit | Small (1–2 KB), read alongside its visit |
-| Audio recordings | Supabase Storage, in a private bucket at `<user>/<visit>.m4a` | Binary files. Served only through short-lived signed URLs. |
+| Audio recordings | Supabase Storage, in a private bucket at `<user>/<visit>.m4a`, **only until transcribed** | The server deletes the file as soon as the transcript is saved, and asks AssemblyAI to delete its copy of the transcript. The sweeper deletes any file left behind. |
 | Recordings not yet uploaded, the upload queue, offline cache | On the phone: local SQLite plus the app's private file folder | Recording must work with no signal, and nothing is deleted until the server confirms it has the file. |
 | Login tokens | Phone's secure storage (iOS Keychain or Android Keystore) | Standard practice for credentials |
 
@@ -175,9 +175,9 @@ User 1 ──── * Property 1 ──── * Visit 1 ──── 1 Transcrip
 
 **Access rules:** Postgres row-level security limits every row to its owner. Phones can't write transcripts or AI-written note items, and can't move a visit's status past "uploading"; only the server can. The share page never queries tables directly. It calls one database function that looks up the token and returns only the fields that particular link allows.
 
-**Storage sizing:** voice audio is recorded as mono AAC at about 48 kbps, so a one-minute clip is about **0.35 MB**. A buyer recording 30 visits uses about 10 MB. The database footprint per visit is under 10 KB.
+**Storage sizing:** voice audio is recorded as mono AAC at about 48 kbps, so a one-minute clip is about **0.35 MB**, stored only until it is transcribed. The database footprint per visit is under 10 KB.
 
-**Retention:** audio and transcripts are kept until the buyer deletes them. Deleting a visit removes its audio from storage immediately.
+**Retention:** original audio is deleted right after transcription (usually within a minute of upload), from Supabase Storage and from AssemblyAI. Transcripts, notes and rankings are kept until the buyer deletes them.
 
 ### 3.4 Front end (mobile app)
 
@@ -191,7 +191,7 @@ User 1 ──── * Property 1 ──── * Visit 1 ──── 1 Transcrip
 | Home | "Record a home" button, notes still processing, recent visits |
 | Confirm property | GPS-suggested address, editable, with the buyer's nearby properties as shortcuts |
 | Record | Rotating prompts, a timer that turns green at 40 seconds, stop, re-record, save |
-| Note | Status while processing, then overall impression, liked, concerns, questions with quotes. Edit mode, play recording, transcript, regenerate, share. |
+| Note | Status while processing, then overall impression, liked, concerns, questions with quotes. Edit mode, transcript, regenerate, share. |
 | Properties | List and search by address, opening to a property page with all its visits |
 | Share | Include-transcript toggle, then the phone's share sheet. Existing links with a revoke option. |
 | Settings | Account, delete account, sign out |
@@ -207,7 +207,7 @@ User 1 ──── * Property 1 ──── * Visit 1 ──── 1 Transcrip
 - Each saved visit goes into a persistent upload queue in SQLite with its property details, file path, and duration.
 - The queue runs when a visit is saved, when the app comes to the foreground, and when the network comes back. Each item retries with increasing delays.
 - Steps per visit: find or create the property, create the visit, upload the clip, ask the server to process it. Each step is safe to repeat, so a retry after a failure never creates duplicates.
-- The local audio file is deleted once the server has the file and the note is ready.
+- The local audio file is deleted once the note is ready. The server deletes its copy once the transcript is saved.
 
 **Offline behaviour:** recording and saving work offline. Notes and properties the buyer has already seen are cached for reading. Editing needs a connection.
 
@@ -245,7 +245,7 @@ A one-minute clip transcribes in several seconds and the note takes 10–30 seco
 |---|---|---|
 | `process-visit` | App (after upload), sweeper, or the buyer tapping **Try again** | Transcribes the clip, writes the note, sends the push notification, then looks up the home's facts with RentCast if it doesn't have them yet. With `regenerate`, it skips transcription and rewrites the note while keeping the buyer's edits. |
 | `sweep` | Scheduled every 5 minutes | Finds visits stuck in processing for more than 5 minutes, or failed with fewer than 3 attempts, and runs them again. Also looks up facts for up to 3 homes still waiting (created before the RentCast key was set, held back by the monthly cap, or retried a day after an error). |
-| `delete-account` | App | Deletes the user's audio files, database rows, and sign-in record |
+| `delete-account` | App | Deletes any remaining audio files, the user's database rows, and the sign-in record |
 | `get_shared_note` (database function) | Share page | Looks up the token, checks expiry and revocation, returns only the allowed fields, counts the view |
 
 Share links are created and revoked by the app directly in the database, under the same per-user access rules.
@@ -266,7 +266,7 @@ Share links are created and revoked by the app directly in the database, under t
 
 - Data is encrypted in transit (HTTPS) and at rest (Supabase default).
 - Row-level security on every table. Service keys exist only inside Edge Functions.
-- Audio is served only through signed URLs that expire after 15 minutes.
+- Audio is never served back. The transcription service reads it through a signed URL that expires after 10 minutes, and the file is deleted once transcribed.
 - Share tokens are 128-bit random values that can be revoked and expire after 90 days.
 - Anthropic doesn't train on API data by default. Check AssemblyAI's terms on training and retention (its pricing page doesn't say) and state both in the privacy policy.
 - Error monitoring (Sentry) and product analytics (PostHog) never receive transcript or note text.
@@ -290,7 +290,7 @@ Share links are created and revoked by the app directly in the database, under t
 |---|---|---|
 | Transcription (AssemblyAI Universal-3.5 Pro, pre-recorded audio, $0.21/hour) | 1 min × $0.0035/min | ~$0.0035 |
 | Summarization, Claude Opus 5 ($5 per million input tokens, $25 per million output) | 1k × $5/M + 1k × $25/M | ~$0.03 |
-| Storage and data transfer | ~0.35 MB stored, played back a few times | <$0.001 |
+| Storage and data transfer | ~0.35 MB, stored only until transcribed | <$0.001 |
 | **Total with Claude Opus 5** | | **≈ $0.034** |
 | *Alternative: summarize with Claude Sonnet 5 ($2 / $10 per million)* | 1k × $2/M + 1k × $10/M | *~$0.012, for a total of ≈ $0.016 per visit* |
 
@@ -548,7 +548,7 @@ Do these once the company accounts work, before inviting testers:
 |---|---|
 | **Buyers forget to record after leaving** | A large "Record a home" button on the home screen and a quick flow (two taps to start). A reminder when leaving an open house is planned for Phase 2. |
 | **Short reactions miss things the buyer would want to remember** | Rotating prompts during recording. Buyers can add points and personal notes by typing. A clarifying question after recording is planned for Phase 2. |
-| **Note quality: missed or invented points** | A quote with every item, server-side quote checking, the transcript and recording one tap away, and a quality test set run on every prompt change. |
+| **Note quality: missed or invented points** | A quote with every item, server-side quote checking, the transcript one tap away, and a quality test set run on every prompt change. |
 | **Poor connection outside the home** | The clip is saved on the phone first, and the upload queue retries until it succeeds. |
 | **Address matching** (condo units, new builds, GPS drift) | Suggest an address but always let the buyer confirm or edit. Record a unit number. Offer the buyer's own nearby properties first. |
 | **Vendor dependence** | Transcription and summarization each sit behind one back-end module, so AssemblyAI can be swapped (for example, for another provider that handles mixed Chinese and English) and Claude models can change without touching the app. |

@@ -177,14 +177,6 @@ export async function updatePersonalNote(noteId: string, personalNote: string) {
   if (error) throw error;
 }
 
-// --- Audio ------------------------------------------------------------------
-
-export async function signedAudioUrl(path: string): Promise<string> {
-  const { data, error } = await supabase.storage.from('audio').createSignedUrl(path, 15 * 60);
-  if (error || !data) throw error ?? new Error('Could not load the recording.');
-  return data.signedUrl;
-}
-
 // --- Sharing ----------------------------------------------------------------
 
 export async function listShareLinks(noteId: string): Promise<ShareLink[]> {

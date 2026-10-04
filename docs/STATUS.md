@@ -30,6 +30,8 @@ Last updated: 2026-10-03. Update this file at the end of each work session: move
 
 18. **Speech-to-text moved from Deepgram to AssemblyAI (2026-10-03)** so buyers can speak English, Chinese, or a mix without choosing a language. Deepgram's automatic mode doesn't include Chinese. `_shared/assemblyai.ts` sends the signed audio URL with `speech_models: ['universal-3-5-pro', 'universal-2']` and `language_detection: true`, polls until done, then fetches sentence timings. `_shared/deepgram.ts` was removed. The quote check counts each Chinese character as a word, and the note prompt writes the note in the language the buyer mostly spoke (prompt version `2026-10-03`). Secret `ASSEMBLYAI_API_KEY` set by the user; `process-visit` redeployed. The old `DEEPGRAM_API_KEY` secret is still set but nothing reads it. **Not yet tested with a real recording.**
 
+19. **Original audio deleted after transcription (2026-10-03).** Matches the updated mockup and privacy copy. `process-visit` deletes the clip from Storage and clears `audio_path` as soon as the transcript is saved (`deleteVisitAudio` in `_shared/runtime.ts`), and asks AssemblyAI to delete its transcript. Retries reuse the saved transcript, so they no longer need the audio. `sweep` deletes any audio left behind; its first run deleted the 4 existing clips. The app never played audio back; the unused `signedAudioUrl` was removed.
+
 ## Done and verified
 
 | Area | Verified how |

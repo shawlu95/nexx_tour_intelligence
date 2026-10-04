@@ -1,13 +1,14 @@
 // Runs every 5 minutes (pg_cron, see supabase/migrations/*_schedule_sweep.sql).
 // Restarts visits that are stuck, failed with automatic attempts left, or
 // uploaded but never submitted (for example, the app was closed right after the upload).
-// Also fills in home facts that are still missing (for homes created before the
+// Deletes original audio that is still stored after its transcript was saved (normally
+// process-visit does this straight away). Also fills in home facts that are still missing (for homes created before the
 // RentCast key was set, or held back by the monthly cap), a few per run.
 //
 // The scheduler authenticates with its own key (SWEEP_SECRET, sent as
 // x-sweep-secret), so the project's service-role key never leaves the server.
 import { lookUpFacts } from '../_shared/rentcast.ts';
-import { adminClient, corsHeaders, invokeFunction, json } from '../_shared/runtime.ts';
+import { adminClient, corsHeaders, deleteVisitAudio, invokeFunction, json } from '../_shared/runtime.ts';
 
 const BATCH = 20;
 const FACTS_PER_RUN = 3; // each home costs 1–2 RentCast calls
@@ -46,6 +47,22 @@ Deno.serve(async (req) => {
   const failed = results.filter((r) => r.status === 'rejected').length;
   if (failed > 0) console.error(`sweep: ${failed} of ${results.length} retries could not be started`);
 
+  // Audio left behind after transcription: NORA keeps only the transcript.
+  let audioDeleted = 0;
+  const { data: leftover } = await db
+    .from('visits')
+    .select('id, audio_path, transcripts!inner(visit_id)')
+    .not('audio_path', 'is', null)
+    .limit(BATCH);
+  for (const v of leftover ?? []) {
+    try {
+      await deleteVisitAudio(db, v.id, v.audio_path as string);
+      audioDeleted++;
+    } catch (e) {
+      console.error('sweep: could not delete audio', v.id, e);
+    }
+  }
+
   // Homes still waiting for facts. Newly created homes are left to process-visit,
   // which looks them up right after their first note.
   let factsChecked = 0;
@@ -63,5 +80,5 @@ Deno.serve(async (req) => {
     }
   }
 
-  return json({ retried: results.length - failed, failed, factsChecked });
+  return json({ retried: results.length - failed, failed, audioDeleted, factsChecked });
 });

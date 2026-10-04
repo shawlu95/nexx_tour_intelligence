@@ -230,7 +230,7 @@ function ReadyNote({
           ) : (
             <Card>
               <Text style={s.cardTitle}>Delete this note?</Text>
-              <Body>The recording, transcript and note are deleted for good. Share links stop working.</Body>
+              <Body>The transcript and note are deleted for good. Share links stop working.</Body>
               <View style={s.actions}>
                 <Button kind="secondary" title="Cancel" onPress={() => setConfirm(null)} />
                 <Button
