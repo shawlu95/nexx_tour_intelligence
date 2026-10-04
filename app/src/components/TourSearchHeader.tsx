@@ -20,10 +20,10 @@ export function TourSearchHeader({ summary }: { summary: TourSummary | null }) {
 
 const s = StyleSheet.create({
   flex: { flex: 1 },
-  search: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 4 },
-  eyebrow: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
-  title: { fontFamily, fontSize: 26, fontWeight: '800', color: colors.ink, letterSpacing: -0.4, marginTop: 4 },
-  week: { backgroundColor: colors.sunk, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 12, alignItems: 'center' },
-  weekCount: { fontFamily, fontSize: 20, fontWeight: '800', color: colors.ink, fontVariant: ['tabular-nums'] },
+  search: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  eyebrow: { fontFamily, fontSize: 11, fontWeight: '700', letterSpacing: 1.4, color: colors.accent, marginBottom: 6 },
+  title: { fontFamily, fontSize: 21, fontWeight: '700', lineHeight: 24.5, color: colors.ink, letterSpacing: -0.74 },
+  week: { flexDirection: 'row', alignItems: 'center', gap: 3, height: 27, backgroundColor: colors.sunk, borderRadius: 14, paddingHorizontal: 9 },
+  weekCount: { fontFamily, fontSize: 11.5, fontWeight: '700', color: colors.ink },
   weekLabel: { fontFamily, fontSize: 11, color: colors.ink3 },
 });

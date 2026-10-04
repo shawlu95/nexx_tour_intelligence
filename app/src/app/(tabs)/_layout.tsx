@@ -60,8 +60,6 @@ export default function TabsLayout() {
           ),
         }}
       />
-      {/* History now lives on the Tour tab; the old route stays reachable but off the bar. */}
-      <Tabs.Screen name="homes" options={{ href: null }} />
       <Tabs.Screen
         name="sharing"
         options={{

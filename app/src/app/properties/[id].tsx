@@ -77,7 +77,7 @@ export default function PropertyScreen() {
                 setBusy(true);
                 try {
                   await deleteProperty(property.id);
-                  router.dismissTo('/homes');
+                  router.dismissTo('/tour');
                 } catch {
                   setError("Couldn't delete this home. Check your connection.");
                   setBusy(false);

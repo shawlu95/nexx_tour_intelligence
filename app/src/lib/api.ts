@@ -54,38 +54,6 @@ async function withCache<T>(key: string, load: () => Promise<T>): Promise<Cached
 const PROPERTY_CARD = 'id, address_line, unit, city, latitude, longitude, beds, baths, sqft, price, price_kind, price_date, listing_status';
 const VISIT_SUMMARY = `id, property_id, recorded_at, duration_seconds, audio_path, status, error, properties(${PROPERTY_CARD}), notes(overall)`;
 
-export function fetchRecentVisits(limit = 15): Promise<Cached<VisitSummary[]>> {
-  return withCache('recent-visits', async () => {
-    const { data, error } = await supabase
-      .from('visits')
-      .select(VISIT_SUMMARY)
-      .order('recorded_at', { ascending: false })
-      .limit(limit);
-    if (error) throw error;
-    return data as unknown as VisitSummary[];
-  });
-}
-
-export interface HistoryVisit extends Visit {
-  properties: PropertyCard | null;
-  notes: (Pick<Note, 'overall'> & { note_items: Pick<NoteItem, 'kind' | 'text' | 'deleted' | 'sort'>[] }) | null;
-}
-
-/** Every visit, newest first, with the note's points for the History tab. */
-export function fetchHistory(): Promise<Cached<HistoryVisit[]>> {
-  return withCache('history', async () => {
-    const { data, error } = await supabase
-      .from('visits')
-      .select(
-        `id, property_id, recorded_at, duration_seconds, audio_path, status, error, properties(${PROPERTY_CARD}), notes(overall, note_items(kind, text, deleted, sort))`,
-      )
-      .order('recorded_at', { ascending: false })
-      .limit(200);
-    if (error) throw error;
-    return data as unknown as HistoryVisit[];
-  });
-}
-
 export function fetchProperties(): Promise<Cached<Property[]>> {
   return withCache('properties', async () => {
     const { data, error } = await supabase
