@@ -6,8 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { SymbolView, type SFSymbol } from 'expo-symbols';
 import { Animated, Easing, Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { FactsRow, PriceLine, PropertyDetails, SourceLine } from '../../../components/PropertyFacts';
-import { TourSearchHeader } from '../../../components/TourSearchHeader';
-import { Button, colors, fontFamily, Screen, TabHeader } from '../../../components/ui';
+import { Button, colors, fontFamily, Screen } from '../../../components/ui';
 import {
   aboutDistance,
   cityState,
@@ -15,8 +14,7 @@ import {
   distanceMeters,
   normalizedKey,
 } from '../../../lib/address';
-import { fetchProperties, fetchProperty, fetchTourSummary, type TourSummary } from '../../../lib/api';
-import { startOfWeek } from '../../../lib/format';
+import { fetchProperties, fetchProperty } from '../../../lib/api';
 import { geocodeAddress, nearbyAddresses } from '../../../lib/geo';
 import { setSuggested, takePicked, type HomeChoice } from '../../../lib/homeChoice';
 import { useThumbnail } from '../../../lib/thumbnail';
@@ -28,7 +26,6 @@ const SAVED_HOME_METERS = 80; // you're "at" a saved home within this distance
 type Found = HomeChoice;
 
 export default function Locate() {
-  const [summary, setSummary] = useState<TourSummary | null>(null);
   // A home picked in Change location (which may have replaced this screen) wins over GPS.
   const [initialPick] = useState<Found | null>(() => takePicked());
   const [found, setFound] = useState<Found | null>(initialPick);
@@ -46,11 +43,6 @@ export default function Locate() {
     setSuggested(found);
   }, [found]);
 
-  useEffect(() => {
-    fetchTourSummary(startOfWeek())
-      .then((r) => setSummary(r.data))
-      .catch(() => undefined);
-  }, []);
 
   useEffect(() => {
     if (initialPick) return; // opened with a home picked in Change location: no GPS lookup
@@ -107,9 +99,7 @@ export default function Locate() {
   }, [initialPick]);
 
   return (
-    <Screen tab style={s.screen}>
-      <TabHeader />
-      <TourSearchHeader summary={summary} />
+    <Screen header style={s.screen}>
       {found ? <Confirm found={found} /> : <Locating />}
     </Screen>
   );

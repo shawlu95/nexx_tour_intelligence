@@ -8,7 +8,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AppState, Linking, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { AI_CONSENT_COPY } from '../../../components/AiConsentSheet';
 import { WarningSheet } from '../../../components/WarningSheet';
-import { BackLink, colors, fontFamily, Screen, TabHeader } from '../../../components/ui';
+import { colors, fontFamily, Screen } from '../../../components/ui';
 import { deleteAccount } from '../../../lib/api';
 import { signOut, useUserId } from '../../../lib/auth';
 import { setAiConsent, useAiConsent } from '../../../lib/consent';
@@ -51,9 +51,7 @@ export default function PrivacyAndData() {
   }, [refresh]);
 
   return (
-    <Screen tab style={s.screen}>
-      <TabHeader />
-      <BackLink />
+    <Screen header style={s.screen}>
 
       <View style={s.heading}>
         <Text style={s.eyebrow}>PRIVACY & DATA</Text>

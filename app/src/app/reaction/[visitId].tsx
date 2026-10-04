@@ -1,12 +1,10 @@
 // Edit reaction, from the updated mockup: the buyer rewrites their reaction in their
 // own words, and NORA updates the Liked / Concerns bubbles below as they type
 // (a preview a moment after they stop). Save changes stores both.
-import { router, useLocalSearchParams } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, colors, fontFamily, TabHeader } from '../../components/ui';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { colors, fontFamily } from '../../components/ui';
 import { displayAddress } from '../../lib/address';
 import { editReaction, fetchVisit } from '../../lib/api';
 
@@ -74,94 +72,94 @@ export default function EditReaction() {
   }
 
   return (
-    <SafeAreaView style={s.root} edges={['top', 'left', 'right', 'bottom']}>
-      <View style={s.top}>
-        <TabHeader />
-      </View>
-      <View style={s.header}>
-        <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={10} style={s.cancel}>
-          <SymbolView name="chevron.left" tintColor={colors.ink2} size={12} type="monochrome" />
-          <Text style={s.cancelText}>Cancel</Text>
-        </Pressable>
-        <Text style={s.headerLabel}>EDIT REACTION</Text>
-      </View>
-
-      <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={s.body} keyboardShouldPersistTaps="handled">
-          <Text style={s.title} accessibilityRole="header">
-            Your words. Your reaction.
-          </Text>
-          <Text style={s.address}>{address}</Text>
-
-          <Text style={s.fieldLabel}>Summary</Text>
-          <TextInput
-            accessibilityLabel="Summary"
-            accessibilityHint="Edit your words. NORA updates the bubbles below."
-            style={s.input}
-            value={text}
-            onChangeText={setText}
-            placeholder="What did you like? What concerned you?"
-            placeholderTextColor="#8C95A6"
-            maxLength={5000}
-            multiline
-          />
-          <Text style={s.help}>Edit your words. NORA updates the bubbles below.</Text>
-
-          <View style={s.labelRow}>
-            <Text style={[s.label, { color: colors.good }]}>LIKED</Text>
-            {previewing ? <ActivityIndicator size="small" color={colors.accent} /> : null}
-          </View>
-          <View style={s.chips}>
-            {liked.length ? (
-              liked.map((b) => (
-                <Text key={b.text} style={[s.chip, s.chipGood]}>
-                  {b.text}
-                </Text>
-              ))
+    <>
+      <Stack.Screen
+        options={{
+          headerLeft: () => (
+            <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={10}>
+              <Text style={s.navButton}>Cancel</Text>
+            </Pressable>
+          ),
+          headerRight: () =>
+            saving ? (
+              <ActivityIndicator color={colors.accent} />
             ) : (
-              <Text style={s.none}>Nothing yet</Text>
-            )}
-          </View>
-          <Text style={[s.label, { color: colors.bad }]}>CONCERNS</Text>
-          <View style={s.chips}>
-            {concerns.length ? (
-              concerns.map((b) => (
-                <Text key={b.text} style={[s.chip, s.chipBad]}>
-                  {b.text}
-                </Text>
-              ))
-            ) : (
-              <Text style={s.none}>Nothing yet</Text>
-            )}
-          </View>
-          <Text style={s.note}>Review NORA’s interpretation before saving.</Text>
-          {error ? <Text style={s.error}>{error}</Text> : null}
-        </ScrollView>
-        <View style={s.footer}>
-          <Button title="Save changes" onPress={() => void save()} disabled={!changed || previewing} loading={saving} />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ disabled: !changed || previewing }}
+                disabled={!changed || previewing}
+                onPress={() => void save()}
+                hitSlop={10}
+              >
+                <Text style={[s.navButton, s.navSave, (!changed || previewing) && s.navDisabled]}>Save</Text>
+              </Pressable>
+            ),
+        }}
+      />
+      <ScrollView
+        contentContainerStyle={s.body}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        automaticallyAdjustKeyboardInsets
+      >
+        <Text style={s.title} accessibilityRole="header">
+          Your words. Your reaction.
+        </Text>
+        <Text style={s.address}>{address}</Text>
+
+        <Text style={s.fieldLabel}>Summary</Text>
+        <TextInput
+          accessibilityLabel="Summary"
+          accessibilityHint="Edit your words. NORA updates the bubbles below."
+          style={s.input}
+          value={text}
+          onChangeText={setText}
+          placeholder="What did you like? What concerned you?"
+          placeholderTextColor="#8C95A6"
+          maxLength={5000}
+          multiline
+        />
+        <Text style={s.help}>Edit your words. NORA updates the bubbles below.</Text>
+
+        <View style={s.labelRow}>
+          <Text style={[s.label, { color: colors.good }]}>LIKED</Text>
+          {previewing ? <ActivityIndicator size="small" color={colors.accent} /> : null}
         </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        <View style={s.chips}>
+          {liked.length ? (
+            liked.map((b) => (
+              <Text key={b.text} style={[s.chip, s.chipGood]}>
+                {b.text}
+              </Text>
+            ))
+          ) : (
+            <Text style={s.none}>Nothing yet</Text>
+          )}
+        </View>
+        <Text style={[s.label, { color: colors.bad }]}>CONCERNS</Text>
+        <View style={s.chips}>
+          {concerns.length ? (
+            concerns.map((b) => (
+              <Text key={b.text} style={[s.chip, s.chipBad]}>
+                {b.text}
+              </Text>
+            ))
+          ) : (
+            <Text style={s.none}>Nothing yet</Text>
+          )}
+        </View>
+        <Text style={s.note}>Review NORA’s interpretation before saving.</Text>
+        {error ? <Text style={s.error}>{error}</Text> : null}
+      </ScrollView>
+    </>
   );
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
-  flex: { flex: 1 },
-  top: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 10 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 18,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.line,
-  },
-  cancel: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44 },
-  cancelText: { fontFamily, fontSize: 15, fontWeight: '700', color: colors.ink2 },
-  headerLabel: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.2, color: '#8C95A6' },
-  body: { padding: 18, paddingBottom: 30 },
+  navButton: { fontFamily, fontSize: 17, color: colors.accent },
+  navSave: { fontWeight: '600' },
+  navDisabled: { color: '#A9B2C1' },
+  body: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 30 },
   title: { fontFamily, fontSize: 22, fontWeight: '800', letterSpacing: -0.5, color: colors.ink },
   address: { fontFamily, fontSize: 13, color: colors.ink3, marginTop: 6 },
   fieldLabel: { fontFamily, fontSize: 13, fontWeight: '700', color: colors.ink2, marginTop: 24, marginBottom: 8 },
@@ -188,5 +186,4 @@ const s = StyleSheet.create({
   none: { fontFamily, fontSize: 13, color: colors.ink3 },
   note: { fontFamily, fontSize: 12, color: '#949DAD', marginTop: 20 },
   error: { fontFamily, fontSize: 13, color: colors.bad, marginTop: 10 },
-  footer: { paddingHorizontal: 18, paddingTop: 10, paddingBottom: 8, borderTopWidth: 1, borderTopColor: colors.line, backgroundColor: colors.bg },
 });

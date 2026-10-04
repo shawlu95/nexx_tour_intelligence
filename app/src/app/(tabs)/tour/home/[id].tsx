@@ -7,7 +7,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { DetailsGrid, FactsRow, PriceLine, SourceLine } from '../../../../components/PropertyFacts';
 import { WarningSheet } from '../../../../components/WarningSheet';
-import { BackLink, Banner, colors, fontFamily, Screen, TabHeader } from '../../../../components/ui';
+import { Banner, colors, fontFamily, Screen } from '../../../../components/ui';
 import { cityState, displayAddress } from '../../../../lib/address';
 import { deleteProperty, fetchHome, type HomeVisit } from '../../../../lib/api';
 import { fetchRankingState, latestRanking, type RankedHome } from '../../../../lib/ranking';
@@ -71,9 +71,7 @@ export default function HomePage() {
 
   if (!home) {
     return (
-      <Screen tab>
-        <TabHeader />
-        <BackLink />
+      <Screen header>
         {error ? <Banner tone="error">{error}</Banner> : <ActivityIndicator color={colors.accent} />}
       </Screen>
     );
@@ -86,15 +84,7 @@ export default function HomePage() {
   const score = typeof fit?.score === 'number' ? fit.score : null;
 
   return (
-    <Screen tab style={s.screen}>
-      <TabHeader />
-      <View style={s.topRow}>
-        <BackLink />
-        <View style={s.private}>
-          <Text style={s.privateText}>Private</Text>
-        </View>
-      </View>
-
+    <Screen header style={s.screen}>
       {offline ? <Banner>{"You're offline. Showing the last saved version."}</Banner> : null}
       {error ? <Banner tone="error">{error}</Banner> : null}
 
@@ -243,9 +233,6 @@ export default function HomePage() {
 const s = StyleSheet.create({
   flex: { flex: 1 },
   screen: { gap: 12 },
-  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  private: { backgroundColor: colors.sunk, borderRadius: 13, paddingVertical: 6, paddingHorizontal: 10 },
-  privateText: { fontFamily, fontSize: 12, fontWeight: '700', color: colors.ink3 },
   card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: 16, overflow: 'hidden' },
   photo: { width: '100%', height: 190, backgroundColor: '#E8EDF5' },
   photoChip: {

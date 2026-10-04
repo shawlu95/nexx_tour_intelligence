@@ -3,8 +3,8 @@
 import { SymbolView } from 'expo-symbols';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Button, colors, Field, fontFamily, Screen, TabHeader } from '../../../components/ui';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Button, colors, Field, fontFamily, Screen } from '../../../components/ui';
 import { inviteAgent, useWorkspacePaused } from '../../../lib/sharingPreview';
 
 export default function InviteAgent() {
@@ -29,14 +29,8 @@ export default function InviteAgent() {
   }
 
   return (
-    <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Screen tab style={s.screen}>
-        <TabHeader />
-
-        <Pressable accessibilityRole="link" onPress={() => router.back()} hitSlop={10} style={s.back}>
-          <SymbolView name="chevron.left" tintColor={colors.ink2} size={12} type="monochrome" />
-          <Text style={s.backText}>Back</Text>
-        </Pressable>
+    <>
+      <Screen header style={s.screen}>
 
         <View style={s.heading}>
           <Text style={s.eyebrow}>OPTIONAL SHARING</Text>
@@ -80,15 +74,13 @@ export default function InviteAgent() {
           <Text style={s.note}>An app connection does not create a representation agreement.</Text>
         </View>
       </Screen>
-    </KeyboardAvoidingView>
+    </>
   );
 }
 
 const s = StyleSheet.create({
   flex: { flex: 1 },
   screen: { gap: 20 },
-  back: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' },
-  backText: { fontFamily, fontSize: 15, fontWeight: '600', color: colors.ink2 },
   heading: { gap: 8 },
   eyebrow: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
   title: { fontFamily, fontSize: 28, fontWeight: '800', color: colors.ink, letterSpacing: -0.4 },

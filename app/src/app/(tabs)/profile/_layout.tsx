@@ -1,8 +1,14 @@
 import { Stack } from 'expo-router';
-import { colors } from '../../../components/ui';
+import { nativeHeader } from '../../../components/ui';
 
-// Profile keeps its own stack so Privacy & data, the Privacy Policy and the Terms
-// stay inside the tab (tab bar visible, Profile highlighted), as in the mockup.
+// Profile's own stack, with the system navigation bar on pushed screens.
 export default function ProfileLayout() {
-  return <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }} />;
+  return (
+    <Stack screenOptions={nativeHeader}>
+      <Stack.Screen name="index" options={{ headerShown: false, title: 'Profile' }} />
+      <Stack.Screen name="privacy" options={{ title: 'Privacy & Data' }} />
+      <Stack.Screen name="privacy-policy" options={{ title: 'Privacy Policy' }} />
+      <Stack.Screen name="terms" options={{ title: 'Terms' }} />
+    </Stack>
+  );
 }

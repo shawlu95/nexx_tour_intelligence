@@ -1,11 +1,9 @@
 import { LegalDoc } from '../../../components/Legal';
-import { BackLink, Screen, TabHeader } from '../../../components/ui';
+import { Screen } from '../../../components/ui';
 
 export default function Terms() {
   return (
-    <Screen tab>
-      <TabHeader />
-      <BackLink />
+    <Screen header>
       <LegalDoc doc="terms" />
     </Screen>
   );

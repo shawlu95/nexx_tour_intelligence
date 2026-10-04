@@ -6,7 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { LocationSetup } from '../components/LocationSetup';
 import SignIn from '../components/SignIn';
-import { colors, Loading } from '../components/ui';
+import { Loading, nativeHeader } from '../components/ui';
 import { AuthProvider, useAuth } from '../lib/auth';
 import { listenForNotificationTaps, registerForPush } from '../lib/push';
 import { startQueueTriggers } from '../lib/sync';
@@ -42,20 +42,13 @@ function Root() {
 
   return (
     <Stack
-      screenOptions={{
-        headerTintColor: colors.accent,
-        headerTitleStyle: { color: colors.ink },
-        headerStyle: { backgroundColor: colors.bg },
-        headerShadowVisible: false,
-        contentStyle: { backgroundColor: colors.bg },
-        headerBackTitle: 'Back',
-      }}
+      screenOptions={nativeHeader}
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Back' }} />
       <Stack.Screen name="visit/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="share/[visitId]" options={{ title: 'Share', presentation: 'modal' }} />
       <Stack.Screen name="properties/[id]" options={{ headerShown: false }} />
-      <Stack.Screen name="reaction/[visitId]" options={{ headerShown: false }} />
+      <Stack.Screen name="reaction/[visitId]" options={{ presentation: 'modal', title: 'Edit Reaction' }} />
       <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
     </Stack>
   );

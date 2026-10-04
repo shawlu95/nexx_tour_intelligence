@@ -4,7 +4,7 @@ import { SymbolView } from 'expo-symbols';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Avatar } from '../../../components/Avatar';
-import { Button, colors, fontFamily, Screen, StatusPill, TabHeader } from '../../../components/ui';
+import { Button, colors, fontFamily, Screen, StatusPill } from '../../../components/ui';
 import { setAgentStatus, usePreviewAgents } from '../../../lib/sharingPreview';
 
 export default function InvitationSent() {
@@ -15,8 +15,7 @@ export default function InvitationSent() {
   const firstName = agentName.split(/\s+/)[0];
 
   return (
-    <Screen tab style={s.screen}>
-      <TabHeader />
+    <Screen header style={s.screen}>
 
       <View style={s.hero}>
         <View style={s.check}>

@@ -1,8 +1,13 @@
 import { Stack } from 'expo-router';
-import { colors } from '../../../components/ui';
+import { nativeHeader } from '../../../components/ui';
 
-// Sharing keeps its own stack so Invite and Invitation sent stay inside the tab
-// (tab bar visible, Sharing highlighted), as in the mockup.
+// Sharing's own stack, with the system navigation bar on pushed screens.
 export default function SharingLayout() {
-  return <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }} />;
+  return (
+    <Stack screenOptions={nativeHeader}>
+      <Stack.Screen name="index" options={{ headerShown: false, title: 'Sharing' }} />
+      <Stack.Screen name="invite" options={{ title: 'Invite Agent' }} />
+      <Stack.Screen name="sent" options={{ title: '', headerBackVisible: false }} />
+    </Stack>
+  );
 }

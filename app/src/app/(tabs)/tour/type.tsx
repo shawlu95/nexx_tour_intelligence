@@ -7,8 +7,9 @@ import { useState } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { AiConsentSheet } from '../../../components/AiConsentSheet';
-import { colors, fontFamily, TabHeader } from '../../../components/ui';
+import { colors, fontFamily } from '../../../components/ui';
 import type { AddressDraft } from '../../../lib/address';
 import { useUserId } from '../../../lib/auth';
 import { loadAiConsent } from '../../../lib/consent';
@@ -55,14 +56,12 @@ export default function TypeNote() {
 
   return (
     <SafeAreaView style={s.root} edges={['top', 'left', 'right']}>
-      <View style={s.header}>
-        <TabHeader />
-      </View>
+      <StatusBar style="light" />
       <KeyboardAvoidingView style={s.stage} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={s.stageContent} keyboardShouldPersistTaps="handled">
           <View style={s.topRow}>
-            <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={s.backButton} hitSlop={8}>
-              <SymbolView name="chevron.left" tintColor="#FFFFFF" size={14} type="monochrome" />
+            <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => router.back()} style={s.backButton} hitSlop={8}>
+              <SymbolView name="xmark" tintColor="#FFFFFF" size={14} type="monochrome" weight="semibold" />
             </Pressable>
             <View style={s.placeBox}>
               <Text style={s.placeTitle} numberOfLines={1}>
@@ -115,13 +114,12 @@ export default function TypeNote() {
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.surface },
-  header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 14, backgroundColor: colors.surface },
+  root: { flex: 1, backgroundColor: colors.stage },
   stage: { flex: 1, backgroundColor: colors.stage },
   stageContent: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 30 },
   topRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
-  backButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
-  backSpacer: { width: 36 },
+  backButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
+  backSpacer: { width: 44 },
   placeBox: { flex: 1, alignItems: 'center', gap: 2 },
   placeTitle: { fontFamily, fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
   placeSub: { fontFamily, fontSize: 13, color: colors.stage2 },

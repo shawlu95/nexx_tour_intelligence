@@ -17,8 +17,9 @@ import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Linking, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { AiConsentSheet } from '../../../components/AiConsentSheet';
-import { colors, fontFamily, TabHeader } from '../../../components/ui';
+import { colors, fontFamily } from '../../../components/ui';
 import type { AddressDraft } from '../../../lib/address';
 import { useUserId } from '../../../lib/auth';
 import { loadAiConsent } from '../../../lib/consent';
@@ -193,19 +194,17 @@ export default function Record() {
 
   return (
     <SafeAreaView style={s.root} edges={['top', 'left', 'right']}>
-      <View style={s.header}>
-        <TabHeader />
-      </View>
+      <StatusBar style="light" />
       <View style={s.stage}>
         <View style={s.topRow}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Back"
+            accessibilityLabel="Close"
             onPress={() => (recording ? setPhaseNow('confirmDiscard') : router.back())}
             style={s.backButton}
             hitSlop={8}
           >
-            <SymbolView name="chevron.left" tintColor="#FFFFFF" size={14} type="monochrome" />
+            <SymbolView name="xmark" tintColor="#FFFFFF" size={14} type="monochrome" weight="semibold" />
           </Pressable>
           <View style={s.place}>
             <Text style={s.placeTitle} numberOfLines={1}>
@@ -388,19 +387,18 @@ function Orb({ active }: { active: boolean }) {
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.surface },
-  header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 14, backgroundColor: colors.surface },
-  stage: { flex: 1, backgroundColor: colors.stage, alignItems: 'center', paddingHorizontal: 24, paddingTop: 16 },
+  root: { flex: 1, backgroundColor: colors.stage },
+  stage: { flex: 1, backgroundColor: colors.stage, alignItems: 'center', paddingHorizontal: 16, paddingTop: 8 },
   topRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch' },
   backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  backButtonSpacer: { width: 36 },
+  backButtonSpacer: { width: 44 },
   place: { flex: 1, alignItems: 'center', gap: 2 },
   placeTitle: { fontFamily, fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
   placeSub: { fontFamily, fontSize: 13, color: colors.stage2 },

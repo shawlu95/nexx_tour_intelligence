@@ -3,14 +3,11 @@
 // Choosing a home returns to the confirm card (tour/locate).
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { TourSearchHeader } from '../../../components/TourSearchHeader';
-import { Banner, Body, Button, colors, Field, fontFamily, Screen, TabHeader } from '../../../components/ui';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Banner, Body, Button, colors, Field, fontFamily, Screen } from '../../../components/ui';
 import { aboutDistance, displayAddress, distanceMeters, EMPTY_DRAFT, normalizedKey, type AddressDraft } from '../../../lib/address';
-import { fetchProperties, fetchTourSummary, type TourSummary } from '../../../lib/api';
-import { startOfWeek } from '../../../lib/format';
+import { fetchProperties } from '../../../lib/api';
 import { fixPropertyCoordinates, geocodeAddress, nearbyAddresses } from '../../../lib/geo';
 import { getSuggested, pickHome, type HomeChoice } from '../../../lib/homeChoice';
 import type { Property } from '../../../lib/types';
@@ -42,7 +39,6 @@ function choose(choice: HomeChoice) {
 }
 
 export default function ChangeLocation() {
-  const [summary, setSummary] = useState<TourSummary | null>(null);
   const [locating, setLocating] = useState(true);
   const [locationNote, setLocationNote] = useState('');
   const [here, setHere] = useState<Coords | null>(null);
@@ -53,11 +49,6 @@ export default function ChangeLocation() {
   const [saving, setSaving] = useState(false);
   const [suggestedKey] = useState(() => keyOfChoice(getSuggested()));
 
-  useEffect(() => {
-    fetchTourSummary(startOfWeek())
-      .then((r) => setSummary(r.data))
-      .catch(() => undefined);
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -134,15 +125,8 @@ export default function ChangeLocation() {
 
   return (
     // The page moves up with the keyboard so the address fields stay in view.
-    <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Screen tab style={s.screen}>
-        <TabHeader />
-        <TourSearchHeader summary={summary} />
-
-        <Pressable accessibilityRole="link" onPress={() => router.back()} hitSlop={10} style={s.back}>
-          <SymbolView name="chevron.left" tintColor={colors.ink2} size={12} type="monochrome" />
-          <Text style={s.backText}>Back</Text>
-        </Pressable>
+    <>
+      <Screen header style={s.screen}>
 
         <View style={s.heading}>
           <Text style={s.eyebrow}>CHANGE LOCATION</Text>
@@ -206,7 +190,7 @@ export default function ChangeLocation() {
           </>
         )}
       </Screen>
-    </KeyboardAvoidingView>
+    </>
   );
 }
 
@@ -233,8 +217,6 @@ function OptionRow({ option, onPress }: { option: HomeChoice; onPress: () => voi
 const s = StyleSheet.create({
   flex: { flex: 1 },
   screen: { gap: 18 },
-  back: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' },
-  backText: { fontFamily, fontSize: 15, fontWeight: '600', color: colors.ink2 },
   heading: { gap: 8 },
   eyebrow: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
   title: { fontFamily, fontSize: 22, fontWeight: '700', color: colors.ink, letterSpacing: -0.3 },

@@ -7,7 +7,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { HomeThumb } from '../../../../components/HomeThumb';
-import { Banner, Body, Button, Card, colors, fontFamily, Screen, TabHeader } from '../../../../components/ui';
+import { Banner, Body, Button, Card, colors, fontFamily, Screen } from '../../../../components/ui';
 import { displayAddress } from '../../../../lib/address';
 import { answerClarify, fetchVisit, retryVisit, type VisitDetail } from '../../../../lib/api';
 import { setAiConsent } from '../../../../lib/consent';
@@ -59,8 +59,7 @@ export default function NoteScreen() {
 
   if (!loaded) {
     return (
-      <Screen tab>
-        <TabHeader />
+      <Screen header>
         <ActivityIndicator color={colors.accent} />
       </Screen>
     );
@@ -68,8 +67,7 @@ export default function NoteScreen() {
 
   if (!detail && !pending) {
     return (
-      <Screen tab>
-        <TabHeader />
+      <Screen header>
         <Banner tone="error">{offline ? "You're offline and this note isn't saved on this phone yet." : 'This note no longer exists.'}</Banner>
         <Button kind="secondary" title="Back to Tour" onPress={() => router.dismissTo('/tour')} />
       </Screen>
@@ -92,8 +90,7 @@ export default function NoteScreen() {
   }
 
   return (
-    <Screen tab style={s.screen}>
-      <TabHeader />
+    <Screen header style={s.screen}>
       <Text style={s.address}>{detail ? displayAddress(detail.property) : (pending?.address_label ?? '')}</Text>
       {offline ? <Banner>{"You're offline. Showing the last saved version."}</Banner> : null}
       {error ? <Banner tone="error">{error}</Banner> : null}
@@ -222,8 +219,7 @@ function Question({
   }
 
   return (
-    <Screen tab style={s.questionScreen}>
-      <TabHeader />
+    <Screen header style={s.questionScreen}>
       <View style={s.organized}>
         <View style={s.organizedDot} />
         <Text style={s.organizedText}>Note organized</Text>
@@ -276,8 +272,7 @@ function NoteReady({ detail, fit }: { detail: VisitDetail; fit: RankedHome | nul
   const score = typeof fit?.score === 'number' ? fit.score : null;
 
   return (
-    <Screen tab style={s.readyScreen}>
-      <TabHeader />
+    <Screen header style={s.readyScreen}>
       <View style={s.success}>
         <View style={s.check}>
           <Text style={s.checkText}>✓</Text>

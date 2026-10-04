@@ -15,8 +15,6 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
 import { useWorkspacePaused } from '../lib/sharingPreview';
 
 // Design tokens from the mockup's :root (--ink, --muted, --blue, --blue-fill, …).
@@ -47,9 +45,20 @@ export const colors = {
 /** The mockup's typeface. Embedded natively (expo-font plugin in app.json); fontWeight picks the face. */
 export const fontFamily = 'DM Sans';
 
+/** The system navigation bar for pushed screens, styled to blend into the page. */
+export const nativeHeader = {
+  headerShadowVisible: false,
+  headerStyle: { backgroundColor: '#F4F6FA' },
+  headerTintColor: '#1768BC',
+  headerTitleStyle: { fontFamily: 'DM Sans', fontSize: 17, fontWeight: '600' as const, color: '#171A29' },
+  headerBackTitleStyle: { fontFamily: 'DM Sans', fontSize: 17 },
+  contentStyle: { backgroundColor: '#F4F6FA' },
+};
+
 /**
- * Page container. `tab` is for tab-bar screens, which have no header: they pad
- * the top for the status bar and Dynamic Island, and leave the bottom to the tab bar.
+ * Page container. `tab` is for a tab's first screen, which has no navigation bar:
+ * it pads the top for the status bar and Dynamic Island. `header` is for screens
+ * pushed under the system navigation bar. Both leave the bottom to the tab bar.
  */
 export function Screen({
   children,
@@ -57,6 +66,7 @@ export function Screen({
   style,
   dark = false,
   tab = false,
+  header = false,
   refreshControl,
   scrollEnabled = true,
 }: {
@@ -65,18 +75,22 @@ export function Screen({
   style?: StyleProp<ViewStyle>;
   dark?: boolean;
   tab?: boolean;
+  header?: boolean;
   refreshControl?: ReactElement<RefreshControlProps>;
   /** Turn off while something inside handles vertical drags. */
   scrollEnabled?: boolean;
 }) {
   const bg = { backgroundColor: dark ? colors.stage : colors.bg };
-  const edges: Edge[] = tab ? ['top', 'left', 'right'] : ['bottom', 'left', 'right'];
+  const edges: Edge[] = tab ? ['top', 'left', 'right'] : header ? ['left', 'right'] : ['bottom', 'left', 'right'];
   return (
     <SafeAreaView style={[styles.flex, bg]} edges={edges}>
       {scroll ? (
         <ScrollView
           contentContainerStyle={[styles.screen, style]}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          // iOS moves the content above the keyboard itself.
+          automaticallyAdjustKeyboardInsets
           refreshControl={refreshControl}
           scrollEnabled={scrollEnabled}
         >
@@ -223,15 +237,6 @@ export function TabHeader({ title }: { title?: string }) {
   );
 }
 
-/** The mockup's small "‹ Back" link at the top of screens inside a tab. */
-export function BackLink({ onPress = () => router.back() }: { onPress?: () => void }) {
-  return (
-    <Pressable accessibilityRole="link" onPress={onPress} hitSlop={10} style={styles.back}>
-      <SymbolView name="chevron.left" tintColor={colors.ink2} size={12} type="monochrome" />
-      <Text style={styles.backText}>Back</Text>
-    </Pressable>
-  );
-}
 
 export function Loading() {
   return (
@@ -285,6 +290,4 @@ export const styles = StyleSheet.create({
   wordmark: { fontFamily, fontSize: 16, fontWeight: '800', letterSpacing: 4, color: colors.ink },
   pill: { borderRadius: 999, paddingVertical: 4, paddingHorizontal: 9, alignSelf: 'flex-start' },
   pillText: { fontFamily, fontSize: 12, fontWeight: '600' },
-  back: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' },
-  backText: { fontFamily, fontSize: 15, fontWeight: '600', color: colors.ink2 },
 });
