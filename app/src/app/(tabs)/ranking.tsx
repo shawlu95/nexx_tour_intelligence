@@ -1,12 +1,12 @@
-// Ranking, from the updated mockup: the headline, a compact list (rank, thumbnail,
+// Ranking, from the updated mockup (the reorderable list is the page itself): the headline, a compact list (rank, thumbnail,
 // address and label, NORA score, drag grip), the first home open with its
 // summary, tags and "Open this note", then "Share with your agent" and "Record
 // the next home". NORA re-ranks by itself when there's a new home or new
 // discussion; after "Save and update ranking" a banner confirms the saved visit.
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { NestedReorderableList, reorderItems, ScrollViewContainer, useReorderableDrag } from 'react-native-reorderable-list';
+import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import ReorderableList, { reorderItems, useReorderableDrag } from 'react-native-reorderable-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { HomeThumb } from '../../components/HomeThumb';
 import { Banner, Body, Button, colors, fontFamily, TabHeader } from '../../components/ui';
@@ -41,6 +41,7 @@ export default function Ranking() {
   const [ranking, setRanking] = useState(false);
   const [error, setError] = useState('');
   const [open, setOpen] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const autoRanked = useRef('');
 
   const rank = useCallback(async () => {
@@ -126,97 +127,110 @@ export default function Ranking() {
     }
   }
 
-  return (
-    // ScrollViewContainer lets the nested ranking list take over vertical drags.
-    <SafeAreaView style={s.root} edges={['top', 'left', 'right']}>
-      <ScrollViewContainer contentContainerStyle={s.screen} keyboardShouldPersistTaps="handled">
-        <TabHeader />
+  const ranked = state && enoughHomes ? list : [];
+  async function refresh() {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }
 
-        {loadError ? <Banner tone="error">{loadError}</Banner> : null}
-        {state?.offline ? <Banner>{"You're offline. Showing your last ranking."}</Banner> : null}
-        {!state && !loadError ? <ActivityIndicator color={colors.accent} /> : null}
+  const header = (
+    <View>
+      <TabHeader />
+      {loadError ? <Banner tone="error">{loadError}</Banner> : null}
+      {state?.offline ? <Banner>{"You're offline. Showing your last ranking."}</Banner> : null}
+      {!state && !loadError ? <ActivityIndicator color={colors.accent} style={s.loading} /> : null}
 
-        {state && !enoughHomes ? (
-          <View style={s.empty}>
-            <Text style={s.eyebrow}>YOUR RANKING</Text>
-            <Text style={s.headline}>Tour a couple of homes first</Text>
-            <Body muted>Record your reaction to at least two homes, and NORA will rank them from your notes and the home facts.</Body>
-            <Button title="Record a home" onPress={() => router.push('/tour/locate')} />
+      {state && !enoughHomes ? (
+        <View style={s.empty}>
+          <Text style={s.eyebrow}>YOUR RANKING</Text>
+          <Text style={s.headline}>Tour a couple of homes first</Text>
+          <Body muted>Record your reaction to at least two homes, and NORA will rank them from your notes and the home facts.</Body>
+          <Button title="Record a home" onPress={() => router.push('/tour/locate')} />
+        </View>
+      ) : null}
+
+      {state && enoughHomes ? (
+        <>
+          <View style={s.heading}>
+            <View style={s.flex}>
+              <Text style={s.eyebrow}>YOUR RANKING</Text>
+              <Text style={s.headline} accessibilityRole="header">
+                {latest ? headline : 'Ranking your homes…'}
+              </Text>
+            </View>
+            <View style={s.count}>
+              <Text style={s.countText}>{list.length} homes</Text>
+            </View>
           </View>
-        ) : null}
+          <Text style={s.helper}>Tap a home for details. Drag the grip to make this list your own; NORA scores stay unchanged.</Text>
 
-        {state && enoughHomes ? (
-          <>
-            <View style={s.heading}>
+          {reordered ? (
+            <View style={s.yourOrder}>
               <View style={s.flex}>
-                <Text style={s.eyebrow}>YOUR RANKING</Text>
-                <Text style={s.headline} accessibilityRole="header">
-                  {latest ? headline : 'Ranking your homes…'}
-                </Text>
+                <Text style={s.yourOrderTitle}>Your order</Text>
+                <Text style={s.yourOrderCopy}>NORA scores are unchanged</Text>
               </View>
-              <View style={s.count}>
-                <Text style={s.countText}>{list.length} homes</Text>
-              </View>
+              <Pressable accessibilityRole="button" onPress={restore} hitSlop={12}>
+                <Text style={s.restore}>Restore NORA ranking</Text>
+              </Pressable>
             </View>
-            <Text style={s.helper}>Tap a home for details. Drag the grip to make this list your own; NORA scores stay unchanged.</Text>
+          ) : null}
 
-            {reordered ? (
-              <View style={s.yourOrder}>
-                <View style={s.flex}>
-                  <Text style={s.yourOrderTitle}>Your order</Text>
-                  <Text style={s.yourOrderCopy}>NORA scores are unchanged</Text>
-                </View>
-                <Pressable accessibilityRole="button" onPress={restore} hitSlop={12}>
-                  <Text style={s.restore}>Restore NORA ranking</Text>
-                </Pressable>
-              </View>
-            ) : null}
-
-            {saved ? (
-              <View style={s.savedBanner} accessibilityLiveRegion="polite">
-                <Text style={s.savedText}>1 visit saved · Reaction saved</Text>
-              </View>
-            ) : null}
-            {ranking ? (
-              <View style={s.updating}>
-                <ActivityIndicator size="small" color={colors.accent} />
-                <Text style={s.updatingText}>NORA is updating your ranking…</Text>
-              </View>
-            ) : null}
-
-            {list.length > 0 ? (
-              <View style={[s.list, ranking && { opacity: 0.6 }]}>
-                <NestedReorderableList
-                  // The page scrolls, not the list. Without this React Native warns about a
-                  // scrollable list nested in a ScrollView.
-                  scrollEnabled={false}
-                  data={list}
-                  keyExtractor={(r) => r.property_id}
-                  onReorder={({ from, to }) => reorder(reorderItems(list, from, to))}
-                  renderItem={({ item: r, index }) => (
-                    <RankRow
-                      item={r}
-                      home={state.homes.get(r.property_id)}
-                      summary={state.summaries?.[r.property_id]}
-                      justAdded={r.property_id === saved}
-                      first={index === 0}
-                      expanded={expanded === r.property_id}
-                      onToggle={() => setOpen(expanded === r.property_id ? '' : r.property_id)}
-                    />
-                  )}
-                />
-              </View>
-            ) : null}
-
-            <View style={s.actions}>
-              <Button title="Share with your agent" onPress={() => router.navigate('/sharing')} />
-              <Button kind="secondary" title="Record the next home" onPress={() => router.push('/tour/locate')} />
+          {saved ? (
+            <View style={s.savedBanner} accessibilityLiveRegion="polite">
+              <Text style={s.savedText}>1 visit saved · Reaction saved</Text>
             </View>
-          </>
-        ) : null}
+          ) : null}
+          {ranking ? (
+            <View style={s.updating}>
+              <ActivityIndicator size="small" color={colors.accent} />
+              <Text style={s.updatingText}>NORA is updating your ranking…</Text>
+            </View>
+          ) : null}
+        </>
+      ) : null}
+    </View>
+  );
 
-        {error ? <Banner tone="error">{error}</Banner> : null}
-      </ScrollViewContainer>
+  const footer = (
+    <View style={s.footer}>
+      {state && enoughHomes ? (
+        <View style={s.actions}>
+          <Button title="Share with your agent" onPress={() => router.navigate('/sharing')} />
+          <Button kind="secondary" title="Record the next home" onPress={() => router.push('/tour/locate')} />
+        </View>
+      ) : null}
+      {error ? <Banner tone="error">{error}</Banner> : null}
+    </View>
+  );
+
+  return (
+    // The reorderable list is the page itself (header and buttons around it), so
+    // there's no second scroll view for a drag to lock.
+    <SafeAreaView style={s.root} edges={['top', 'left', 'right']}>
+      <ReorderableList
+        data={ranked}
+        keyExtractor={(r) => r.property_id}
+        onReorder={({ from, to }) => reorder(reorderItems(list, from, to))}
+        ListHeaderComponent={header}
+        ListFooterComponent={footer}
+        contentContainerStyle={s.screen}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
+        renderItem={({ item: r, index }) => (
+          <RankRow
+            item={r}
+            home={state?.homes.get(r.property_id)}
+            summary={state?.summaries?.[r.property_id]}
+            justAdded={r.property_id === saved}
+            first={index === 0}
+            last={index === ranked.length - 1}
+            dimmed={ranking}
+            expanded={expanded === r.property_id}
+            onToggle={() => setOpen(expanded === r.property_id ? '' : r.property_id)}
+          />
+        )}
+      />
     </SafeAreaView>
   );
 }
@@ -227,6 +241,8 @@ function RankRow({
   summary,
   justAdded,
   first,
+  last,
+  dimmed,
   expanded,
   onToggle,
 }: {
@@ -235,6 +251,8 @@ function RankRow({
   summary: string | undefined;
   justAdded: boolean;
   first: boolean;
+  last: boolean;
+  dimmed: boolean;
   expanded: boolean;
   onToggle: () => void;
 }) {
@@ -251,7 +269,7 @@ function RankRow({
   const cons = item.cons ?? [];
   const address = home ? displayAddress(home) : 'Home';
   return (
-    <View style={[s.row, !first && s.rowDivider]}>
+    <View style={[s.row, first ? s.rowFirst : s.rowDivider, last && s.rowLast, dimmed && { opacity: 0.6 }]}>
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded }}
@@ -340,8 +358,12 @@ const s = StyleSheet.create({
   savedText: { fontFamily, fontSize: 15, fontWeight: '700', lineHeight: 21, color: colors.good },
   updating: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
   updatingText: { fontFamily, fontSize: 13, color: colors.ink3 },
-  list: { backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: '#D4D9E3', overflow: 'hidden', marginBottom: 13 },
-  row: { backgroundColor: colors.surface },
+  loading: { marginTop: 24 },
+  // The rows form one card: side borders on every row, rounded ends on the first and last.
+  row: { backgroundColor: colors.surface, borderLeftWidth: 1, borderRightWidth: 1, borderColor: '#D4D9E3' },
+  rowFirst: { borderTopWidth: 1, borderTopLeftRadius: 16, borderTopRightRadius: 16 },
+  rowLast: { borderBottomWidth: 1, borderBottomLeftRadius: 16, borderBottomRightRadius: 16 },
+  footer: { marginTop: 13, gap: 12 },
   rowDivider: { borderTopWidth: 1, borderTopColor: '#E6E9EF' },
   trigger: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, paddingHorizontal: 11 },
   number: { width: 25, height: 25, borderRadius: 7, backgroundColor: '#EFF2F6', alignItems: 'center', justifyContent: 'center' },
