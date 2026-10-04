@@ -73,12 +73,12 @@ export default function Profile() {
         </Text>
         {paused ? (
           <Button
+            kind="success"
             title="Reactivate account"
             onPress={() => {
               setWorkspacePaused(false);
               setToast('Account reactivated');
             }}
-            style={s.reactivate}
           />
         ) : (
           <Button kind="danger" title="Deactivate account" onPress={() => setAsking('deactivate')} />
@@ -193,7 +193,6 @@ const s = StyleSheet.create({
     marginTop: 8,
   },
   statusBody: { fontFamily, fontSize: 13, lineHeight: 19, color: colors.ink2 },
-  reactivate: { backgroundColor: colors.good },
   toast: {
     position: 'absolute',
     bottom: 12,

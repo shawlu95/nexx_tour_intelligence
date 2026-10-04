@@ -78,13 +78,15 @@ export default function EditReaction() {
       <Stack.Screen
         options={{
           headerLeft: () => (
-            <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={10}>
+            <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={10} style={s.navItem}>
               <Text style={s.navButton}>Cancel</Text>
             </Pressable>
           ),
           headerRight: () =>
             saving ? (
-              <ActivityIndicator color={colors.accent} />
+              <View style={s.navItem}>
+                <ActivityIndicator color={colors.accent} />
+              </View>
             ) : (
               <Pressable
                 accessibilityRole="button"
@@ -92,6 +94,7 @@ export default function EditReaction() {
                 disabled={!changed || previewing}
                 onPress={() => void save()}
                 hitSlop={10}
+                style={s.navItem}
               >
                 <Text style={[s.navButton, s.navSave, (!changed || previewing) && s.navDisabled]}>Save</Text>
               </Pressable>
@@ -158,6 +161,8 @@ export default function EditReaction() {
 }
 
 const s = StyleSheet.create({
+  // Room around the label inside the navigation bar's button capsule.
+  navItem: { paddingHorizontal: 14, minHeight: 36, justifyContent: 'center' },
   navButton: { fontFamily, fontSize: 17, color: colors.accent },
   navSave: { fontWeight: '600' },
   navDisabled: { color: '#A9B2C1' },

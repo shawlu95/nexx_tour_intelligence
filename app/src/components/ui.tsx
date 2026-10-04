@@ -103,7 +103,7 @@ export function Screen({
   );
 }
 
-type ButtonKind = 'primary' | 'secondary' | 'danger' | 'ghost';
+type ButtonKind = 'primary' | 'secondary' | 'danger' | 'success' | 'ghost';
 
 export function Button({
   title,
@@ -126,6 +126,7 @@ export function Button({
     primary: { bg: colors.accentFill, fg: colors.accentDark, border: 'transparent' },
     secondary: { bg: colors.surface, fg: colors.ink, border: colors.line },
     danger: { bg: colors.bad, fg: '#FFFFFF', border: colors.bad },
+    success: { bg: colors.good, fg: '#FFFFFF', border: colors.good },
     ghost: { bg: 'transparent', fg: colors.accent, border: 'transparent' },
   }[kind];
   return (
