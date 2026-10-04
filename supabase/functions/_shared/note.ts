@@ -3,7 +3,7 @@
 
 import { plainText } from './text.ts';
 
-export const PROMPT_VERSION = '2026-10-03';
+export const PROMPT_VERSION = '2026-10-03.2';
 
 export type ItemKind = 'liked' | 'concern' | 'question';
 

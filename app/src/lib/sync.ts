@@ -1,5 +1,6 @@
-// Upload queue. Moves each saved recording through:
+// Upload queue. Moves each saved recording (or typed note) through:
 //   saved → property → visit → uploaded → submitted → (removed once the note is ready)
+// A typed note travels with the visit row, so it has no audio upload.
 // Every step is idempotent, so a crash or lost connection just means the step runs again.
 import { Directory, File, Paths, UploadType } from 'expo-file-system';
 import * as Network from 'expo-network';
@@ -69,6 +70,7 @@ async function ensureVisit(v: PendingVisit, propertyId: string) {
       property_id: propertyId,
       recorded_at: v.recorded_at,
       duration_seconds: v.duration_seconds,
+      typed_note: v.typed_text,
       status: 'uploading',
     },
     { onConflict: 'id', ignoreDuplicates: true },
@@ -115,7 +117,7 @@ async function step(v: PendingVisit): Promise<void> {
     current = { ...current, stage: 'visit' };
   }
   if (current.stage === 'visit') {
-    await uploadAudio(current);
+    if (!current.typed_text) await uploadAudio(current);
     await updatePending(current.id, { stage: 'uploaded' });
     current = { ...current, stage: 'uploaded' };
   }
@@ -128,8 +130,10 @@ async function step(v: PendingVisit): Promise<void> {
     // Keep the local copy until the note exists, then free the space.
     const { data } = await supabase.from('visits').select('status').eq('id', current.id).maybeSingle();
     if (data?.status === 'ready') {
-      const file = new File(current.file_uri);
-      if (file.exists) file.delete();
+      if (current.file_uri) {
+        const file = new File(current.file_uri);
+        if (file.exists) file.delete();
+      }
       await removePending(current.id);
     }
   }

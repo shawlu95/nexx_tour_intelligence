@@ -38,6 +38,8 @@ Last updated: 2026-10-03. Update this file at the end of each work session: move
 
 22. **Permissions and privacy manifest (2026-10-03).** After sign-in, while location hasn't been asked yet, the mockup's one-time "Find each home automatically." screen explains it; Continue shows the iPhone prompt (no "Not now", which App Review rejects on pre-permission screens). Denied location still falls back to typing the address. Microphone and location purpose strings now say exactly when each is used and that typing is the alternative. `app.json` declares `ios.privacyManifests`: no tracking; collected Name, Email, User ID, Audio, Other User Content and Precise Location (house coordinates can fall back to the phone's position), all linked to the user and for app functionality; and the required-reason APIs our dependencies declare (UserDefaults CA92.1, FileTimestamp 0A2A.1/3B52.1/C617.1, SystemBootTime 35F9.1, DiskSpace 85F4.1/E174.1). **Needs a native rebuild.**
 
+23. **Type instead of recording (2026-10-03).** Migration `20261003010000_typed_notes.sql` adds `visits.typed_note` (≤ 5000 characters). The confirm screen offers "Start with voice" / "Type instead", and the record screen offers "Type instead" when the microphone is off (the alternative App Review expects). `tour/type.tsx` saves the text in the local queue (`pending_visits.typed_text`, added with `ALTER TABLE` for existing phones), the visit row carries it, and there's no audio upload. `process-visit` saves the typed text as the transcript (provider `typed`) and skips AssemblyAI. The note screen labels it "Typed note".
+
 ## Done and verified
 
 | Area | Verified how |

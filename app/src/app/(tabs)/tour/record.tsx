@@ -128,6 +128,7 @@ export default function Record() {
       recorded_at: new Date().toISOString(),
       duration_seconds: Math.round(seconds),
       file_uri: dest.uri,
+      typed_text: null,
     });
     void runQueue({ force: true });
     router.dismissTo('/tour');
@@ -253,9 +254,18 @@ export default function Record() {
             <Text style={s.finishText}>Record again</Text>
           </Pressable>
         ) : phase === 'denied' ? (
-          <Pressable style={s.finish} onPress={() => Linking.openSettings()} accessibilityRole="button">
-            <Text style={s.finishText}>Open Settings</Text>
-          </Pressable>
+          <>
+            <Pressable
+              style={s.finish}
+              onPress={() => router.replace({ pathname: '/tour/type', params })}
+              accessibilityRole="button"
+            >
+              <Text style={s.finishText}>Type instead</Text>
+            </Pressable>
+            <Pressable onPress={() => Linking.openSettings()} accessibilityRole="link" hitSlop={8} style={s.settingsLink}>
+              <Text style={s.settingsLinkText}>Turn on the microphone in Settings</Text>
+            </Pressable>
+          </>
         ) : (
           <Pressable
             style={({ pressed }) => [s.finish, (pressed || phase !== 'recording') && { opacity: 0.8 }]}
@@ -272,7 +282,7 @@ export default function Record() {
           {phase === 'tooShort'
             ? `Say a bit more: at least ${MIN_SECONDS} seconds.`
             : phase === 'denied'
-              ? 'Turn on the microphone for NORA to record your reaction.'
+              ? 'The microphone is off for NORA. Type your reaction, or turn the microphone on in Settings.'
               : 'Listening · your note stays private'}
         </Text>
       </View>
@@ -408,6 +418,8 @@ const s = StyleSheet.create({
   },
   stopSquare: { width: 12, height: 12, borderRadius: 3, backgroundColor: '#E04848' },
   finishText: { fontSize: 17, fontWeight: '700', color: colors.ink },
+  settingsLink: { marginTop: 14 },
+  settingsLinkText: { fontSize: 14, fontWeight: '600', color: '#91A8FA', textDecorationLine: 'underline' },
   listening: { fontSize: 13, color: colors.stage2, marginTop: 16, textAlign: 'center' },
   confirm: { marginTop: 24, alignItems: 'center', gap: 12 },
   confirmText: { fontSize: 15, fontWeight: '600', color: '#FFFFFF' },

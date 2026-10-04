@@ -19,7 +19,8 @@ db.execSync(`
     stage TEXT NOT NULL,
     attempts INTEGER NOT NULL DEFAULT 0,
     next_attempt_at INTEGER NOT NULL DEFAULT 0,
-    last_error TEXT
+    last_error TEXT,
+    typed_text TEXT
   );
   CREATE TABLE IF NOT EXISTS cache (
     key TEXT PRIMARY KEY NOT NULL,
@@ -27,6 +28,13 @@ db.execSync(`
     updated_at INTEGER NOT NULL
   );
 `);
+
+// Databases created before typed notes lack the column.
+try {
+  db.execSync('ALTER TABLE pending_visits ADD COLUMN typed_text TEXT');
+} catch {
+  // already there
+}
 
 /**
  * Upload stages, in order. Each step is safe to repeat.
@@ -42,7 +50,10 @@ export interface PendingVisit {
   address_label: string;
   recorded_at: string;
   duration_seconds: number;
+  /** Empty for a typed note. */
   file_uri: string;
+  /** The buyer's typed reaction, instead of a recording. */
+  typed_text: string | null;
   stage: Stage;
   attempts: number;
   next_attempt_at: number;
@@ -59,8 +70,8 @@ function fromRow(r: PendingRow): PendingVisit {
 
 export async function addPending(v: Omit<PendingVisit, 'stage' | 'attempts' | 'next_attempt_at' | 'last_error'>) {
   await db.runAsync(
-    `INSERT INTO pending_visits (id, user_id, property_id, property_draft, address_label, recorded_at, duration_seconds, file_uri, stage)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'saved')`,
+    `INSERT INTO pending_visits (id, user_id, property_id, property_draft, address_label, recorded_at, duration_seconds, file_uri, typed_text, stage)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'saved')`,
     v.id,
     v.user_id,
     v.property_id,
@@ -69,6 +80,7 @@ export async function addPending(v: Omit<PendingVisit, 'stage' | 'attempts' | 'n
     v.recorded_at,
     v.duration_seconds,
     v.file_uri,
+    v.typed_text,
   );
 }
 

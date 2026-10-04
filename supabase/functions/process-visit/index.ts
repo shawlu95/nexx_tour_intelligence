@@ -1,5 +1,6 @@
 // Turns an uploaded reaction clip into a note: transcribe, summarize, check, save.
-// The original audio is deleted as soon as its transcript is saved.
+// The original audio is deleted as soon as its transcript is saved. A typed note
+// skips transcription: its text becomes the transcript.
 //
 // POST { visit_id, regenerate? }
 //   - called by the app after the clip is uploaded, and when the buyer taps "Try again"
@@ -57,7 +58,9 @@ Deno.serve(async (req) => {
   if (error) return json({ error: error.message }, 500);
   if (!visit || (userId && visit.user_id !== userId)) return json({ error: 'Visit not found' }, 404);
   const { data: saved } = await db.from('transcripts').select('full_text').eq('visit_id', visitId).maybeSingle();
-  if (!visit.audio_path && !saved) return json({ error: 'The recording has not finished uploading yet.' }, 409);
+  if (!visit.audio_path && !visit.typed_note && !saved) {
+    return json({ error: 'The recording has not finished uploading yet.' }, 409);
+  }
 
   if (visit.status === 'ready' && !regenerate) return json({ status: 'ready' });
   const inFlight = visit.status === 'processing' && Date.now() - new Date(visit.status_updated_at).getTime() < STALE_MS;
@@ -83,6 +86,18 @@ Deno.serve(async (req) => {
       try {
         // 1. Transcript: reuse the saved one (regenerating, or retrying after a later step failed), otherwise transcribe.
         let transcript: string | null = saved?.full_text ?? null;
+        if (transcript === null && visit.typed_note) {
+          transcript = (visit.typed_note as string).trim();
+          const { error: tError } = await db.from('transcripts').upsert({
+            visit_id: visitId,
+            user_id: visit.user_id,
+            utterances: [{ start: 0, end: 0, text: transcript }],
+            full_text: transcript,
+            provider: 'typed',
+            model: 'buyer',
+          });
+          if (tError) throw tError;
+        }
         if (transcript === null) {
           const { data: signed, error: signError } = await db.storage
             .from('audio')

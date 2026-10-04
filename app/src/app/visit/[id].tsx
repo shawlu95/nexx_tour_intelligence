@@ -63,6 +63,8 @@ export default function VisitScreen() {
   const address = detail ? displayAddress(detail.property) : (pending?.address_label ?? '');
   const recordedAt = detail?.visit.recorded_at ?? pending!.recorded_at;
   const duration = detail?.visit.duration_seconds ?? pending!.duration_seconds;
+  // Typed notes have no length.
+  const kind = duration > 0 ? `${formatClock(duration)} reaction` : 'Typed note';
 
   return (
     <Screen>
@@ -70,13 +72,13 @@ export default function VisitScreen() {
       {detail ? (
         <HomeHero
           home={detail.property}
-          eyebrow={`${formatWhen(recordedAt)} · ${formatClock(duration)} reaction`}
+          eyebrow={`${formatWhen(recordedAt)} · ${kind}`}
           onPress={() => router.push(`/properties/${detail.property.id}`)}
         />
       ) : (
         <View style={s.header}>
           <Eyebrow>
-            {formatWhen(recordedAt)} · {formatClock(duration)} reaction
+            {formatWhen(recordedAt)} · {kind}
           </Eyebrow>
           <Title>{address}</Title>
         </View>
@@ -137,7 +139,7 @@ function Progress({
     return (
       <Card>
         <Text style={s.cardTitle}>{"We couldn't write this note"}</Text>
-        <Body>{detail?.visit.error ?? 'Something went wrong.'} Your recording is safe.</Body>
+        <Body>{detail?.visit.error ?? 'Something went wrong.'} Your note is safe.</Body>
         <Button
           title="Try again"
           loading={busy}
@@ -268,8 +270,10 @@ function ReadyNote({
                     try {
                       await deleteVisit(detail.visit);
                       if (pending) {
-                        const f = new File(pending.file_uri);
-                        if (f.exists) f.delete();
+                        if (pending.file_uri) {
+                          const f = new File(pending.file_uri);
+                          if (f.exists) f.delete();
+                        }
                         await removePending(pending.id);
                       }
                       router.dismissTo('/tour');

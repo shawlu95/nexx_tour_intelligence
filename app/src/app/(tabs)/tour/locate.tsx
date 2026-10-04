@@ -177,11 +177,12 @@ function Confirm({ found }: { found: Found }) {
     Animated.timing(fade, { toValue: 1, duration: 220, useNativeDriver: true }).start();
   }, [fade]);
 
-  function start() {
+  function start(how: 'record' | 'type') {
+    const pathname = how === 'record' ? '/tour/record' : '/tour/type';
     if (found.kind === 'existing') {
-      router.push({ pathname: '/tour/record', params: { propertyId: found.property.id, label: displayAddress(found.property) } });
+      router.push({ pathname, params: { propertyId: found.property.id, label: displayAddress(found.property) } });
     } else {
-      router.push({ pathname: '/tour/record', params: { draft: JSON.stringify(found.draft), label: found.draft.addressLine } });
+      router.push({ pathname, params: { draft: JSON.stringify(found.draft), label: found.draft.addressLine } });
     }
   }
 
@@ -217,8 +218,12 @@ function Confirm({ found }: { found: Found }) {
       </View>
 
       <View style={s.actions}>
-        <Button title="Yes, start recording" onPress={start} />
-        <Button kind="secondary" title="Change location" onPress={() => router.push('/tour/pick')} />
+        <View style={s.startRow}>
+          <Button title="Start with voice" onPress={() => start('record')} style={s.flex} />
+          <Button kind="secondary" title="Type instead" onPress={() => start('type')} style={s.flex} />
+        </View>
+        <Text style={s.correct}>Choose voice or typing for this note.</Text>
+        <Button kind="ghost" title="Change location" onPress={() => router.push('/tour/pick')} />
         <Text style={s.correct}>You can correct property details later.</Text>
       </View>
     </Animated.View>
@@ -293,5 +298,7 @@ const s = StyleSheet.create({
   factLabel: { fontSize: 13, color: colors.ink2 },
   factsNote: { fontSize: 12, color: colors.ink3, marginTop: 10 },
   actions: { gap: 10, marginTop: 4 },
+  startRow: { flexDirection: 'row', gap: 10 },
+  flex: { flex: 1 },
   correct: { fontSize: 12, color: colors.ink3, textAlign: 'center', marginTop: 2 },
 });

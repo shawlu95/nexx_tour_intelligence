@@ -6,7 +6,7 @@ import { CHAT_SCHEMA, RANK_SCHEMA, type ChatOutput, type RankOutput } from './ra
 export const SUMMARY_MODEL = Deno.env.get('SUMMARY_MODEL') ?? 'claude-opus-5';
 
 // Kept byte-for-byte stable so it can be served from the prompt cache.
-const SYSTEM_PROMPT = `You write notes for a home buyer. Right after leaving an open house, the buyer recorded a short spoken reaction (usually under a minute) about the home they just saw.
+const SYSTEM_PROMPT = `You write notes for a home buyer. Right after leaving an open house, the buyer recorded a short spoken reaction (usually under a minute) about the home they just saw, or typed it. The transcript is what they said or typed.
 Your note is their memory aid weeks later and may be sent to their buyer's agent.
 
 Write:

@@ -59,6 +59,7 @@ Something belongs in the MVP only if leaving it out would break that job. Everyt
 | 1 | **Sign in** with Apple, Google, or email code | No passwords. Apple sign-in is required by the App Store whenever Google sign-in is offered. |
 | 2 | **Pick the property** | GPS suggests the nearest address, which the buyer confirms or edits (one line, plus a unit number for condos). The buyer's own properties nearby are offered first. If the address matches an existing property, the visit is added to it. |
 | 3 | **Record a short reaction** | Prompts on screen and a timer that turns green at 40 seconds. Stops on its own at 2 minutes. Re-record before saving. The clip is saved on the phone first. |
+| 3a | **Or type it** | "Type instead" on the confirm screen, or when the microphone is off. The text is organized like a transcript, with no transcription step. |
 | 4 | **Reliable upload and processing** | Uploads queue and retry until they succeed, so a clip recorded with no signal is processed later. The note usually appears within 30 seconds, and a push notification arrives if the buyer has left the screen. |
 | 5 | **Structured note** | An overall impression plus **Liked**, **Concerns**, and **Questions for my agent**. |
 | 6 | **Check against the source** | Each point shows the quote it came from. The full transcript is one tap away. The original audio is deleted once it's transcribed. |
