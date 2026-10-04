@@ -44,8 +44,6 @@ export default function Sharing() {
         <Text style={s.body}>
           {paused
             ? 'Your workspace and every agent connection are paused.'
-            : agents.some((a) => a.status === 'active')
-            ? 'You and the agents you invited can see your tour notes and rankings.'
             : `Only you can see your ${notes === null ? '' : `${notes} `}tour ${notes === 1 ? 'note' : 'notes'} and rankings right now.`}
         </Text>
       </View>
@@ -80,20 +78,9 @@ export default function Sharing() {
           <AccessRow
             key={a.id}
             name={a.name || a.email}
-            detail={paused ? 'Access paused' : a.status === 'active' ? 'Agent · can view and add notes' : 'Invitation sent'}
-            pill={
-              paused ? (
-                <StatusPill label="Paused" tone="neutral" />
-              ) : a.status === 'active' ? (
-                <StatusPill label="Active" tone="good" />
-              ) : (
-                <StatusPill label="Invitation pending" tone="warn" />
-              )
-            }
-            action={{
-              label: a.status === 'active' ? 'Remove access' : 'Cancel invitation',
-              onPress: () => removeAgent(a.id),
-            }}
+            detail={paused ? 'Access paused' : 'Invitation sent'}
+            pill={paused ? <StatusPill label="Paused" tone="neutral" /> : <StatusPill label="Invitation pending" tone="warn" />}
+            action={{ label: 'Cancel invitation', onPress: () => removeAgent(a.id) }}
           />
         ))}
       </View>

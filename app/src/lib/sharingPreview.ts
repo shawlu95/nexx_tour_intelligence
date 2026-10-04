@@ -10,7 +10,6 @@ export interface PreviewAgent {
   id: string;
   name: string;
   email: string;
-  status: 'pending' | 'active';
 }
 
 let agents: PreviewAgent[] = [];
@@ -21,15 +20,10 @@ function emit() {
 }
 
 export function inviteAgent(name: string, email: string): PreviewAgent {
-  const agent: PreviewAgent = { id: `${Date.now()}`, name: name.trim(), email: email.trim(), status: 'pending' };
+  const agent: PreviewAgent = { id: `${Date.now()}`, name: name.trim(), email: email.trim() };
   agents = [...agents, agent];
   emit();
   return agent;
-}
-
-export function setAgentStatus(id: string, status: PreviewAgent['status']) {
-  agents = agents.map((a) => (a.id === id ? { ...a, status } : a));
-  emit();
 }
 
 /** Cancels a pending invitation or removes an agent's access. */

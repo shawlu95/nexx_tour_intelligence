@@ -4,14 +4,13 @@ import { SymbolView } from 'expo-symbols';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Avatar } from '../../../components/Avatar';
-import { Button, colors, fontFamily, Screen, StatusPill } from '../../../components/ui';
-import { setAgentStatus, usePreviewAgents } from '../../../lib/sharingPreview';
+import { colors, fontFamily, Screen, StatusPill } from '../../../components/ui';
+import { usePreviewAgents } from '../../../lib/sharingPreview';
 
 export default function InvitationSent() {
   const { id, name } = useLocalSearchParams<{ id: string; name: string }>();
   const agent = usePreviewAgents().find((a) => a.id === id);
   const agentName = agent?.name || name || 'Your agent';
-  const accepted = agent?.status === 'active';
   const firstName = agentName.split(/\s+/)[0];
 
   return (
@@ -21,14 +20,12 @@ export default function InvitationSent() {
         <View style={s.check}>
           <SymbolView name="checkmark" tintColor={colors.good} size={28} type="monochrome" />
         </View>
-        <Text style={s.eyebrow}>{accepted ? 'INVITATION ACCEPTED' : 'INVITATION SENT'}</Text>
+        <Text style={s.eyebrow}>INVITATION SENT</Text>
         <Text style={s.title} accessibilityRole="header">
           You stay in control.
         </Text>
         <Text style={s.body}>
-          {accepted
-            ? `${firstName} can now view your tours and add notes. You can remove access at any time.`
-            : `${firstName} will receive a secure link. Access begins only after the invitation is accepted.`}
+          {`${firstName} will receive a secure link. Access begins only after the invitation is accepted.`}
         </Text>
       </View>
 
@@ -38,13 +35,12 @@ export default function InvitationSent() {
           <Text style={s.rowName} numberOfLines={1}>
             {agentName}
           </Text>
-          <Text style={s.rowDetail}>{accepted ? 'Access active' : 'Invitation sent'}</Text>
+          <Text style={s.rowDetail}>Invitation sent</Text>
         </View>
-        {accepted ? <StatusPill label="Active" tone="good" /> : <StatusPill label="Invitation pending" tone="warn" />}
+        <StatusPill label="Invitation pending" tone="warn" />
       </View>
 
       <View style={s.actions}>
-        {!accepted && agent ? <Button title="Preview accepted status" onPress={() => setAgentStatus(agent.id, 'active')} /> : null}
         <Pressable accessibilityRole="link" onPress={() => router.dismissTo('/sharing')} hitSlop={10} style={s.manage}>
           <Text style={s.manageText}>Manage sharing</Text>
         </Pressable>
