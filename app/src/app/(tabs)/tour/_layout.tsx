@@ -8,7 +8,7 @@ export default function TourLayout() {
     <Stack screenOptions={nativeHeader}>
       <Stack.Screen name="index" options={{ headerShown: false, title: 'Tour' }} />
       <Stack.Screen name="locate" options={{ title: 'Record a Home' }} />
-      <Stack.Screen name="pick" options={{ title: 'Change Location' }} />
+      <Stack.Screen name="pick" options={{ title: 'Choose a Home' }} />
       <Stack.Screen name="record" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
       <Stack.Screen name="type" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
       <Stack.Screen name="note/[id]" options={{ title: 'Note' }} />

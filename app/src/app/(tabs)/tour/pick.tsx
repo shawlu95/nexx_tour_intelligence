@@ -1,15 +1,17 @@
-// Change location, recreated from the mockup: nearby addresses to tap (the one
-// already suggested is left out), and "Not listed? Type the address" at the bottom.
-// Choosing a home returns to the confirm card (tour/locate).
+// Change location, from the mockup: the suggested home (checked) and nearby
+// addresses to tap, then "Search or enter an address" with Google suggestions as
+// you type. Choosing a home returns to the confirm card (tour/locate).
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Banner, Body, Button, colors, Field, fontFamily, Screen } from '../../../components/ui';
-import { aboutDistance, displayAddress, distanceMeters, EMPTY_DRAFT, normalizedKey, type AddressDraft } from '../../../lib/address';
+import { SymbolView } from 'expo-symbols';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Banner, Body, colors, fontFamily, Screen } from '../../../components/ui';
+import { aboutDistance, displayAddress, distanceMeters, normalizedKey, type AddressDraft } from '../../../lib/address';
 import { fetchProperties } from '../../../lib/api';
-import { fixPropertyCoordinates, geocodeAddress, nearbyAddresses } from '../../../lib/geo';
+import { fixPropertyCoordinates, nearbyAddresses } from '../../../lib/geo';
 import { getSuggested, pickHome, type HomeChoice } from '../../../lib/homeChoice';
+import { addressOf, lookUpTyped, newSearchSession, searchAddresses, type PlaceSuggestion } from '../../../lib/places';
 import type { Property } from '../../../lib/types';
 
 const NEARBY_METERS = 800; // your saved homes within about half a mile
@@ -44,11 +46,18 @@ export default function ChangeLocation() {
   const [here, setHere] = useState<Coords | null>(null);
   const [properties, setProperties] = useState<Property[]>([]);
   const [candidates, setCandidates] = useState<AddressDraft[]>([]);
-  const [typing, setTyping] = useState(false);
-  const [draft, setDraft] = useState<AddressDraft>(EMPTY_DRAFT);
-  const [saving, setSaving] = useState(false);
-  const [suggestedKey] = useState(() => keyOfChoice(getSuggested()));
+  const [suggested] = useState(() => getSuggested());
+  const suggestedKey = keyOfChoice(suggested);
 
+  // "Search or enter an address": Google suggestions as you type, or the phone's
+  // geocoder when Google isn't available.
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<PlaceSuggestion[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [googleOff, setGoogleOff] = useState(false);
+  const [picking, setPicking] = useState<string | null>(null);
+  const [searchError, setSearchError] = useState('');
+  const session = useRef(newSearchSession());
 
   useEffect(() => {
     let cancelled = false;
@@ -63,8 +72,7 @@ export default function ChangeLocation() {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
-          setLocationNote('Location is off, so type the address.');
-          setTyping(true);
+          setLocationNote('Location is off, so search for the address.');
           return;
         }
         const pos =
@@ -76,10 +84,7 @@ export default function ChangeLocation() {
         const found = await nearbyAddresses(coords);
         if (!cancelled) setCandidates(found);
       } catch {
-        if (!cancelled) {
-          setLocationNote("Couldn't get your location, so type the address.");
-          setTyping(true);
-        }
+        if (!cancelled) setLocationNote("Couldn't get your location, so search for the address.");
       } finally {
         if (!cancelled) setLocating(false);
       }
@@ -89,7 +94,32 @@ export default function ChangeLocation() {
     };
   }, []);
 
-  // Your saved homes nearby first, then street addresses; the suggested home is left out.
+  // Suggestions a moment after typing stops.
+  useEffect(() => {
+    const text = query.trim();
+    if (googleOff || text.length < 3) return;
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const found = await searchAddresses(text, session.current, here);
+        if (!cancelled) {
+          setResults(found);
+          setSearchError('');
+        }
+      } catch {
+        // No key yet, or Google is down: fall back to the phone's geocoder.
+        if (!cancelled) setGoogleOff(true);
+      }
+      if (!cancelled) setSearching(false);
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [query, here, googleOff]);
+
+  // The suggested home first (checked), then your saved homes nearby, then street addresses.
   const options = useMemo<HomeChoice[]>(() => {
     const existing: HomeChoice[] = properties
       .map((p) => ({ kind: 'existing' as const, property: p, meters: distanceTo(here, p) }))
@@ -101,100 +131,144 @@ export default function ChangeLocation() {
       .filter((d) => !known.has(normalizedKey(d)))
       .map((d) => ({ kind: 'new' as const, draft: d, meters: distanceTo(here, d) }))
       .sort((a, b) => (a.meters ?? Infinity) - (b.meters ?? Infinity));
-    return [...existing, ...fresh].filter((o) => keyOfChoice(o) !== suggestedKey).slice(0, MAX_OPTIONS);
-  }, [properties, candidates, here, suggestedKey]);
+    const rest = [...existing, ...fresh].filter((o) => keyOfChoice(o) !== suggestedKey);
+    return [...(suggested ? [suggested] : []), ...rest].slice(0, MAX_OPTIONS);
+  }, [properties, candidates, here, suggested, suggestedKey]);
 
-  // A typed address that matches a saved home records against that home.
-  const typedMatch = useMemo(() => {
-    if (!draft.addressLine.trim()) return null;
-    const key = normalizedKey(draft);
-    return properties.find((p) => keyOfProperty(p) === key) ?? null;
-  }, [draft, properties]);
-
-  async function useTyped() {
-    if (typedMatch) return choose({ kind: 'existing', property: typedMatch, meters: distanceTo(here, typedMatch) });
-    setSaving(true);
-    const clean = { ...draft, addressLine: draft.addressLine.trim(), unit: draft.unit.trim(), city: draft.city.trim() };
-    const house = await geocodeAddress(clean);
-    const located = house ? { ...clean, latitude: house.latitude, longitude: house.longitude } : clean;
-    setSaving(false);
-    choose({ kind: 'new', draft: located, meters: distanceTo(here, located) });
+  /** A searched address: a home you've visited before records against that home. */
+  function chooseAddress(draft: AddressDraft) {
+    const match = properties.find((p) => keyOfProperty(p) === normalizedKey(draft));
+    if (match) return choose({ kind: 'existing', property: match, meters: distanceTo(here, match) });
+    choose({ kind: 'new', draft, meters: distanceTo(here, draft) });
   }
 
-  const set = (field: keyof AddressDraft) => (value: string) => setDraft((d) => ({ ...d, [field]: value }));
+  async function pickSuggestion(r: PlaceSuggestion) {
+    setPicking(r.placeId);
+    setSearchError('');
+    try {
+      const draft = await addressOf(r.placeId, session.current);
+      session.current = newSearchSession(); // the details call ends Google's session
+      chooseAddress(draft);
+    } catch (e) {
+      setSearchError(e instanceof Error ? e.message : "Couldn't use that address. Try another.");
+    }
+    setPicking(null);
+  }
+
+  async function searchTyped() {
+    setPicking('typed');
+    setSearchError('');
+    const draft = await lookUpTyped(query.trim());
+    setPicking(null);
+    if (!draft) return setSearchError('Couldn’t find that address. Add the city, or check the street number.');
+    chooseAddress(draft);
+  }
+
+  const typed = query.trim().length >= 3;
 
   return (
-    // The page moves up with the keyboard so the address fields stay in view.
-    <>
-      <Screen header style={s.screen}>
+    <Screen header style={s.screen}>
+      <View style={s.heading}>
+        <Text style={s.eyebrow}>CHANGE LOCATION</Text>
+        <Text style={s.title} accessibilityRole="header">
+          Which home are you visiting?
+        </Text>
+        <Text style={s.body}>Choose a nearby address. Search only if you don’t see it.</Text>
+      </View>
 
-        <View style={s.heading}>
-          <Text style={s.eyebrow}>CHANGE LOCATION</Text>
-          <Text style={s.title} accessibilityRole="header">
-            Which home are you visiting?
-          </Text>
-          <Text style={s.body}>Choose a nearby address. Search only if you don’t see it.</Text>
+      {locationNote ? <Banner>{locationNote}</Banner> : null}
+
+      {locating ? (
+        <View style={s.locating}>
+          <ActivityIndicator color={colors.accent} />
+          <Text style={s.locatingText}>Finding homes near you…</Text>
         </View>
+      ) : null}
 
-        {locationNote ? <Banner>{locationNote}</Banner> : null}
+      {options.length > 0 ? (
+        <View style={s.options}>
+          {options.map((o) => (
+            <OptionRow key={keyOfChoice(o)!} option={o} selected={keyOfChoice(o) === suggestedKey} onPress={() => choose(o)} />
+          ))}
+        </View>
+      ) : !locating && !locationNote ? (
+        <Body muted>No other addresses found nearby.</Body>
+      ) : null}
 
-        {typing ? (
-          <View style={s.form}>
-            <Field
-              label="Street address"
-              value={draft.addressLine}
-              onChangeText={set('addressLine')}
-              placeholder="Start typing an address"
-              autoCapitalize="words"
-              autoFocus
-              returnKeyType="next"
-            />
-            <View style={s.row}>
-              <View style={s.unit}>
-                <Field label="Unit" value={draft.unit} onChangeText={set('unit')} placeholder="Optional" />
-              </View>
-              <View style={s.city}>
-                <Field label="City" value={draft.city} onChangeText={set('city')} placeholder="City" autoCapitalize="words" />
-              </View>
-            </View>
-            {typedMatch ? <Banner tone="success">{"You've visited this home before. This reaction will be added to it."}</Banner> : null}
-            <Button title="Use this address" onPress={useTyped} loading={saving} disabled={draft.addressLine.trim().length < 3} />
-            {options.length > 0 ? (
-              <Pressable accessibilityRole="button" onPress={() => setTyping(false)} hitSlop={8}>
-                <Text style={s.link}>Choose from nearby addresses instead</Text>
+      <View style={s.search}>
+        <Text style={s.searchLabel}>Search or enter an address</Text>
+        <TextInput
+          accessibilityLabel="Search or enter an address"
+          style={s.searchInput}
+          value={query}
+          onChangeText={(t) => {
+            setQuery(t);
+            if (t.trim().length < 3) setResults([]);
+          }}
+          placeholder="Start typing an address"
+          placeholderTextColor="#8C95A6"
+          autoCapitalize="words"
+          autoCorrect={false}
+          textContentType="fullStreetAddress"
+          autoComplete="street-address"
+          returnKeyType="search"
+          clearButtonMode="while-editing"
+          onSubmitEditing={() => (googleOff ? void searchTyped() : results[0] && void pickSuggestion(results[0]))}
+        />
+
+        {typed && !googleOff ? (
+          <View style={s.results}>
+            {results.map((r, i) => (
+              <Pressable
+                key={r.placeId}
+                accessibilityRole="button"
+                accessibilityLabel={`${r.main}, ${r.secondary}`}
+                onPress={() => void pickSuggestion(r)}
+                disabled={picking !== null}
+                style={({ pressed }) => [s.result, i > 0 && s.resultDivider, pressed && { backgroundColor: colors.accentSoft }]}
+              >
+                <SymbolView name="mappin.circle" tintColor={colors.ink3} size={20} type="monochrome" />
+                <View style={s.flex}>
+                  <Text style={s.resultMain} numberOfLines={1}>
+                    {r.main}
+                  </Text>
+                  {r.secondary ? (
+                    <Text style={s.resultSecondary} numberOfLines={1}>
+                      {r.secondary}
+                    </Text>
+                  ) : null}
+                </View>
+                {picking === r.placeId ? <ActivityIndicator color={colors.accent} /> : null}
               </Pressable>
+            ))}
+            {results.length === 0 ? (
+              <Text style={s.resultNote}>{searching ? 'Searching…' : 'No matching addresses yet. Keep typing.'}</Text>
             ) : null}
           </View>
-        ) : (
-          <>
-            {locating ? (
-              <View style={s.locating}>
-                <ActivityIndicator color={colors.accent} />
-                <Text style={s.locatingText}>Finding homes near you…</Text>
-              </View>
-            ) : null}
+        ) : null}
 
-            {options.length > 0 ? (
-              <View style={s.options}>
-                {options.map((o) => (
-                  <OptionRow key={keyOfChoice(o)!} option={o} onPress={() => choose(o)} />
-                ))}
-              </View>
-            ) : !locating ? (
-              <Body muted>No other addresses found nearby.</Body>
-            ) : null}
-
-            <Pressable accessibilityRole="button" onPress={() => setTyping(true)} hitSlop={8} style={s.notListed}>
-              <Text style={s.link}>Not listed? Type the address</Text>
+        {typed && googleOff ? (
+          <View style={s.results}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void searchTyped()}
+              disabled={picking !== null}
+              style={({ pressed }) => [s.result, pressed && { backgroundColor: colors.accentSoft }]}
+            >
+              <SymbolView name="magnifyingglass" tintColor={colors.ink3} size={18} type="monochrome" />
+              <Text style={[s.resultMain, s.flex]} numberOfLines={2}>{`Use “${query.trim()}”`}</Text>
+              {picking === 'typed' ? <ActivityIndicator color={colors.accent} /> : null}
             </Pressable>
-          </>
-        )}
-      </Screen>
-    </>
+          </View>
+        ) : null}
+
+        {searchError ? <Text style={s.searchError}>{searchError}</Text> : null}
+      </View>
+    </Screen>
   );
 }
 
-function OptionRow({ option, onPress }: { option: HomeChoice; onPress: () => void }) {
+function OptionRow({ option, selected, onPress }: { option: HomeChoice; selected: boolean; onPress: () => void }) {
   const title = option.kind === 'existing' ? displayAddress(option.property) : option.draft.addressLine;
   const detail = [option.meters !== null ? aboutDistance(option.meters) : null, option.kind === 'existing' ? 'Visited before' : null]
     .filter(Boolean)
@@ -202,19 +276,24 @@ function OptionRow({ option, onPress }: { option: HomeChoice; onPress: () => voi
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={{ selected }}
       accessibilityLabel={`${title}${detail ? `, ${detail}` : ''}`}
       onPress={onPress}
-      style={({ pressed }) => [s.option, pressed && s.optionPressed]}
+      style={({ pressed }) => [s.option, (selected || pressed) && s.optionSelected]}
     >
-      <Text style={s.optionTitle} numberOfLines={1}>
-        {title}
-      </Text>
-      {detail ? <Text style={s.optionDetail}>{detail}</Text> : null}
+      <View style={s.flex}>
+        <Text style={s.optionTitle} numberOfLines={1}>
+          {title}
+        </Text>
+        {detail ? <Text style={s.optionDetail}>{detail}</Text> : null}
+      </View>
+      {selected ? <SymbolView name="checkmark" tintColor={colors.accent} size={16} type="monochrome" weight="semibold" /> : null}
     </Pressable>
   );
 }
 
 const s = StyleSheet.create({
+  flex: { flex: 1 },
   screen: { gap: 18 },
   heading: { gap: 8 },
   eyebrow: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
@@ -224,21 +303,37 @@ const s = StyleSheet.create({
   locatingText: { color: colors.ink3, fontFamily, fontSize: 15 },
   options: { gap: 10 },
   option: {
-    gap: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     paddingHorizontal: 16,
-    paddingVertical: 15,
+    paddingVertical: 14,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.line,
     backgroundColor: colors.surface,
   },
-  optionPressed: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
-  optionTitle: { fontFamily, fontSize: 16, fontWeight: '700', color: colors.ink },
-  optionDetail: { fontFamily, fontSize: 15, color: colors.ink2 },
-  notListed: { alignSelf: 'center', paddingVertical: 6 },
-  link: { fontFamily, fontSize: 15, fontWeight: '600', color: colors.accent, textAlign: 'center' },
-  form: { gap: 12 },
-  row: { flexDirection: 'row', gap: 10 },
-  unit: { flex: 1 },
-  city: { flex: 2 },
+  optionSelected: { borderColor: colors.accent, backgroundColor: 'rgba(33,150,255,0.1)' },
+  optionTitle: { fontFamily, fontSize: 15, fontWeight: '700', color: colors.ink },
+  optionDetail: { fontFamily, fontSize: 13, color: colors.ink3, marginTop: 3 },
+  search: { gap: 8 },
+  searchLabel: { fontFamily, fontSize: 13, fontWeight: '700', color: colors.ink },
+  searchInput: {
+    minHeight: 48,
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.line,
+    paddingHorizontal: 14,
+    fontFamily,
+    fontSize: 17,
+    color: colors.ink,
+  },
+  results: { backgroundColor: colors.surface, borderRadius: 14, borderWidth: 1, borderColor: colors.line, overflow: 'hidden' },
+  result: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, paddingVertical: 10, paddingHorizontal: 14 },
+  resultDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
+  resultMain: { fontFamily, fontSize: 15, fontWeight: '600', color: colors.ink },
+  resultSecondary: { fontFamily, fontSize: 13, color: colors.ink3, marginTop: 2 },
+  resultNote: { fontFamily, fontSize: 13, color: colors.ink3, padding: 14 },
+  searchError: { fontFamily, fontSize: 13, color: colors.bad },
 });

@@ -33,7 +33,7 @@ const PRIVACY: Section[] = [
   },
   {
     heading: 'Other service providers',
-    body: 'Supabase stores your account and notes. RentCast looks up public facts (beds, baths, size, price) for the address you confirm. Apple Maps finds nearby addresses and makes the street-level picture of each home, on your phone.',
+    body: 'Supabase stores your account and notes. RentCast looks up public facts (beds, baths, size, price) for the address you confirm. Google Places suggests addresses as you type one in. Apple Maps finds nearby addresses and makes the street-level picture of each home, on your phone.',
   },
   {
     heading: 'Location and audio',

@@ -340,6 +340,7 @@ Facts are looked up per buyer, so two buyers who visit the same open house cost 
 | **Resend** (or Supabase's built-in email for testing) | Sign-in code emails | Free up to 3k emails/month, then $20/month | $0 |
 | **Device geocoding** (Apple and Google built-in) | Turning GPS coordinates into an address | Free on the device | $0 |
 | **RentCast** | Beds, baths, square feet, price per home (1–2 calls per new home, once) | Per call, by plan: Developer $0 (50 calls), Foundation $74 (1,000), Growth $199 (5,000), Scale $449 (25,000), plus a per-call fee beyond the allowance. The app enforces its own monthly cap. | $0 in development; $74/month for a pilot |
+| **Google Places API (New)** | Address suggestions while typing on Choose a Home (through the `places` Edge Function; the key stays on the server) | Autocomplete $2.83 per 1,000 requests and Place Details Essentials $5 per 1,000, each with 10,000 free a month; typing in one search is one session, so a pilot stays inside the free tier | $0 at pilot scale |
 | **Apple Look Around / Maps snapshots** | Home thumbnails, generated on the phone | Free, no key | $0 |
 | **Apple Developer Program** | App Store distribution | $99/year | $99/year |
 | **Google Play Console** | Play Store distribution (Phase 1.5) | $25 one-time | $25 one-time |
