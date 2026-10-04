@@ -41,9 +41,12 @@ const OPTIONS: RecordingOptions = {
 const AUTO_STOP_SECONDS = 90; // "Auto-stops at 1:30"
 const MIN_SECONDS = 5;
 const VOICE_DB = -40; // metering above this counts as speech
-const NO_SPEECH_SECONDS = 8; // mockup: "I'm not hearing anything." after 8 s of silence
+const SILENCE_SECONDS = 10; // mockup: "NORA checks in after 10 seconds of silence"
 
-type Phase = 'starting' | 'recording' | 'saving' | 'tooShort' | 'denied' | 'confirmDiscard' | 'noSound';
+// stillRecording: the "Still recording?" check-in is open; the recorder keeps running.
+type Phase = 'starting' | 'recording' | 'stillRecording' | 'saving' | 'tooShort' | 'denied' | 'confirmDiscard' | 'noSound';
+
+const isRecording = (p: Phase) => p === 'recording' || p === 'stillRecording' || p === 'confirmDiscard';
 
 function clock(seconds: number) {
   const s = Math.max(0, Math.floor(seconds));
@@ -60,6 +63,7 @@ export default function Record() {
   const [heardVoice, setHeardVoice] = useState(false);
   const [askConsent, setAskConsent] = useState(false);
   const phaseRef = useRef<Phase>('starting');
+  const lastVoiceMs = useRef(0); // recorder time when speech was last heard
   const setPhaseNow = (p: Phase) => {
     phaseRef.current = p;
     setPhase(p);
@@ -81,6 +85,7 @@ export default function Record() {
     recorder.record();
     await activateKeepAwakeAsync('nora-recording');
     setHeardVoice(false);
+    lastVoiceMs.current = 0;
     setMeterSeen(false);
     setPhaseNow('recording');
   }, [recorder]);
@@ -104,7 +109,7 @@ export default function Record() {
   };
 
   const finish = useCallback(async () => {
-    if (phaseRef.current !== 'recording' && phaseRef.current !== 'confirmDiscard') return;
+    if (!isRecording(phaseRef.current)) return;
     setPhaseNow('saving');
     const { seconds, uri } = await stopRecorder();
     if (meterSeen && !heardVoice) {
@@ -135,23 +140,25 @@ export default function Record() {
     router.push(`/visit/${visitId}`);
   }, [stopRecorder, userId, params.propertyId, params.label, draft, meterSeen, heardVoice]);
 
-  // Eight seconds of silence: stop, throw the clip away, and say so.
-  const noSound = useCallback(async () => {
-    if (phaseRef.current !== 'recording') return;
-    setPhaseNow('saving');
-    const { uri } = await stopRecorder();
-    discardFile(uri);
-    setPhaseNow('noSound');
-  }, [stopRecorder]);
+  // Ten seconds without speech: ask "Still recording?" while the recorder keeps going.
+  // Only judged when this phone reports sound levels.
   useEffect(() => {
-    if (phase !== 'recording' || heardVoice || !meterSeen) return;
-    const remaining = NO_SPEECH_SECONDS * 1000 - recorder.getStatus().durationMillis;
-    const timer = setTimeout(() => void noSound(), Math.max(0, remaining));
-    return () => clearTimeout(timer);
-  }, [phase, heardVoice, meterSeen, noSound, recorder]);
+    if (voiceNow) lastVoiceMs.current = recState.durationMillis;
+  }, [voiceNow, recState.durationMillis]);
+  useEffect(() => {
+    if (phase !== 'recording' || !meterSeen) return;
+    const timer = setInterval(() => {
+      if (recorder.getStatus().durationMillis - lastVoiceMs.current >= SILENCE_SECONDS * 1000) setPhaseNow('stillRecording');
+    }, 500);
+    return () => clearInterval(timer);
+  }, [phase, meterSeen, recorder]);
+  const keepRecording = () => {
+    lastVoiceMs.current = recorder.getStatus().durationMillis;
+    setPhaseNow('recording');
+  };
   // "Auto-stops at 1:30": while recording, finish when the clip reaches 90 seconds.
   useEffect(() => {
-    if (phase !== 'recording') return;
+    if (phase !== 'recording' && phase !== 'stillRecording') return;
     const remaining = AUTO_STOP_SECONDS * 1000 - recorder.getStatus().durationMillis;
     const timer = setTimeout(() => void finish(), Math.max(0, remaining));
     return () => clearTimeout(timer);
@@ -174,14 +181,14 @@ export default function Record() {
     });
     return () => {
       cancelAnimationFrame(frame);
-      if (phaseRef.current === 'recording' || phaseRef.current === 'confirmDiscard') {
+      if (isRecording(phaseRef.current)) {
         recorder.stop().catch(() => undefined);
         deactivateKeepAwake('nora-recording');
       }
     };
   }, [begin, recorder]);
 
-  const recording = phase === 'recording' || phase === 'confirmDiscard';
+  const recording = isRecording(phase);
   const place = draft?.city || '';
   const cityLine = `${place ? `${place} · ` : ''}location confirmed`;
 
@@ -283,7 +290,7 @@ export default function Record() {
             ? `Say a bit more: at least ${MIN_SECONDS} seconds.`
             : phase === 'denied'
               ? 'The microphone is off for NORA. Type your reaction, or turn the microphone on in Settings.'
-              : 'Listening · your note stays private'}
+              : `Listening · NORA checks in after ${SILENCE_SECONDS} seconds of silence`}
         </Text>
       </View>
       <AiConsentSheet
@@ -294,8 +301,34 @@ export default function Record() {
           void begin();
         }}
       />
+      <StillRecordingDialog visible={phase === 'stillRecording'} onKeep={keepRecording} onEnd={() => void finish()} />
       <NotHearingDialog visible={phase === 'noSound'} onTryAgain={() => void begin()} onCancel={() => router.back()} />
     </SafeAreaView>
+  );
+}
+
+/** The mockup's check-in after ten seconds of silence. Recording continues underneath. */
+function StillRecordingDialog({ visible, onKeep, onEnd }: { visible: boolean; onKeep: () => void; onEnd: () => void }) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onKeep}>
+      <View style={s.backdrop}>
+        <View style={s.sheet} accessibilityViewIsModal>
+          <View style={s.sheetIcon}>
+            <Text style={s.sheetCount}>{SILENCE_SECONDS}</Text>
+          </View>
+          <Text style={s.sheetTitle} accessibilityRole="header">
+            Still recording?
+          </Text>
+          <Text style={s.sheetCopy}>I haven’t heard anything for {SILENCE_SECONDS} seconds. Keep recording, or end this recording.</Text>
+          <Pressable style={({ pressed }) => [s.sheetPrimary, pressed && { opacity: 0.85 }]} onPress={onKeep} accessibilityRole="button">
+            <Text style={s.sheetPrimaryText}>Keep recording</Text>
+          </Pressable>
+          <Pressable style={({ pressed }) => [s.sheetSecondary, pressed && { opacity: 0.7 }]} onPress={onEnd} accessibilityRole="button">
+            <Text style={s.sheetSecondaryText}>End recording</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -452,6 +485,7 @@ const s = StyleSheet.create({
     gap: 5,
     marginBottom: 4,
   },
+  sheetCount: { fontSize: 18, fontWeight: '800', color: colors.accent },
   sheetDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accent },
   sheetTitle: { fontSize: 23, fontWeight: '800', color: colors.ink, textAlign: 'center', letterSpacing: -0.3 },
   sheetCopy: { fontSize: 15, lineHeight: 22, color: colors.ink2, textAlign: 'center', paddingHorizontal: 16 },

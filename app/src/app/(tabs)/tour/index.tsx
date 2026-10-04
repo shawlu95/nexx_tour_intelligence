@@ -71,8 +71,8 @@ export default function Home() {
             <SymbolView name="mappin.and.ellipse" tintColor="#9DB4FF" size={24} type="monochrome" />
           </View>
           <Text style={s.heroEyebrow}>NEW HOME</Text>
-          <Text style={s.heroTitle}>Ready to record another home?</Text>
-          <Text style={s.heroBody}>We’ll use your location to suggest the property you’re visiting.</Text>
+          <Text style={s.heroTitle}>Record your reaction</Text>
+          <Text style={s.heroBody}>About a minute: what you liked, what worried you, and what to ask.</Text>
           <Pressable
             accessibilityRole="button"
             onPress={() => router.push('/tour/locate')}
@@ -107,9 +107,9 @@ export default function Home() {
 
         <View style={s.section}>
           <View style={s.sectionHead}>
-            <Text style={s.sectionTitle}>Last recorded</Text>
+            <Text style={s.sectionTitle}>Recent</Text>
             <Pressable accessibilityRole="link" onPress={() => router.navigate('/homes')} hitSlop={8}>
-              <Text style={s.seeHistory}>See history</Text>
+              <Text style={s.seeHistory}>View all</Text>
             </Pressable>
           </View>
           {visits.filter((v) => !localIds.has(v.id)).length === 0 && localOnly.length === 0 ? (

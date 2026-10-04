@@ -43,7 +43,7 @@ export default function InviteAgent() {
           <Text style={s.title} accessibilityRole="header">
             Invite your agent
           </Text>
-          <Text style={s.body}>They can view your tours and add professional notes. Your original opinions remain yours.</Text>
+          <Text style={s.body}>They can view confirmed property addresses, tour notes, concerns, and rankings. They cannot see your account credentials or raw location.</Text>
         </View>
 
         <View style={s.form}>

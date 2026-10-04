@@ -152,11 +152,11 @@ export default function Ranking() {
             <Text style={s.headline} accessibilityRole="header">
               {reordered && topHome ? `${topHome.address_line} is your #1` : latest.content || 'Your homes, best fit first'}
             </Text>
-            <Text style={s.helper}>Tap an address for details. Drag its number to change the order.</Text>
+            <Text style={s.helper}>Tap a home for details. Drag the grip to make this list your own; NORA scores stay unchanged.</Text>
             {reordered ? (
               <Pressable accessibilityRole="button" onPress={revert} hitSlop={8} style={s.revert}>
                 <SymbolView name="arrow.uturn.backward" tintColor={colors.ink3} size={12} type="monochrome" />
-                <Text style={s.revertText}>Revert to NORA&apos;s ranking</Text>
+                <Text style={s.revertText}>Restore NORA ranking</Text>
               </Pressable>
             ) : null}
           </View>

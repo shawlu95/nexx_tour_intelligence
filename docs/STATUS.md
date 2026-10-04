@@ -44,6 +44,8 @@ Last updated: 2026-10-03. Update this file at the end of each work session: move
 
 25. **One quick question (2026-10-03).** The note writer's structured output now includes `clarify` (question, reason, three answers), from the same Claude call, so there's no extra cost beyond a few output tokens. `normalizeClarify` keeps it only with a question and 2–3 distinct answers. Migration `20261003020000_note_clarify.sql` adds `notes.clarify`, `clarify_answer` (label or `skipped`), `clarify_answered_at`; regeneration keeps an answered question. The note screen shows the mockup's "ONE QUICK QUESTION" card (`components/ClarifyCard.tsx`) until answered or skipped, then the answer under the note. Answers go into the ranking dossier as "Follow-up: question → answer (detail)". Prompt version `2026-10-03.3`.
 
+26. **Mockup copy and the silence check-in (2026-10-03).** Recording no longer throws the clip away after 8 seconds of silence: after 10 seconds without speech (at any point) the mockup's "Still recording?" sheet asks Keep recording / End recording while the recorder keeps running. Finish with no speech heard at all still discards the clip ("I'm not hearing anything."). Copy updates from the mockup: Tour card ("Record your reaction"), "Recent / View all", the Invite screen's description of what agents can see, and Ranking's drag hint and "Restore NORA ranking".
+
 ## Done and verified
 
 | Area | Verified how |
@@ -84,7 +86,7 @@ These are written and type-checked but have not been exercised end to end. Expec
 ## Mockup screens (2026-10-01)
 
 - **Tour tab** follows the mockup: "YOUR HOME SEARCH / N homes toured" with the "this week" chip (`TourSearchHeader`, counts from `fetchTourSummary`), the dark "NEW HOME" card, and "Last recorded / See history"; visit rows show NORA's latest 0–10 score.
-- **Record a home flow lives in the Tour tab's own stack** (`app/src/app/(tabs)/tour/`): `index` → `locate` (pulsing "USING YOUR LOCATION" rings, then the confirm card with "Location found", "About N feet away", photo, ARE YOU HERE?, beds/baths/sq ft) → `record` (mockup recording screen: starts immediately, voice detection from metering, auto-stops at 1:30, Finish saves and opens the note). "Change location" opens `pick` (nearby list + type the address). No speech within 8 seconds, or Finish without any speech heard (judged from the recorder's metering, threshold -40 dB, only when the phone reports levels), discards the clip without uploading it and shows the mockup's "I'm not hearing anything." sheet (Try again / Cancel). The root `index` redirects to `/tour`; the old `record/*` routes are gone.
+- **Record a home flow lives in the Tour tab's own stack** (`app/src/app/(tabs)/tour/`): `index` → `locate` (pulsing "USING YOUR LOCATION" rings, then the confirm card with "Location found", "About N feet away", photo, ARE YOU HERE?, beds/baths/sq ft) → `record` (mockup recording screen: starts immediately, voice detection from metering, auto-stops at 1:30, Finish saves and opens the note). "Change location" opens `pick` (nearby list + type the address). Ten seconds without speech opens "Still recording?" (Keep / End). Finish without any speech heard (judged from the recorder's metering, threshold -40 dB, only when the phone reports levels) discards the clip without uploading it and shows the mockup's "I'm not hearing anything." sheet (Try again / Cancel). The root `index` redirects to `/tour`; the old `record/*` routes are gone.
 
 ## Built as UI only (not functional yet)
 
