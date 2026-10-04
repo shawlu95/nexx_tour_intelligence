@@ -50,6 +50,8 @@ Last updated: 2026-10-03. Update this file at the end of each work session: move
 
 28. **iOS-native pass (2026-10-04).** Font sizes snap to Apple's text styles with a 12 pt floor (tab labels 10 pt), 16 pt margins, minHeight for Dynamic Type. Pushed screens use the system navigation bar and swipe back; recording and typing are full-screen modals with a ✕ close; Edit Reaction is a modal sheet with Cancel/Save. Confirmations were briefly system alerts; at the designer's request they use the mockup's dialogs again (`components/DesignSheet.tsx`). Haptics via `lib/haptics.ts` (`expo-haptics`, needs a native rebuild). Ask NORA keeps the mockup's back button (it returns to the previous tab); Tour history rows have disclosure chevrons. Rules are in CLAUDE.md under "iOS look and feel".
 
+29. **Launch page, You're ready, location setup (2026-10-04),** following the mockup. Sign-in (`components/SignIn.tsx`): "NORA·" wordmark and "Remember every home." in Manrope (loaded at runtime with `useFonts`, no rebuild), the words rising in one by one (0.12 / 0.28 / 0.44 s), a blue line drawn under them, then Continue with Google / Apple / email rising in (0.72 / 0.82 / 0.92 s), on the mockup's glow-on-gradient background (`experimental_backgroundImage`). Email and code steps share the style. After sign-in: "You're ready, <first name>." (`components/Ready.tsx`, once per sign-in on this phone), then the redesigned one-time location setup if location hasn't been asked. Apple sign-in shows a message in free-signing builds. Shared pieces in `components/Onboarding.tsx`.
+
 ## Done and verified
 
 | Area | Verified how |
