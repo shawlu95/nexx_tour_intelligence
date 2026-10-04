@@ -2,7 +2,7 @@
 // (compare homes, spot patterns, decide what to ask the agent). Each turn is a
 // rank-homes "chat" turn, which also keeps the buyer's priorities up to date for
 // the next ranking.
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useRef, useState } from 'react';
 import {
@@ -80,6 +80,15 @@ export default function AskNora() {
   return (
     <SafeAreaView style={s.root} edges={['top', 'left', 'right']}>
       <View style={s.header}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          onPress={() => (router.canGoBack() ? router.back() : router.navigate('/tour'))}
+          style={s.back}
+          hitSlop={6}
+        >
+          <SymbolView name="chevron.left" tintColor="#5F6B82" size={15} type="monochrome" weight="semibold" />
+        </Pressable>
         <View style={s.flex}>
           <Text style={s.title} accessibilityRole="header">
             Ask NORA
@@ -173,7 +182,8 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   flex: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingTop: 8, paddingHorizontal: 16, paddingBottom: 10 },
-  title: { fontFamily, fontSize: 28, fontWeight: '800', letterSpacing: -0.6, color: colors.ink },
+  back: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#E9EDF5', alignItems: 'center', justifyContent: 'center' },
+  title: { fontFamily, fontSize: 20, fontWeight: '800', letterSpacing: -0.4, color: colors.ink },
   subtitle: { fontFamily, fontSize: 12, color: colors.ink3, marginTop: 4 },
   thread: { paddingTop: 22, paddingHorizontal: 17, paddingBottom: 20, gap: 20 },
   threadEmpty: { flexGrow: 1, justifyContent: 'center' },
