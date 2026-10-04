@@ -12,6 +12,7 @@ import { BackLink, colors, Screen, TabHeader } from '../../../components/ui';
 import { deleteAccount } from '../../../lib/api';
 import { signOut, useUserId } from '../../../lib/auth';
 import { setAiConsent, useAiConsent } from '../../../lib/consent';
+import { exportMyData } from '../../../lib/exportData';
 import { listPending } from '../../../lib/localdb';
 
 type PermissionState = 'granted' | 'denied' | 'undetermined';
@@ -29,6 +30,8 @@ export default function PrivacyAndData() {
   const aiConsent = useAiConsent();
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState('');
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState('');
 
   const refresh = useCallback(() => {
     getForegroundPermissionsAsync()
@@ -111,6 +114,21 @@ export default function PrivacyAndData() {
 
       <View style={s.card}>
         <Text style={s.cardTitle}>Your data</Text>
+        <DataRow
+          title={exporting ? 'Preparing your data…' : 'Download my data'}
+          copy={exportError || 'Export your profile, notes, transcripts and rankings as a file.'}
+          onPress={async () => {
+            if (exporting) return;
+            setExporting(true);
+            setExportError('');
+            try {
+              await exportMyData();
+            } catch (e) {
+              setExportError(e instanceof Error ? e.message : "Couldn't export your data. Try again.");
+            }
+            setExporting(false);
+          }}
+        />
         <DataRow
           title="Manage agent access"
           copy="Review or remove people who can see your activity."

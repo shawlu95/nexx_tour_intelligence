@@ -40,6 +40,8 @@ Last updated: 2026-10-03. Update this file at the end of each work session: move
 
 23. **Type instead of recording (2026-10-03).** Migration `20261003010000_typed_notes.sql` adds `visits.typed_note` (≤ 5000 characters). The confirm screen offers "Start with voice" / "Type instead", and the record screen offers "Type instead" when the microphone is off (the alternative App Review expects). `tour/type.tsx` saves the text in the local queue (`pending_visits.typed_text`, added with `ALTER TABLE` for existing phones), the visit row carries it, and there's no audio upload. `process-visit` saves the typed text as the transcript (provider `typed`) and skips AssemblyAI. The note screen labels it "Typed note".
 
+24. **Download my data (2026-10-03).** Privacy & data → Download my data (`lib/exportData.ts`) reads every table the buyer owns (under RLS), writes one JSON file to the cache, opens the share sheet (Save to Files, AirDrop, Mail), then deletes the cached file. Audio isn't included because it's deleted after transcription.
+
 ## Done and verified
 
 | Area | Verified how |
