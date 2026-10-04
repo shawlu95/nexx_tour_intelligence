@@ -12,7 +12,7 @@ This document covers:
 6. [Beta test](#6-beta-test): moving NORA to company-owned accounts and inviting testers
 7. [Risks and open questions](#7-risks-and-open-questions)
 
-To run or deploy the code, see [SETUP.md](SETUP.md).
+To run or deploy the code, see [SETUP.md](SETUP.md). App Store review requirements and what's still open: [docs/APP_STORE.md](docs/APP_STORE.md).
 
 > **Design assumption:** NORA records one short reaction after each visit, not the whole tour. The buyer records alone, typically in the car or on the sidewalk, while the home is still fresh in their mind. This matches the original mockup ("Talk naturally for 40–60 seconds") and keeps the app quick to use, cheap to run, and free of the consent problems that come with recording other people.
 
@@ -61,13 +61,13 @@ Something belongs in the MVP only if leaving it out would break that job. Everyt
 | 3a | **Or type it** | "Type instead" on the confirm screen, or when the microphone is off. The text is organized like a transcript, with no transcription step. |
 | 4 | **Reliable upload and processing** | Uploads queue and retry until they succeed, so a clip recorded with no signal is processed later. The note usually appears within 30 seconds, and a push notification arrives if the buyer has left the screen. |
 | 5 | **Structured note** | An overall impression plus **Liked**, **Concerns**, and **Questions for my agent**. |
+| 5a | **One quick question** | After a note is ready, NORA may ask one follow-up about something the buyer raised but left unclear ("How much do the nearby power lines concern you?") with three one-tap answers, or Skip. It comes from the same Claude call as the note, and the answer feeds the ranking. |
 | 6 | **Check against the source** | Each point shows the quote it came from. The full transcript is one tap away. The original audio is deleted once it's transcribed. |
 | 7 | **Edit the note** | Change, add, or delete points, and add free-text personal notes. Edits are marked as the buyer's own and are never overwritten by regenerating the note. |
 | 8 | **Property list and property page** | Homes listed by most recent visit, with search by address. Each property page shows all its visits, newest first. |
 | 9 | **Share a note with the agent** | Creates a private, read-only web link and opens the phone's share sheet (text, email, WhatsApp). The buyer chooses whether to include the transcript and can revoke the link at any time. The agent doesn't need an account. |
 | 10 | **Delete data** | Delete a visit, a property, or the whole account, including transcripts and any audio not yet deleted. This is required by the App Store and expected by users. |
 | 10a | **Download my data** | Privacy & data exports the buyer's profile, homes, notes, transcripts and rankings as one JSON file through the share sheet. |
-| 5a | **One quick question** | After a note is ready, NORA may ask one follow-up about something the buyer raised but left unclear ("How much do the nearby power lines concern you?") with three one-tap answers, or Skip. It comes from the same Claude call as the note, and the answer feeds the ranking. |
 | 11 | **Home facts and thumbnail** | Each home shows beds, baths, square feet and the listing (or last sale) price, looked up once from RentCast's public-record and listing data. A small street-level thumbnail is made on the phone with Apple Look Around (a map snapshot where there's no coverage), so homes in lists are easy to tell apart. |
 | 12 | **Ranking and Discuss** | A Ranking tab (laid out like the mockup) lists all the buyer's homes best fit first, each with a thumbnail, a rough 0–10 score (meant for relative comparison: close scores are a close call, a big gap is a clear difference), a 2–4 word label ("Best overall fit", "Too much renovation") and, when tapped, short pro and con tags, built from their notes and the home facts. **Ask Nora** opens a chat (the Discuss screen) where the buyer asks why a home ranks where it does and says what matters (yard vs. size, commute, budget); NORA refines a visible list of priorities and offers one-tap replies. **Update ranking** then re-ranks once with the new preferences. The buyer can also drag homes into their own order, which is saved, overrides NORA's order, and is passed to NORA as a strong preference at the next re-rank; a subtle "Revert to NORA's ranking" link restores NORA's order. |
 

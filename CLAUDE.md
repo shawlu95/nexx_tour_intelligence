@@ -5,6 +5,7 @@ Voice note-taking app for home buyers. After leaving an open house, the buyer re
 - Design doc and MVP scope: @README.md
 - Setup, deployment, Xcode guide: [SETUP.md](SETUP.md)
 - Current status, what's done and what's left: @docs/STATUS.md (**update it at the end of each work session**)
+- App Store review checklist: [docs/APP_STORE.md](docs/APP_STORE.md). Design every feature for App Review from the start (permissions in context with an alternative, AI consent enforced on the server, real deletion, no UI-only features in a review build).
 - App-specific Expo rules: [app/AGENTS.md](app/AGENTS.md) (loaded via `app/CLAUDE.md` when working in `app/`)
 
 ## Layout
