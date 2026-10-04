@@ -95,7 +95,7 @@ const RANK_MODE = `This is a Ranking turn. Output:
 - priorities: the full current list.`;
 
 const CHAT_MODE = `This is a Discuss turn. Output:
-- reply: what you say to the buyer, conversational and plain, under 90 words. Explain reasoning when asked ("Why is Bonita #2?"), surface trade-offs between top homes, and confirm what you've learned. Don't list the whole ranking.
+- reply: what you say to the buyer, conversational and plain, under 150 words, in short paragraphs separated by blank lines. Answer what they asked: compare homes, point out patterns in their reactions, explain why a home ranks where it does, or suggest what to ask their agent. Say which notes you're drawing on, and that it's based on their tour notes, not market data, when that matters. Don't list the whole ranking.
 - question: one short, specific question that would most change the ranking (often a trade-off between two top homes), or an empty string if nothing useful is left to ask. Don't repeat a question already answered.
 - suggestions: two or three short replies the buyer could send with one tap, in the buyer's own voice (first person), each under 8 words, meaningfully different. Empty list if there's no question.
 - priorities: the full current list, updated with what the buyer just said.`;

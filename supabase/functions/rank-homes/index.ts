@@ -125,8 +125,12 @@ Deno.serve(async (req) => {
     }))
     .filter((h) => h.visits.length > 0);
 
-  if (homes.length < 2) {
-    return json({ error: 'Record reactions to at least two homes to get a ranking.' }, 409);
+  // Ranking needs two homes; Ask NORA can talk about one.
+  if (homes.length < (mode === 'rank' ? 2 : 1)) {
+    return json(
+      { error: mode === 'rank' ? 'Record reactions to at least two homes to get a ranking.' : 'Record a reaction to a home first.' },
+      409,
+    );
   }
 
   const { data: history } = await db

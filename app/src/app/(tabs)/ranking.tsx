@@ -196,7 +196,6 @@ export default function Ranking() {
 
           <View style={s.actions}>
             <Button title="Record the next home" onPress={() => router.push('/tour/locate')} />
-            <Button kind="secondary" title="Ask Nora" onPress={() => router.push('/ranking/discuss')} accessibilityLabel="Ask Nora about your ranking" />
           </View>
         </>
       ) : null}
