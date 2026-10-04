@@ -3,15 +3,15 @@
 // you type. Choosing a home returns to the confirm card (tour/locate).
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView, type SFSymbol } from 'expo-symbols';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { Banner, Body, colors, fontFamily, Screen } from '../../../components/ui';
 import { aboutDistance, displayAddress, distanceMeters, normalizedKey, type AddressDraft } from '../../../lib/address';
 import { fetchProperties } from '../../../lib/api';
 import { fixPropertyCoordinates, nearbyAddresses } from '../../../lib/geo';
 import { getSuggested, pickHome, type HomeChoice } from '../../../lib/homeChoice';
-import { addressOf, lookUpTyped, newSearchSession, searchAddresses, type PlaceSuggestion } from '../../../lib/places';
+import { addressOf, lookUpTyped, newSearchSession, searchAddresses, suggestTyped, type PlaceSuggestion } from '../../../lib/places';
 import type { Property } from '../../../lib/types';
 
 const NEARBY_METERS = 800; // your saved homes within about half a mile
@@ -53,6 +53,12 @@ export default function ChangeLocation() {
   // geocoder when Google isn't available.
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<PlaceSuggestion[]>([]);
+  // Without Google: addresses the phone's geocoder finds for the typed text.
+  const [fallback, setFallback] = useState<AddressDraft[]>([]);
+  const [focused, setFocused] = useState(false);
+  const scroll = useRef<ScrollView>(null);
+  const searchY = useRef(0);
+  const { height: windowHeight } = useWindowDimensions();
   const [searching, setSearching] = useState(false);
   const [googleOff, setGoogleOff] = useState(false);
   const [picking, setPicking] = useState<string | null>(null);
@@ -97,10 +103,16 @@ export default function ChangeLocation() {
   // Suggestions a moment after typing stops.
   useEffect(() => {
     const text = query.trim();
-    if (googleOff || text.length < 3) return;
+    if (text.length < 3) return;
     let cancelled = false;
     const timer = setTimeout(async () => {
       setSearching(true);
+      if (googleOff) {
+        const found = await suggestTyped(text);
+        if (!cancelled) setFallback(found);
+        if (!cancelled) setSearching(false);
+        return;
+      }
       try {
         const found = await searchAddresses(text, session.current, here);
         if (!cancelled) {
@@ -112,7 +124,7 @@ export default function ChangeLocation() {
         if (!cancelled) setGoogleOff(true);
       }
       if (!cancelled) setSearching(false);
-    }, 250);
+    }, googleOff ? 400 : 250);
     return () => {
       cancelled = true;
       clearTimeout(timer);
@@ -165,9 +177,17 @@ export default function ChangeLocation() {
   }
 
   const typed = query.trim().length >= 3;
+  // The dropdown stays while there's text, even after the keyboard is dismissed.
+  const open = typed;
+
+  /** Bring the search box to the top, above the keyboard. */
+  function revealSearch() {
+    setFocused(true);
+    requestAnimationFrame(() => scroll.current?.scrollTo({ y: Math.max(0, searchY.current - 12), animated: true }));
+  }
 
   return (
-    <Screen header style={s.screen}>
+    <Screen header style={s.screen} scrollRef={scroll}>
       <View style={s.heading}>
         <Text style={s.eyebrow}>CHANGE LOCATION</Text>
         <Text style={s.title} accessibilityRole="header">
@@ -195,16 +215,21 @@ export default function ChangeLocation() {
         <Body muted>No other addresses found nearby.</Body>
       ) : null}
 
-      <View style={s.search}>
+      <View style={s.search} onLayout={(e) => (searchY.current = e.nativeEvent.layout.y)}>
         <Text style={s.searchLabel}>Search or enter an address</Text>
         <TextInput
           accessibilityLabel="Search or enter an address"
-          style={s.searchInput}
+          style={[s.searchInput, open && s.searchInputOpen]}
           value={query}
           onChangeText={(t) => {
             setQuery(t);
-            if (t.trim().length < 3) setResults([]);
+            if (t.trim().length < 3) {
+              setResults([]);
+              setFallback([]);
+            }
           }}
+          onFocus={revealSearch}
+          onBlur={() => setFocused(false)}
           placeholder="Start typing an address"
           placeholderTextColor="#8C95A6"
           autoCapitalize="words"
@@ -213,58 +238,99 @@ export default function ChangeLocation() {
           autoComplete="street-address"
           returnKeyType="search"
           clearButtonMode="while-editing"
-          onSubmitEditing={() => (googleOff ? void searchTyped() : results[0] && void pickSuggestion(results[0]))}
+          onSubmitEditing={() =>
+            googleOff ? (fallback[0] ? chooseAddress(fallback[0]) : void searchTyped()) : results[0] && void pickSuggestion(results[0])
+          }
         />
 
-        {typed && !googleOff ? (
-          <View style={s.results}>
-            {results.map((r, i) => (
-              <Pressable
-                key={r.placeId}
-                accessibilityRole="button"
-                accessibilityLabel={`${r.main}, ${r.secondary}`}
-                onPress={() => void pickSuggestion(r)}
-                disabled={picking !== null}
-                style={({ pressed }) => [s.result, i > 0 && s.resultDivider, pressed && { backgroundColor: colors.accentSoft }]}
-              >
-                <SymbolView name="mappin.circle" tintColor={colors.ink3} size={20} type="monochrome" />
-                <View style={s.flex}>
-                  <Text style={s.resultMain} numberOfLines={1}>
-                    {r.main}
-                  </Text>
-                  {r.secondary ? (
-                    <Text style={s.resultSecondary} numberOfLines={1}>
-                      {r.secondary}
-                    </Text>
-                  ) : null}
-                </View>
-                {picking === r.placeId ? <ActivityIndicator color={colors.accent} /> : null}
-              </Pressable>
-            ))}
-            {results.length === 0 ? (
+        {open ? (
+          <View style={s.dropdown}>
+            {!googleOff
+              ? results.map((r, i) => (
+                  <SuggestionRow
+                    key={r.placeId}
+                    main={r.main}
+                    secondary={r.secondary}
+                    first={i === 0}
+                    busy={picking === r.placeId}
+                    disabled={picking !== null}
+                    onPress={() => void pickSuggestion(r)}
+                  />
+                ))
+              : fallback.map((d, i) => (
+                  <SuggestionRow
+                    key={`${d.addressLine}|${d.city}`}
+                    main={d.unit ? `${d.addressLine}, Unit ${d.unit}` : d.addressLine}
+                    secondary={[d.city, [d.region, d.postalCode].filter(Boolean).join(' ')].filter(Boolean).join(', ')}
+                    first={i === 0}
+                    busy={false}
+                    disabled={picking !== null}
+                    onPress={() => chooseAddress(d)}
+                  />
+                ))}
+            {(googleOff ? fallback : results).length === 0 ? (
               <Text style={s.resultNote}>{searching ? 'Searching…' : 'No matching addresses yet. Keep typing.'}</Text>
             ) : null}
-          </View>
-        ) : null}
-
-        {typed && googleOff ? (
-          <View style={s.results}>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => void searchTyped()}
-              disabled={picking !== null}
-              style={({ pressed }) => [s.result, pressed && { backgroundColor: colors.accentSoft }]}
-            >
-              <SymbolView name="magnifyingglass" tintColor={colors.ink3} size={18} type="monochrome" />
-              <Text style={[s.resultMain, s.flex]} numberOfLines={2}>{`Use “${query.trim()}”`}</Text>
-              {picking === 'typed' ? <ActivityIndicator color={colors.accent} /> : null}
-            </Pressable>
+            {googleOff ? (
+              <SuggestionRow
+                icon="magnifyingglass"
+                main={`Use “${query.trim()}”`}
+                secondary="Exactly as typed"
+                first={fallback.length === 0 && !searching}
+                busy={picking === 'typed'}
+                disabled={picking !== null}
+                onPress={() => void searchTyped()}
+              />
+            ) : null}
           </View>
         ) : null}
 
         {searchError ? <Text style={s.searchError}>{searchError}</Text> : null}
       </View>
+      {/* Room below the box, so it can scroll to the top while the keyboard is up. */}
+      {focused ? <View style={{ height: windowHeight * 0.6 }} /> : null}
     </Screen>
+  );
+}
+
+function SuggestionRow({
+  main,
+  secondary,
+  first,
+  busy,
+  disabled,
+  onPress,
+  icon = 'mappin.circle',
+}: {
+  main: string;
+  secondary: string;
+  first: boolean;
+  busy: boolean;
+  disabled: boolean;
+  onPress: () => void;
+  icon?: SFSymbol;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={secondary ? `${main}, ${secondary}` : main}
+      onPress={onPress}
+      disabled={disabled}
+      style={({ pressed }) => [s.result, !first && s.resultDivider, pressed && { backgroundColor: colors.accentSoft }]}
+    >
+      <SymbolView name={icon} tintColor={colors.ink3} size={20} type="monochrome" />
+      <View style={s.flex}>
+        <Text style={s.resultMain} numberOfLines={1}>
+          {main}
+        </Text>
+        {secondary ? (
+          <Text style={s.resultSecondary} numberOfLines={1}>
+            {secondary}
+          </Text>
+        ) : null}
+      </View>
+      {busy ? <ActivityIndicator color={colors.accent} /> : null}
+    </Pressable>
   );
 }
 
@@ -329,7 +395,22 @@ const s = StyleSheet.create({
     fontSize: 17,
     color: colors.ink,
   },
-  results: { backgroundColor: colors.surface, borderRadius: 14, borderWidth: 1, borderColor: colors.line, overflow: 'hidden' },
+  // The open box and its dropdown read as one control.
+  searchInputOpen: { borderColor: colors.accent, borderBottomLeftRadius: 0, borderBottomRightRadius: 0 },
+  dropdown: {
+    marginTop: -9, // sits flush under the box (the section's gap is 8)
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderColor: colors.accent,
+    borderBottomLeftRadius: 14,
+    borderBottomRightRadius: 14,
+    overflow: 'hidden',
+    shadowColor: 'rgb(17,28,49)',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+  },
   result: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, paddingVertical: 10, paddingHorizontal: 14 },
   resultDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
   resultMain: { fontFamily, fontSize: 15, fontWeight: '600', color: colors.ink },

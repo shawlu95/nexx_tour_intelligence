@@ -49,3 +49,26 @@ export async function lookUpTyped(text: string): Promise<AddressDraft | null> {
   const addressLine = /^\d/.test(typedLine) ? typedLine : draft.addressLine;
   return addressLine ? { ...draft, addressLine } : null;
 }
+
+/**
+ * Fallback suggestions without Google: up to `limit` addresses the phone's geocoder
+ * finds for the typed text, as street line plus "City, ST ZIP".
+ */
+export async function suggestTyped(text: string, limit = 4): Promise<AddressDraft[]> {
+  const hits = (await Location.geocodeAsync(text).catch(() => [])).slice(0, limit);
+  const drafts = await Promise.all(
+    hits.map(async (h) => {
+      const coords = { latitude: h.latitude, longitude: h.longitude };
+      const [place] = await Location.reverseGeocodeAsync(coords).catch(() => []);
+      return place ? draftFromGeocode(place, coords) : null;
+    }),
+  );
+  const seen = new Set<string>();
+  return drafts.filter((d): d is AddressDraft => {
+    if (!d?.addressLine) return false;
+    const key = `${d.addressLine}|${d.city}`.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}

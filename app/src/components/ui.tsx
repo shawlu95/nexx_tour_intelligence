@@ -1,5 +1,5 @@
 // Small set of shared UI building blocks. Colors follow the NORA mockup.
-import type { ReactElement, ReactNode } from 'react';
+import type { ReactElement, ReactNode, Ref } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -69,6 +69,7 @@ export function Screen({
   header = false,
   refreshControl,
   scrollEnabled = true,
+  scrollRef,
 }: {
   children: ReactNode;
   scroll?: boolean;
@@ -79,6 +80,8 @@ export function Screen({
   refreshControl?: ReactElement<RefreshControlProps>;
   /** Turn off while something inside handles vertical drags. */
   scrollEnabled?: boolean;
+  /** For screens that scroll themselves (e.g. a search box to the top). */
+  scrollRef?: Ref<ScrollView>;
 }) {
   const bg = { backgroundColor: dark ? colors.stage : colors.bg };
   const edges: Edge[] = tab ? ['top', 'left', 'right'] : header ? ['left', 'right'] : ['bottom', 'left', 'right'];
@@ -86,6 +89,7 @@ export function Screen({
     <SafeAreaView style={[styles.flex, bg]} edges={edges}>
       {scroll ? (
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={[styles.screen, style]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
