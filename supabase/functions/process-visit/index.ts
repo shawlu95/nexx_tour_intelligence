@@ -15,7 +15,15 @@
 // progress through the visit's status.
 import { writeNote } from '../_shared/claude.ts';
 import { STT_MODEL, STT_PROVIDER, transcribeUrl } from '../_shared/assemblyai.ts';
-import { checkItems, planRegeneration, PROMPT_VERSION, type ExistingItem, type NoteItem } from '../_shared/note.ts';
+import {
+  checkItems,
+  normalizeClarify,
+  planRegeneration,
+  PROMPT_VERSION,
+  type Clarify,
+  type ExistingItem,
+  type NoteItem,
+} from '../_shared/note.ts';
 import { sendPush } from '../_shared/push.ts';
 import { lookUpFacts } from '../_shared/rentcast.ts';
 import {
@@ -123,6 +131,7 @@ Deno.serve(async (req) => {
         let overall = NO_SPEECH;
         let model: string | null = null;
         let items: NoteItem[] = [];
+        let clarify: Clarify | null = null;
         if (transcript.trim().length > 0) {
           const result = await writeNote({ transcript, address });
           const checked = checkItems(result.note.items, transcript);
@@ -130,13 +139,23 @@ Deno.serve(async (req) => {
           overall = plainText(result.note.overall).trim() || NO_SPEECH;
           model = result.model;
           items = checked.kept;
+          clarify = normalizeClarify(result.note.clarify);
         }
 
-        // 3. Save, keeping anything the buyer added, edited, or deleted.
+        // 3. Save, keeping anything the buyer added, edited, or deleted, and a follow-up they already answered.
+        const { data: before } = await db.from('notes').select('clarify_answer').eq('visit_id', visitId).maybeSingle();
+        const keepClarify = !!before?.clarify_answer;
         const { data: note, error: nError } = await db
           .from('notes')
           .upsert(
-            { visit_id: visitId, user_id: visit.user_id, overall, model, prompt_version: PROMPT_VERSION },
+            {
+              visit_id: visitId,
+              user_id: visit.user_id,
+              overall,
+              model,
+              prompt_version: PROMPT_VERSION,
+              ...(keepClarify ? {} : { clarify }),
+            },
             { onConflict: 'visit_id' },
           )
           .select('id')

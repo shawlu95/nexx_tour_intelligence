@@ -102,6 +102,8 @@ export interface DossierVisit {
   overall: string | null;
   items: { kind: 'liked' | 'concern' | 'question'; text: string }[];
   personal_note: string | null;
+  /** The buyer's answer to the note's follow-up question, if they answered it. */
+  clarification?: string | null;
 }
 
 export interface DossierHome {
@@ -132,6 +134,16 @@ function priceText(h: DossierHome): string | null {
   return `listed at ${money(h.price)}`;
 }
 
+/** "Question → Answer (detail)" for a follow-up the buyer answered, else null. */
+export function clarificationText(
+  clarify: { question?: string; options?: { label: string; detail: string }[] } | null,
+  answer: string | null,
+): string | null {
+  if (!clarify?.question || !answer || answer === 'skipped') return null;
+  const detail = clarify.options?.find((o) => o.label === answer)?.detail;
+  return `${clarify.question} → ${answer}${detail ? ` (${detail})` : ''}`;
+}
+
 /** Everything the model knows about the buyer's homes, as compact text. */
 export function buildDossier(homes: DossierHome[]): string {
   return homes
@@ -152,6 +164,7 @@ export function buildDossier(homes: DossierHome[]): string {
           if (points.length) lines.push(`  ${kind === 'liked' ? 'Liked' : kind === 'concern' ? 'Concerns' : 'Questions'}: ${points.join('; ')}`);
         }
         if (v.personal_note?.trim()) lines.push(`  Buyer's own note: ${v.personal_note.trim()}`);
+        if (v.clarification) lines.push(`  Follow-up: ${v.clarification}`);
       });
       lines.push('</home>');
       return lines.join('\n');

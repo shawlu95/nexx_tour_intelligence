@@ -3,7 +3,7 @@
 
 import { plainText } from './text.ts';
 
-export const PROMPT_VERSION = '2026-10-03.2';
+export const PROMPT_VERSION = '2026-10-03.3';
 
 export type ItemKind = 'liked' | 'concern' | 'question';
 
@@ -13,18 +13,50 @@ export interface NoteItem {
   quote: string;
 }
 
+export interface ClarifyOption {
+  label: string;
+  detail: string;
+}
+
+/** "One quick question": a follow-up about something the buyer left unclear. */
+export interface Clarify {
+  question: string;
+  reason: string;
+  options: ClarifyOption[];
+}
+
 export interface ModelNote {
   overall: string;
   items: NoteItem[];
+  /** question is empty when nothing important was left unclear. */
+  clarify?: Clarify;
 }
 
 /** JSON schema passed to the API as a structured-output format. */
 export const NOTE_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['overall', 'items'],
+  required: ['overall', 'items', 'clarify'],
   properties: {
     overall: { type: 'string' },
+    clarify: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['question', 'reason', 'options'],
+      properties: {
+        question: { type: 'string' },
+        reason: { type: 'string' },
+        options: {
+          type: 'array',
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['label', 'detail'],
+            properties: { label: { type: 'string' }, detail: { type: 'string' } },
+          },
+        },
+      },
+    },
     items: {
       type: 'array',
       items: {
@@ -98,6 +130,27 @@ export function checkItems(items: NoteItem[], transcript: string): { kept: NoteI
     kept.push({ kind: item.kind, text, quote });
   }
   return { kept, dropped };
+}
+
+/**
+ * The follow-up question to store, or null when there isn't a usable one:
+ * it needs a question and two or three distinct answers. Text is tidied and capped.
+ */
+export function normalizeClarify(c: Clarify | null | undefined): Clarify | null {
+  const tidy = (s: unknown, max: number) => (typeof s === 'string' ? plainText(s).trim().slice(0, max) : '');
+  const question = tidy(c?.question, 200);
+  if (!question) return null;
+  const seen = new Set<string>();
+  const options: ClarifyOption[] = [];
+  for (const o of c?.options ?? []) {
+    const label = tidy(o?.label, 40);
+    if (!label || seen.has(label.toLowerCase())) continue;
+    seen.add(label.toLowerCase());
+    options.push({ label, detail: tidy(o?.detail, 120) });
+    if (options.length === 3) break;
+  }
+  if (options.length < 2) return null;
+  return { question, reason: tidy(c?.reason, 200), options };
 }
 
 export interface ExistingItem {

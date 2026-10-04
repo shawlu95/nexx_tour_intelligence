@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildDossier,
+  clarificationText,
   normalizePriorities,
   normalizeRanking,
   normalizeSuggestions,
@@ -152,5 +153,27 @@ describe('normalizeSuggestions', () => {
   it('drops overly long replies and non-arrays', () => {
     expect(normalizeSuggestions(['x'.repeat(81)])).toEqual([]);
     expect(normalizeSuggestions(null)).toEqual([]);
+  });
+});
+
+describe('clarificationText', () => {
+  const clarify = {
+    question: 'How much do the power lines concern you?',
+    options: [
+      { label: 'Not much', detail: 'I would still consider the home.' },
+      { label: 'A lot', detail: 'This could keep me from offering.' },
+    ],
+  };
+
+  it('pairs the question with the chosen answer and its detail', () => {
+    expect(clarificationText(clarify, 'A lot')).toBe(
+      'How much do the power lines concern you? → A lot (This could keep me from offering.)',
+    );
+  });
+
+  it('is null when unanswered or skipped', () => {
+    expect(clarificationText(clarify, null)).toBeNull();
+    expect(clarificationText(clarify, 'skipped')).toBeNull();
+    expect(clarificationText(null, 'A lot')).toBeNull();
   });
 });

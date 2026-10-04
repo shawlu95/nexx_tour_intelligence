@@ -119,7 +119,7 @@ export function fetchVisit(id: string): Promise<Cached<VisitDetail | null>> {
     if (error) throw error;
     if (!visit) return null;
     const [n, t] = await Promise.all([
-      supabase.from('notes').select('id, visit_id, overall, personal_note').eq('visit_id', id).maybeSingle(),
+      supabase.from('notes').select('id, visit_id, overall, personal_note, clarify, clarify_answer').eq('visit_id', id).maybeSingle(),
       supabase.from('transcripts').select('full_text').eq('visit_id', id).maybeSingle(),
     ]);
     if (n.error) throw n.error;
@@ -170,6 +170,15 @@ export async function addItem(noteId: string, kind: ItemKind, text: string, sort
     .single();
   if (error) throw error;
   return data as NoteItem;
+}
+
+/** Saves the buyer's answer to the note's follow-up question ('skipped' to dismiss it). */
+export async function answerClarify(noteId: string, answer: string) {
+  const { error } = await supabase
+    .from('notes')
+    .update({ clarify_answer: answer, clarify_answered_at: new Date().toISOString() })
+    .eq('id', noteId);
+  if (error) throw error;
 }
 
 export async function updatePersonalNote(noteId: string, personalNote: string) {

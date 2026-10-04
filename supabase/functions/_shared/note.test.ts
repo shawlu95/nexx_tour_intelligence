@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkItems, planRegeneration, quoteSupport, type ExistingItem, type NoteItem } from './note.ts';
+import { checkItems, normalizeClarify, planRegeneration, quoteSupport, type ExistingItem, type NoteItem } from './note.ts';
 
 const TRANSCRIPT =
   "Okay, 812 Pastoria. Really bright when you walk in, high ceilings. I love that the living room opens right onto the kitchen, and the island is huge. Cabinets are dated though, we'd probably redo those. The backyard is tiny, and there are power lines right along the back fence. Need to ask if those affect the price.";
@@ -115,5 +115,36 @@ describe('planRegeneration', () => {
       ],
     );
     expect(plan.insert.map((i) => i.text)).toEqual(['Large island']);
+  });
+});
+
+describe('normalizeClarify', () => {
+  const options = [
+    { label: 'Not much', detail: 'I would still consider the home.' },
+    { label: 'Somewhat', detail: 'I want to understand the impact.' },
+    { label: 'A lot', detail: 'This could keep me from offering.' },
+  ];
+
+  it('keeps a question with its answers, tidied', () => {
+    expect(normalizeClarify({ question: '  How much do the power lines concern you? ', reason: 'You mentioned them.', options })).toEqual({
+      question: 'How much do the power lines concern you?',
+      reason: 'You mentioned them.',
+      options,
+    });
+  });
+
+  it('returns null when there is no question or too few answers', () => {
+    expect(normalizeClarify({ question: '', reason: '', options })).toBeNull();
+    expect(normalizeClarify({ question: 'How much?', reason: '', options: options.slice(0, 1) })).toBeNull();
+    expect(normalizeClarify(undefined)).toBeNull();
+  });
+
+  it('drops duplicate or blank answers and keeps at most three', () => {
+    const c = normalizeClarify({
+      question: 'How much?',
+      reason: '',
+      options: [options[0], { label: 'not much', detail: '' }, { label: ' ', detail: '' }, options[1], options[2], { label: 'Extra', detail: '' }],
+    });
+    expect(c?.options.map((o) => o.label)).toEqual(['Not much', 'Somewhat', 'A lot']);
   });
 });

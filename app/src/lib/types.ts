@@ -36,11 +36,21 @@ export interface Visit {
   error: string | null;
 }
 
+/** "One quick question" NORA asks after a note, about something left unclear. */
+export interface Clarify {
+  question: string;
+  reason: string;
+  options: { label: string; detail: string }[];
+}
+
 export interface Note {
   id: string;
   visit_id: string;
   overall: string;
   personal_note: string;
+  clarify: Clarify | null;
+  /** The chosen option's label, or 'skipped'. */
+  clarify_answer: string | null;
 }
 
 export interface NoteItem {

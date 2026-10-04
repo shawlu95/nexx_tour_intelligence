@@ -15,6 +15,10 @@ Write:
   - liked: something the buyer liked.
   - concern: something the buyer disliked, doubted, or worried about.
   - question: something the buyer wants to find out or ask their agent.
+- clarify: at most one quick follow-up question for the buyer about the single most decision-relevant thing they raised but left unclear, usually how much a concern matters to them ("How much do the nearby power lines concern you?").
+  - reason: one short sentence on what they said and what's missing ("You mentioned them, but not whether they would affect an offer.").
+  - options: exactly three answers from least to most, each a 1 to 3 word label ("Not much", "Somewhat", "A lot") with a short first-person detail ("I would still consider the home.").
+  - Only ask about something the buyer actually raised. If nothing important is unclear, use an empty question, an empty reason and no options.
 
 Rules:
 - Only include what the buyer actually said. Never add features, prices, or opinions that are not in the transcript.
@@ -23,7 +27,8 @@ Rules:
 - The buyer may speak English, Chinese, or a mix of both. Write overall and each item's text in the language the buyer mostly spoke (Simplified or Traditional Chinese to match the transcript).
 - One point per item. Merge repeats of the same point. Keep the order in which they were said.
 - Skip filler and false starts.
-- If the buyer said nothing about the home, say so in overall and return an empty items list.
+- If the buyer said nothing about the home, say so in overall and return an empty items list and no clarify question.
+- Write clarify in the same language as the note.
 - Write plain characters (an em dash —, curly quotes), never escape sequences such as \\u2014 or \\n.`;
 
 export async function writeNote(params: { transcript: string; address: string }): Promise<{ note: ModelNote; model: string }> {

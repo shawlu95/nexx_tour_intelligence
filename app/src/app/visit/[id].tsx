@@ -2,6 +2,7 @@ import { File } from 'expo-file-system';
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ClarifyAnswer, ClarifyCard } from '../../components/ClarifyCard';
 import { HomeHero } from '../../components/HomeHero';
 import { NoteSections } from '../../components/NoteSections';
 import { Banner, Body, Button, Card, colors, Eyebrow, Loading, Screen, Title } from '../../components/ui';
@@ -205,8 +206,12 @@ function ReadyNote({
 
   const setItems = (items: NoteItem[]) => onChanged({ ...detail, items });
 
+  const askNow = note?.clarify && !note.clarify_answer && !editing;
+  const setAnswer = (answer: string) => note && onChanged({ ...detail, note: { ...note, clarify_answer: answer } });
+
   return (
     <View style={s.ready}>
+      {askNow ? <ClarifyCard noteId={note.id} clarify={note.clarify!} onAnswered={setAnswer} onError={onError} /> : null}
       <View style={s.noteCard}>
         <Eyebrow color={colors.ink3}>Your reaction</Eyebrow>
         {note ? <Text style={s.overall}>{note.overall}</Text> : null}
@@ -217,6 +222,10 @@ function ReadyNote({
 
         {note && detail.items.length === 0 && !editing ? (
           <Body muted>No specific points were picked up. Tap Edit to add your own.</Body>
+        ) : null}
+
+        {note?.clarify && note.clarify_answer && note.clarify_answer !== 'skipped' ? (
+          <ClarifyAnswer clarify={note.clarify} answer={note.clarify_answer} />
         ) : null}
       </View>
 

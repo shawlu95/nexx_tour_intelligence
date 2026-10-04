@@ -37,7 +37,6 @@ The full product vision draws on the front-end mockup (nexx-tour-intelligence.fr
 
 These come from the mockup and the review, and are planned for later phases:
 
-- **A clarifying question** after recording, about something the buyer raised but left unclear (for example, "How much do the power lines concern you?").
 - **A reminder to record**, sent when the buyer leaves an open house without recording (geofence), so no visit is forgotten.
 - **Agent workspace:** an agent account with ongoing access to the buyer's tours, where the agent can add professional notes alongside the buyer's.
 - **Listing photos and more property detail** from a licensed listing data provider, plus the buyer's own photos attached to a visit.
@@ -68,6 +67,7 @@ Something belongs in the MVP only if leaving it out would break that job. Everyt
 | 9 | **Share a note with the agent** | Creates a private, read-only web link and opens the phone's share sheet (text, email, WhatsApp). The buyer chooses whether to include the transcript and can revoke the link at any time. The agent doesn't need an account. |
 | 10 | **Delete data** | Delete a visit, a property, or the whole account, including transcripts and any audio not yet deleted. This is required by the App Store and expected by users. |
 | 10a | **Download my data** | Privacy & data exports the buyer's profile, homes, notes, transcripts and rankings as one JSON file through the share sheet. |
+| 5a | **One quick question** | After a note is ready, NORA may ask one follow-up about something the buyer raised but left unclear ("How much do the nearby power lines concern you?") with three one-tap answers, or Skip. It comes from the same Claude call as the note, and the answer feeds the ranking. |
 | 11 | **Home facts and thumbnail** | Each home shows beds, baths, square feet and the listing (or last sale) price, looked up once from RentCast's public-record and listing data. A small street-level thumbnail is made on the phone with Apple Look Around (a map snapshot where there's no coverage), so homes in lists are easy to tell apart. |
 | 12 | **Ranking and Discuss** | A Ranking tab (laid out like the mockup) lists all the buyer's homes best fit first, each with a thumbnail, a rough 0–10 score (meant for relative comparison: close scores are a close call, a big gap is a clear difference), a 2–4 word label ("Best overall fit", "Too much renovation") and, when tapped, short pro and con tags, built from their notes and the home facts. **Ask Nora** opens a chat (the Discuss screen) where the buyer asks why a home ranks where it does and says what matters (yard vs. size, commute, budget); NORA refines a visible list of priorities and offers one-tap replies. **Update ranking** then re-ranks once with the new preferences. The buyer can also drag homes into their own order, which is saved, overrides NORA's order, and is passed to NORA as a strong preference at the next re-rank; a subtle "Revert to NORA's ranking" link restores NORA's order. |
 
@@ -75,7 +75,6 @@ Something belongs in the MVP only if leaving it out would break that job. Everyt
 
 | Feature | Why it's left out | When |
 |---|---|---|
-| Clarifying question after recording | Adds a step and a second AI call. The note already includes "Questions for my agent." | Phase 2 |
 | Reminder to record when leaving a home | Needs background location permission, which many buyers decline and app review scrutinizes. | Phase 2 |
 | Agent accounts, invitations, agent notes | A second user type, permissions, and onboarding. A share link covers the core need with none of that. | Phase 3 |
 | Listing photos | Copyrighted and only available through licensed MLS feeds. The MVP shows a street-level thumbnail made on the phone instead (see feature 11). | Phase 3 |
@@ -550,7 +549,7 @@ Do these once the company accounts work, before inviting testers:
 | Risk | Mitigation |
 |---|---|
 | **Buyers forget to record after leaving** | A large "Record a home" button on the home screen and a quick flow (two taps to start). A reminder when leaving an open house is planned for Phase 2. |
-| **Short reactions miss things the buyer would want to remember** | Rotating prompts during recording. Buyers can add points and personal notes by typing. A clarifying question after recording is planned for Phase 2. |
+| **Short reactions miss things the buyer would want to remember** | Rotating prompts during recording. Buyers can add points and personal notes by typing. NORA asks one quick follow-up question when something important was left unclear. |
 | **Note quality: missed or invented points** | A quote with every item, server-side quote checking, the transcript one tap away, and a quality test set run on every prompt change. |
 | **Poor connection outside the home** | The clip is saved on the phone first, and the upload queue retries until it succeeds. |
 | **Address matching** (condo units, new builds, GPS drift) | Suggest an address but always let the buyer confirm or edit. Record a unit number. Offer the buyer's own nearby properties first. |

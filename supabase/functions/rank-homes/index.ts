@@ -10,6 +10,7 @@
 import { discussHomes, rankHomes, type RankingTurn } from '../_shared/claude.ts';
 import {
   buildDossier,
+  clarificationText,
   normalizePriorities,
   normalizeRanking,
   normalizeSuggestions,
@@ -66,7 +67,7 @@ Deno.serve(async (req) => {
   const { data: props, error: pError } = await db
     .from('properties')
     .select(
-      'id, address_line, unit, city, beds, baths, sqft, price, price_kind, price_date, listing_status, visits(recorded_at, status, notes(overall, personal_note, note_items(kind, text, deleted)))',
+      'id, address_line, unit, city, beds, baths, sqft, price, price_kind, price_date, listing_status, visits(recorded_at, status, notes(overall, personal_note, clarify, clarify_answer, note_items(kind, text, deleted)))',
     )
     .eq('user_id', userId);
   if (pError) return json({ error: pError.message }, 500);
@@ -90,7 +91,13 @@ Deno.serve(async (req) => {
       notes: RawNote | RawNote[] | null;
     }[];
   };
-  type RawNote = { overall: string; personal_note: string; note_items: { kind: 'liked' | 'concern' | 'question'; text: string; deleted: boolean }[] };
+  type RawNote = {
+    overall: string;
+    personal_note: string;
+    clarify: { question?: string; options?: { label: string; detail: string }[] } | null;
+    clarify_answer: string | null;
+    note_items: { kind: 'liked' | 'concern' | 'question'; text: string; deleted: boolean }[];
+  };
   const noteOf = (n: RawNote | RawNote[] | null): RawNote | null => (Array.isArray(n) ? (n[0] ?? null) : n);
   const homes: DossierHome[] = ((props ?? []) as unknown as Raw[])
     .map((p) => ({
@@ -112,6 +119,7 @@ Deno.serve(async (req) => {
           recorded_at: v.recorded_at,
           overall: v.note!.overall,
           personal_note: v.note!.personal_note,
+          clarification: clarificationText(v.note!.clarify, v.note!.clarify_answer),
           items: (v.note!.note_items ?? []).filter((i) => !i.deleted).map((i) => ({ kind: i.kind, text: i.text })),
         })),
     }))

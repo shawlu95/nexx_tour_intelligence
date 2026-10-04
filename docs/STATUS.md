@@ -42,6 +42,8 @@ Last updated: 2026-10-03. Update this file at the end of each work session: move
 
 24. **Download my data (2026-10-03).** Privacy & data → Download my data (`lib/exportData.ts`) reads every table the buyer owns (under RLS), writes one JSON file to the cache, opens the share sheet (Save to Files, AirDrop, Mail), then deletes the cached file. Audio isn't included because it's deleted after transcription.
 
+25. **One quick question (2026-10-03).** The note writer's structured output now includes `clarify` (question, reason, three answers), from the same Claude call, so there's no extra cost beyond a few output tokens. `normalizeClarify` keeps it only with a question and 2–3 distinct answers. Migration `20261003020000_note_clarify.sql` adds `notes.clarify`, `clarify_answer` (label or `skipped`), `clarify_answered_at`; regeneration keeps an answered question. The note screen shows the mockup's "ONE QUICK QUESTION" card (`components/ClarifyCard.tsx`) until answered or skipped, then the answer under the note. Answers go into the ranking dossier as "Follow-up: question → answer (detail)". Prompt version `2026-10-03.3`.
+
 ## Done and verified
 
 | Area | Verified how |
@@ -91,7 +93,7 @@ These are written and type-checked but have not been exercised end to end. Expec
 
 ## Deliberately left out of the MVP
 
-See README §2 "Left out of the MVP" for reasons. In short: ranking and fit score, the clarifying question after recording, reminders when leaving an open house, agent accounts and workspace, listing data and photos, buyer priorities, co-buyers, comparing homes, editing notes offline (reading works offline), languages other than English. Android is planned for Phase 1.5; the code is shared but untested on Android.
+See README §2 "Left out of the MVP" for reasons. In short: reminders when leaving an open house, agent accounts and workspace, listing data and photos, buyer priorities, co-buyers, comparing homes, editing notes offline (reading works offline), languages other than English. Android is planned for Phase 1.5; the code is shared but untested on Android.
 
 Also not set up: Sentry, PostHog, real app icons and splash (Expo defaults), privacy policy, App Store listing, CI.
 
