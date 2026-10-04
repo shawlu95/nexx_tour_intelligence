@@ -4,7 +4,7 @@ import type { PropertyCard } from '../lib/api';
 import { formatHomeLine, formatWhen } from '../lib/format';
 import type { VisitStatus } from '../lib/types';
 import { HomeThumb } from './HomeThumb';
-import { Card, colors, StatusPill } from './ui';
+import { Card, colors, fontFamily, StatusPill } from './ui';
 
 export type RowState = VisitStatus | 'waiting';
 
@@ -81,8 +81,8 @@ const s = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   body: { flex: 1, gap: 3 },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  title: { flex: 1, fontSize: 16, fontWeight: '700', color: colors.ink },
-  meta: { fontSize: 13, color: colors.ink3 },
-  score: { fontSize: 14, fontWeight: '700', color: colors.accent, fontVariant: ['tabular-nums'] },
-  summary: { fontSize: 14, lineHeight: 20, color: colors.ink2, marginTop: 4 },
+  title: { flex: 1, fontFamily, fontSize: 16, fontWeight: '700', color: colors.ink },
+  meta: { fontFamily, fontSize: 13, color: colors.ink3 },
+  score: { fontFamily, fontSize: 14, fontWeight: '700', color: colors.accent, fontVariant: ['tabular-nums'] },
+  summary: { fontFamily, fontSize: 14, lineHeight: 20, color: colors.ink2, marginTop: 4 },
 });

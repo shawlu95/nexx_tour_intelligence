@@ -4,7 +4,7 @@ import { SymbolView } from 'expo-symbols';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Avatar } from '../../../components/Avatar';
-import { Button, colors, Screen, StatusPill, TabHeader } from '../../../components/ui';
+import { Button, colors, fontFamily, Screen, StatusPill, TabHeader } from '../../../components/ui';
 import { setAgentStatus, usePreviewAgents } from '../../../lib/sharingPreview';
 
 export default function InvitationSent() {
@@ -67,9 +67,9 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 10,
   },
-  eyebrow: { fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
-  title: { fontSize: 28, fontWeight: '800', color: colors.ink, letterSpacing: -0.5 },
-  body: { fontSize: 15, lineHeight: 22, color: colors.ink2, textAlign: 'center', paddingHorizontal: 16 },
+  eyebrow: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
+  title: { fontFamily, fontSize: 28, fontWeight: '800', color: colors.ink, letterSpacing: -0.5 },
+  body: { fontFamily, fontSize: 15, lineHeight: 22, color: colors.ink2, textAlign: 'center', paddingHorizontal: 16 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -80,9 +80,9 @@ const s = StyleSheet.create({
     borderRadius: 16,
     padding: 12,
   },
-  rowName: { fontSize: 15, fontWeight: '700', color: colors.ink },
-  rowDetail: { fontSize: 13, color: colors.ink3, marginTop: 1 },
+  rowName: { fontFamily, fontSize: 15, fontWeight: '700', color: colors.ink },
+  rowDetail: { fontFamily, fontSize: 13, color: colors.ink3, marginTop: 1 },
   actions: { gap: 14 },
   manage: { alignSelf: 'center' },
-  manageText: { fontSize: 15, fontWeight: '700', color: colors.accent },
+  manageText: { fontFamily, fontSize: 15, fontWeight: '700', color: colors.accent },
 });

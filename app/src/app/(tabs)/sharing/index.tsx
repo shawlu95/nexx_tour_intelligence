@@ -5,7 +5,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Avatar } from '../../../components/Avatar';
-import { Banner, Button, colors, Screen, StatusPill, TabHeader } from '../../../components/ui';
+import { Banner, Button, colors, fontFamily, Screen, StatusPill, TabHeader } from '../../../components/ui';
 import { displayNameOf, useAuth } from '../../../lib/auth';
 import { AGENT_LIMIT, removeAgent, usePreviewAgents, useWorkspacePaused } from '../../../lib/sharingPreview';
 import { supabase } from '../../../lib/supabase';
@@ -151,9 +151,9 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 6,
   },
-  eyebrow: { fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
-  title: { fontSize: 26, fontWeight: '800', color: colors.ink, textAlign: 'center', letterSpacing: -0.4, lineHeight: 31 },
-  body: { fontSize: 15, lineHeight: 22, color: colors.ink2, textAlign: 'center', paddingHorizontal: 12 },
+  eyebrow: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
+  title: { fontFamily, fontSize: 26, fontWeight: '800', color: colors.ink, textAlign: 'center', letterSpacing: -0.4, lineHeight: 31 },
+  body: { fontFamily, fontSize: 15, lineHeight: 22, color: colors.ink2, textAlign: 'center', paddingHorizontal: 12 },
   card: {
     alignItems: 'center',
     gap: 8,
@@ -172,11 +172,11 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 4,
   },
-  cardTitle: { fontSize: 16, fontWeight: '700', color: colors.ink },
-  cardBody: { fontSize: 13, lineHeight: 19, color: colors.ink2, textAlign: 'center', paddingHorizontal: 8 },
+  cardTitle: { fontFamily, fontSize: 16, fontWeight: '700', color: colors.ink },
+  cardBody: { fontFamily, fontSize: 13, lineHeight: 19, color: colors.ink2, textAlign: 'center', paddingHorizontal: 8 },
   cardButton: { alignSelf: 'stretch', marginTop: 8 },
   access: { gap: 10 },
-  accessTitle: { fontSize: 16, fontWeight: '700', color: colors.ink },
+  accessTitle: { fontFamily, fontSize: 16, fontWeight: '700', color: colors.ink },
   rowCard: {
     gap: 12,
     backgroundColor: colors.surface,
@@ -193,7 +193,7 @@ const s = StyleSheet.create({
     paddingVertical: 10,
     alignItems: 'center',
   },
-  rowActionText: { fontSize: 14, fontWeight: '700', color: colors.bad },
-  rowName: { fontSize: 15, fontWeight: '700', color: colors.ink },
-  rowDetail: { fontSize: 13, color: colors.ink3, marginTop: 1 },
+  rowActionText: { fontFamily, fontSize: 14, fontWeight: '700', color: colors.bad },
+  rowName: { fontFamily, fontSize: 15, fontWeight: '700', color: colors.ink },
+  rowDetail: { fontFamily, fontSize: 13, color: colors.ink3, marginTop: 1 },
 });

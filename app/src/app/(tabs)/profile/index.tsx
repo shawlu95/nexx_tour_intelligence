@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Avatar } from '../../../components/Avatar';
 import { WarningSheet } from '../../../components/WarningSheet';
-import { Body, Button, colors, Screen, StatusPill, TabHeader } from '../../../components/ui';
+import { Body, Button, colors, fontFamily, Screen, StatusPill, TabHeader } from '../../../components/ui';
 import { displayNameOf, signOut, useAuth } from '../../../lib/auth';
 import { listPending } from '../../../lib/localdb';
 import { setWorkspacePaused, useWorkspacePaused } from '../../../lib/sharingPreview';
@@ -147,10 +147,10 @@ const s = StyleSheet.create({
   screen: { gap: 14 },
   flex: { flex: 1 },
   account: { gap: 12, marginTop: 6, marginBottom: 4 },
-  eyebrow: { fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
+  eyebrow: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
   identity: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  name: { fontSize: 24, fontWeight: '800', color: colors.ink, letterSpacing: -0.3 },
-  kind: { fontSize: 14, color: colors.ink3, marginTop: 1 },
+  name: { fontFamily, fontSize: 24, fontWeight: '800', color: colors.ink, letterSpacing: -0.3 },
+  kind: { fontFamily, fontSize: 14, color: colors.ink3, marginTop: 1 },
   card: {
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -160,11 +160,11 @@ const s = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 4,
   },
-  cardTitle: { fontSize: 15, fontWeight: '700', color: colors.ink, marginBottom: 6 },
+  cardTitle: { fontFamily, fontSize: 15, fontWeight: '700', color: colors.ink, marginBottom: 6 },
   detail: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, paddingVertical: 13 },
   detailDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.line },
-  detailLabel: { fontSize: 14, color: colors.ink2 },
-  detailValue: { flexShrink: 1, fontSize: 14, fontWeight: '700', color: colors.ink, textAlign: 'right' },
+  detailLabel: { fontFamily, fontSize: 14, color: colors.ink2 },
+  detailValue: { flexShrink: 1, fontFamily, fontSize: 14, fontWeight: '700', color: colors.ink, textAlign: 'right' },
   link: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -176,9 +176,9 @@ const s = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 16,
   },
-  linkText: { flex: 1, fontSize: 15, fontWeight: '700', color: colors.ink },
+  linkText: { flex: 1, fontFamily, fontSize: 15, fontWeight: '700', color: colors.ink },
   confirm: { gap: 10, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: 16, padding: 16 },
-  confirmTitle: { fontSize: 16, fontWeight: '700', color: colors.ink },
+  confirmTitle: { fontFamily, fontSize: 16, fontWeight: '700', color: colors.ink },
   row: { flexDirection: 'row', gap: 10 },
   status: {
     gap: 10,
@@ -189,7 +189,7 @@ const s = StyleSheet.create({
     padding: 16,
     marginTop: 8,
   },
-  statusBody: { fontSize: 13, lineHeight: 19, color: colors.ink2 },
+  statusBody: { fontFamily, fontSize: 13, lineHeight: 19, color: colors.ink2 },
   reactivate: { backgroundColor: colors.good },
   toast: {
     position: 'absolute',
@@ -200,5 +200,5 @@ const s = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
   },
-  toastText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
+  toastText: { fontFamily, fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
 });

@@ -2,7 +2,7 @@ import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router
 import { useCallback, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { HomeHero } from '../../components/HomeHero';
-import { Banner, Body, Button, Card, colors, Eyebrow, Loading, Screen } from '../../components/ui';
+import { Banner, Body, Button, Card, colors, Eyebrow, fontFamily, Loading, Screen } from '../../components/ui';
 import { VisitRow } from '../../components/VisitRow';
 import { displayAddress } from '../../lib/address';
 import { deleteProperty, fetchProperty, type VisitSummary } from '../../lib/api';
@@ -95,8 +95,8 @@ export default function PropertyScreen() {
 }
 
 const s = StyleSheet.create({
-  meta: { fontSize: 15, color: colors.ink3 },
+  meta: { fontFamily, fontSize: 15, color: colors.ink3 },
   list: { gap: 10 },
-  cardTitle: { fontSize: 17, fontWeight: '700', color: colors.ink },
+  cardTitle: { fontFamily, fontSize: 17, fontWeight: '700', color: colors.ink },
   row: { flexDirection: 'row', gap: 10, marginTop: 6 },
 });

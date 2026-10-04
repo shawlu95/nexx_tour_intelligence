@@ -3,7 +3,7 @@
 // entity and a privacy contact, and be published at a public URL before release.
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors } from './ui';
+import { colors, fontFamily } from './ui';
 
 export type LegalDocName = 'privacy' | 'terms';
 
@@ -115,14 +115,14 @@ export function LegalModal({ doc, onClose }: { doc: LegalDocName | null; onClose
 const s = StyleSheet.create({
   modal: { flex: 1, backgroundColor: colors.bg },
   modalBar: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 20, paddingVertical: 12 },
-  done: { fontSize: 17, fontWeight: '600', color: colors.accent },
+  done: { fontFamily, fontSize: 17, fontWeight: '600', color: colors.accent },
   modalBody: { padding: 20, paddingTop: 4 },
   root: { gap: 18 },
   heading: { gap: 6 },
-  eyebrow: { fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.warn },
-  title: { fontSize: 26, fontWeight: '800', color: colors.ink, letterSpacing: -0.3 },
-  updated: { fontSize: 13, color: colors.ink3 },
+  eyebrow: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.warn },
+  title: { fontFamily, fontSize: 26, fontWeight: '800', color: colors.ink, letterSpacing: -0.3 },
+  updated: { fontFamily, fontSize: 13, color: colors.ink3 },
   section: { gap: 6 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.ink },
-  body: { fontSize: 15, lineHeight: 22, color: colors.ink2 },
+  sectionTitle: { fontFamily, fontSize: 16, fontWeight: '700', color: colors.ink },
+  body: { fontFamily, fontSize: 15, lineHeight: 22, color: colors.ink2 },
 });

@@ -1,6 +1,6 @@
 // Warning bottom sheet from the mockup (deactivate, delete account, remove agent).
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors } from './ui';
+import { colors, fontFamily } from './ui';
 
 export function WarningSheet({
   visible,
@@ -58,7 +58,7 @@ export function WarningSheet({
 }
 
 const s = StyleSheet.create({
-  sheetError: { fontSize: 13, color: colors.bad, textAlign: 'center' },
+  sheetError: { fontFamily, fontSize: 13, color: colors.bad, textAlign: 'center' },
   backdrop: { flex: 1, backgroundColor: 'rgba(10,15,24,0.55)', justifyContent: 'flex-end' },
   sheet: {
     margin: 12,
@@ -79,11 +79,11 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 4,
   },
-  sheetIconText: { fontSize: 18, fontWeight: '800', color: colors.bad },
-  sheetTitle: { fontSize: 21, fontWeight: '800', color: colors.ink, textAlign: 'center', letterSpacing: -0.3 },
-  sheetCopy: { fontSize: 14, lineHeight: 20, color: colors.ink2, textAlign: 'center', paddingHorizontal: 12, marginBottom: 4 },
+  sheetIconText: { fontFamily, fontSize: 18, fontWeight: '800', color: colors.bad },
+  sheetTitle: { fontFamily, fontSize: 21, fontWeight: '800', color: colors.ink, textAlign: 'center', letterSpacing: -0.3 },
+  sheetCopy: { fontFamily, fontSize: 14, lineHeight: 20, color: colors.ink2, textAlign: 'center', paddingHorizontal: 12, marginBottom: 4 },
   sheetDanger: { alignSelf: 'stretch', backgroundColor: colors.bad, borderRadius: 14, paddingVertical: 15, alignItems: 'center' },
-  sheetDangerText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
+  sheetDangerText: { fontFamily, fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
   sheetSecondary: {
     alignSelf: 'stretch',
     borderWidth: 1,
@@ -92,5 +92,5 @@ const s = StyleSheet.create({
     paddingVertical: 15,
     alignItems: 'center',
   },
-  sheetSecondaryText: { fontSize: 16, fontWeight: '700', color: colors.ink },
+  sheetSecondaryText: { fontFamily, fontSize: 16, fontWeight: '700', color: colors.ink },
 });

@@ -5,7 +5,7 @@ import { NestedReorderableList, reorderItems, ScrollViewContainer, useReorderabl
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SymbolView } from 'expo-symbols';
 import { HomeThumb } from '../../components/HomeThumb';
-import { Banner, Body, Button, colors, Eyebrow, TabHeader } from '../../components/ui';
+import { Banner, Body, Button, colors, Eyebrow, fontFamily, TabHeader } from '../../components/ui';
 import { displayAddress } from '../../lib/address';
 import type { PropertyCard } from '../../lib/api';
 import {
@@ -310,36 +310,36 @@ const s = StyleSheet.create({
   flex: { flex: 1 },
   empty: { gap: 14, backgroundColor: colors.surface, borderRadius: 20, borderWidth: 1, borderColor: colors.line, padding: 20 },
   thinking: { alignItems: 'center', gap: 12, paddingVertical: 12 },
-  thinkingText: { fontSize: 15, color: colors.ink2, textAlign: 'center' },
+  thinkingText: { fontFamily, fontSize: 15, color: colors.ink2, textAlign: 'center' },
   heading: { gap: 6 },
   headingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   count: { backgroundColor: colors.sunk, borderRadius: 999, paddingVertical: 4, paddingHorizontal: 10 },
-  countText: { fontSize: 12, fontWeight: '600', color: colors.ink2 },
-  headline: { fontSize: 26, fontWeight: '800', color: colors.ink, letterSpacing: -0.4, lineHeight: 31 },
-  helper: { fontSize: 14, color: colors.ink3 },
+  countText: { fontFamily, fontSize: 12, fontWeight: '600', color: colors.ink2 },
+  headline: { fontFamily, fontSize: 26, fontWeight: '800', color: colors.ink, letterSpacing: -0.4, lineHeight: 31 },
+  helper: { fontFamily, fontSize: 14, color: colors.ink3 },
   update: { gap: 10, backgroundColor: colors.accentSoft, borderRadius: 16, padding: 16 },
-  updateText: { fontSize: 15, color: colors.accent, fontWeight: '600' },
+  updateText: { fontFamily, fontSize: 15, color: colors.accent, fontWeight: '600' },
   list: { backgroundColor: colors.surface, borderRadius: 20, borderWidth: 1, borderColor: colors.line, overflow: 'hidden' },
   row: { paddingHorizontal: 16, backgroundColor: colors.surface },
   rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
   rowTop: { flexDirection: 'row', alignItems: 'center' },
   rowMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
   revert: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', marginTop: 2 },
-  revertText: { fontSize: 13, color: colors.ink3, fontWeight: '600' },
+  revertText: { fontFamily, fontSize: 13, color: colors.ink3, fontWeight: '600' },
   badge: { width: 28, height: 28, borderRadius: 8, backgroundColor: colors.sunk, alignItems: 'center', justifyContent: 'center' },
   badgeFirst: { backgroundColor: colors.ink },
-  badgeText: { fontSize: 13, fontWeight: '800', color: colors.ink2, fontVariant: ['tabular-nums'] },
+  badgeText: { fontFamily, fontSize: 13, fontWeight: '800', color: colors.ink2, fontVariant: ['tabular-nums'] },
   badgeTextFirst: { color: '#FFFFFF' },
-  address: { fontSize: 15, fontWeight: '700', color: colors.ink },
-  label: { fontSize: 12, lineHeight: 16, color: colors.ink3, marginTop: 2 },
-  score: { fontSize: 14, fontWeight: '700', color: colors.ink, fontVariant: ['tabular-nums'], minWidth: 30, textAlign: 'right' },
-  fit: { fontSize: 13, fontWeight: '700' },
+  address: { fontFamily, fontSize: 15, fontWeight: '700', color: colors.ink },
+  label: { fontFamily, fontSize: 12, lineHeight: 16, color: colors.ink3, marginTop: 2 },
+  score: { fontFamily, fontSize: 14, fontWeight: '700', color: colors.ink, fontVariant: ['tabular-nums'], minWidth: 30, textAlign: 'right' },
+  fit: { fontFamily, fontSize: 13, fontWeight: '700' },
   detail: { gap: 10, paddingBottom: 14, paddingLeft: 34 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   tag: { borderRadius: 999, paddingVertical: 4, paddingHorizontal: 9 },
   tagPro: { backgroundColor: colors.goodSoft },
   tagCon: { backgroundColor: colors.warnSoft },
-  tagText: { fontSize: 12, fontWeight: '600' },
-  open: { fontSize: 14, fontWeight: '600', color: colors.accent },
+  tagText: { fontFamily, fontSize: 12, fontWeight: '600' },
+  open: { fontFamily, fontSize: 14, fontWeight: '600', color: colors.accent },
   actions: { gap: 10 },
 });

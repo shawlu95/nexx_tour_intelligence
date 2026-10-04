@@ -4,7 +4,7 @@ import { SymbolView } from 'expo-symbols';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Button, colors, Field, Screen, TabHeader } from '../../../components/ui';
+import { Button, colors, Field, fontFamily, Screen, TabHeader } from '../../../components/ui';
 import { inviteAgent, useWorkspacePaused } from '../../../lib/sharingPreview';
 
 export default function InviteAgent() {
@@ -88,11 +88,11 @@ const s = StyleSheet.create({
   flex: { flex: 1 },
   screen: { gap: 20 },
   back: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' },
-  backText: { fontSize: 14, fontWeight: '600', color: colors.ink2 },
+  backText: { fontFamily, fontSize: 14, fontWeight: '600', color: colors.ink2 },
   heading: { gap: 8 },
-  eyebrow: { fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
-  title: { fontSize: 28, fontWeight: '800', color: colors.ink, letterSpacing: -0.4 },
-  body: { fontSize: 15, lineHeight: 22, color: colors.ink2 },
+  eyebrow: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
+  title: { fontFamily, fontSize: 28, fontWeight: '800', color: colors.ink, letterSpacing: -0.4 },
+  body: { fontFamily, fontSize: 15, lineHeight: 22, color: colors.ink2 },
   form: { gap: 14 },
   agreement: {
     flexDirection: 'row',
@@ -114,8 +114,8 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   boxOn: { backgroundColor: colors.accent, borderColor: colors.accent },
-  agreementText: { flex: 1, fontSize: 14, color: colors.ink, lineHeight: 20 },
-  error: { fontSize: 13, color: colors.bad, fontWeight: '600' },
+  agreementText: { flex: 1, fontFamily, fontSize: 14, color: colors.ink, lineHeight: 20 },
+  error: { fontFamily, fontSize: 13, color: colors.bad, fontWeight: '600' },
   footer: { gap: 12 },
-  note: { fontSize: 12, color: colors.ink3, textAlign: 'center' },
+  note: { fontFamily, fontSize: 12, color: colors.ink3, textAlign: 'center' },
 });

@@ -6,7 +6,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
 import { AiConsentSheet } from '../../../components/AiConsentSheet';
-import { BackLink, Button, colors, Screen, TabHeader } from '../../../components/ui';
+import { BackLink, Button, colors, fontFamily, Screen, TabHeader } from '../../../components/ui';
 import type { AddressDraft } from '../../../lib/address';
 import { useUserId } from '../../../lib/auth';
 import { loadAiConsent } from '../../../lib/consent';
@@ -99,12 +99,12 @@ const s = StyleSheet.create({
   flex: { flex: 1 },
   screen: { gap: 16 },
   heading: { gap: 8, marginTop: 4 },
-  eyebrow: { fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
-  title: { fontSize: 26, fontWeight: '800', color: colors.ink, letterSpacing: -0.3 },
-  body: { fontSize: 15, lineHeight: 22, color: colors.ink2 },
-  place: { fontSize: 14, fontWeight: '700', color: colors.ink },
+  eyebrow: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
+  title: { fontFamily, fontSize: 26, fontWeight: '800', color: colors.ink, letterSpacing: -0.3 },
+  body: { fontFamily, fontSize: 15, lineHeight: 22, color: colors.ink2 },
+  place: { fontFamily, fontSize: 14, fontWeight: '700', color: colors.ink },
   field: { gap: 8 },
-  label: { fontSize: 13, fontWeight: '600', color: colors.ink2 },
+  label: { fontFamily, fontSize: 13, fontWeight: '600', color: colors.ink2 },
   input: {
     minHeight: 180,
     borderWidth: 1,
@@ -112,10 +112,10 @@ const s = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: colors.surface,
     padding: 14,
-    fontSize: 16,
+    fontFamily, fontSize: 16,
     lineHeight: 23,
     color: colors.ink,
     textAlignVertical: 'top',
   },
-  hint: { fontSize: 13, color: colors.ink3, textAlign: 'center' },
+  hint: { fontFamily, fontSize: 13, color: colors.ink3, textAlign: 'center' },
 });

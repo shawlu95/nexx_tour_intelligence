@@ -7,7 +7,7 @@ import { SymbolView } from 'expo-symbols';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { TourSearchHeader } from '../../../components/TourSearchHeader';
-import { Banner, Body, Button, colors, Field, Screen, TabHeader } from '../../../components/ui';
+import { Banner, Body, Button, colors, Field, fontFamily, Screen, TabHeader } from '../../../components/ui';
 import { aboutDistance, displayAddress, distanceMeters, EMPTY_DRAFT, normalizedKey, type AddressDraft } from '../../../lib/address';
 import { fetchProperties, fetchTourSummary, type TourSummary } from '../../../lib/api';
 import { startOfWeek } from '../../../lib/format';
@@ -234,13 +234,13 @@ const s = StyleSheet.create({
   flex: { flex: 1 },
   screen: { gap: 18 },
   back: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' },
-  backText: { fontSize: 14, fontWeight: '600', color: colors.ink2 },
+  backText: { fontFamily, fontSize: 14, fontWeight: '600', color: colors.ink2 },
   heading: { gap: 8 },
-  eyebrow: { fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
-  title: { fontSize: 23, fontWeight: '700', color: colors.ink, letterSpacing: -0.3 },
-  body: { fontSize: 15, lineHeight: 21, color: colors.ink2 },
+  eyebrow: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
+  title: { fontFamily, fontSize: 23, fontWeight: '700', color: colors.ink, letterSpacing: -0.3 },
+  body: { fontFamily, fontSize: 15, lineHeight: 21, color: colors.ink2 },
   locating: { flexDirection: 'row', gap: 10, alignItems: 'center' },
-  locatingText: { color: colors.ink3, fontSize: 15 },
+  locatingText: { color: colors.ink3, fontFamily, fontSize: 15 },
   options: { gap: 10 },
   option: {
     gap: 4,
@@ -252,10 +252,10 @@ const s = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   optionPressed: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
-  optionTitle: { fontSize: 16, fontWeight: '700', color: colors.ink },
-  optionDetail: { fontSize: 14, color: colors.ink2 },
+  optionTitle: { fontFamily, fontSize: 16, fontWeight: '700', color: colors.ink },
+  optionDetail: { fontFamily, fontSize: 14, color: colors.ink2 },
   notListed: { alignSelf: 'center', paddingVertical: 6 },
-  link: { fontSize: 15, fontWeight: '600', color: colors.accent, textAlign: 'center' },
+  link: { fontFamily, fontSize: 15, fontWeight: '600', color: colors.accent, textAlign: 'center' },
   form: { gap: 12 },
   row: { flexDirection: 'row', gap: 10 },
   unit: { flex: 1 },

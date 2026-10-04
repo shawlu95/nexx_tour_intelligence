@@ -5,7 +5,7 @@ import { ActivityIndicator, StyleSheet, Text, TextInput, View } from 'react-nati
 import { ClarifyAnswer, ClarifyCard } from '../../components/ClarifyCard';
 import { HomeHero } from '../../components/HomeHero';
 import { NoteSections } from '../../components/NoteSections';
-import { Banner, Body, Button, Card, colors, Eyebrow, Loading, Screen, Title } from '../../components/ui';
+import { Banner, Body, Button, Card, colors, Eyebrow, fontFamily, Loading, Screen, Title } from '../../components/ui';
 import { displayAddress } from '../../lib/address';
 import { deleteVisit, fetchVisit, retryVisit, updatePersonalNote, type VisitDetail } from '../../lib/api';
 import { setAiConsent } from '../../lib/consent';
@@ -304,7 +304,7 @@ function ReadyNote({
 
 const s = StyleSheet.create({
   header: { gap: 6 },
-  link: { color: colors.accent, fontSize: 14, fontWeight: '600', marginTop: 4 },
+  link: { color: colors.accent, fontFamily, fontSize: 14, fontWeight: '600', marginTop: 4 },
   ready: { gap: 16 },
   noteCard: {
     backgroundColor: colors.surface,
@@ -314,7 +314,7 @@ const s = StyleSheet.create({
     padding: 20,
     gap: 16,
   },
-  overall: { fontSize: 18, lineHeight: 27, color: colors.ink },
+  overall: { fontFamily, fontSize: 18, lineHeight: 27, color: colors.ink },
   chips: { flexDirection: 'row', gap: 10 },
   chip: { flex: 1 },
   personal: { gap: 8 },
@@ -325,12 +325,12 @@ const s = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: colors.surface,
     padding: 12,
-    fontSize: 15,
+    fontFamily, fontSize: 15,
     color: colors.ink,
     textAlignVertical: 'top',
   },
   actions: { gap: 10 },
   progress: { alignItems: 'center', gap: 10, paddingVertical: 24 },
-  cardTitle: { fontSize: 17, fontWeight: '700', color: colors.ink },
-  retry: { fontSize: 13, color: colors.ink3, textAlign: 'center' },
+  cardTitle: { fontFamily, fontSize: 17, fontWeight: '700', color: colors.ink },
+  retry: { fontFamily, fontSize: 13, color: colors.ink3, textAlign: 'center' },
 });

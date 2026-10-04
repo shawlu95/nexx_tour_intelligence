@@ -19,27 +19,33 @@ import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useWorkspacePaused } from '../lib/sharingPreview';
 
+// Design tokens from the mockup's :root (--ink, --muted, --blue, --blue-fill, …).
 export const colors = {
-  bg: '#F4F6F9',
-  surface: '#FFFFFF',
-  sunk: '#E9EDF3',
-  ink: '#18202E',
-  ink2: '#4A5568',
-  ink3: '#7A8496',
-  line: '#D8DEE8',
-  accent: '#2E5BE6',
-  accentSoft: '#E3EAFD',
-  good: '#1E7A4C',
-  goodSoft: '#E1F3E9',
-  warn: '#A8620B',
-  warnSoft: '#FBEEDB',
-  bad: '#B23A3A',
-  badSoft: '#F8E3E3',
-  stage: '#121A2B',
+  bg: '#F4F6FA', // --canvas
+  surface: '#FFFFFF', // --paper
+  sunk: '#E9ECF2', // count pills, inactive rank numbers
+  ink: '#171A29', // --ink
+  ink2: '#525E78', // body copy (reaction summaries)
+  ink3: '#707786', // --muted
+  line: '#D9DEE7', // --line
+  accent: '#1768BC', // --blue
+  accentDark: '#10549A', // --blue-dark, text on --blue-fill
+  accentFill: 'rgba(33,150,255,0.28)', // --blue-fill: primary buttons
+  accentSoft: 'rgba(33,150,255,0.08)', // --soft-blue
+  good: '#18794E',
+  goodSoft: '#E5F5EB',
+  warn: '#956018',
+  warnSoft: '#FFF1DC',
+  bad: '#A43B47',
+  badSoft: '#FFEBEE',
+  stage: '#171C2C', // dark cards and the recording stage
   stageInk: '#EEF2FA',
-  stage2: '#9AA7C2',
+  stage2: '#B9C0CE',
   stageLine: '#26324A',
 };
+
+/** The mockup's typeface. Embedded natively (expo-font plugin in app.json); fontWeight picks the face. */
+export const fontFamily = 'DM Sans';
 
 /**
  * Page container. `tab` is for tab-bar screens, which have no header: they pad
@@ -103,7 +109,7 @@ export function Button({
   accessibilityLabel?: string;
 }) {
   const palette = {
-    primary: { bg: colors.accent, fg: '#FFFFFF', border: colors.accent },
+    primary: { bg: colors.accentFill, fg: colors.accentDark, border: 'transparent' },
     secondary: { bg: colors.surface, fg: colors.ink, border: colors.line },
     danger: { bg: colors.bad, fg: '#FFFFFF', border: colors.bad },
     ghost: { bg: 'transparent', fg: colors.accent, border: 'transparent' },
@@ -240,14 +246,14 @@ export const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center' },
   screen: { padding: 20, gap: 16, flexGrow: 1 },
   button: {
-    minHeight: 50,
-    borderRadius: 12,
+    minHeight: 48,
+    borderRadius: 11,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
   },
-  buttonText: { fontSize: 16, fontWeight: '600' },
+  buttonText: { fontFamily, fontSize: 14, fontWeight: '700' },
   card: {
     backgroundColor: colors.surface,
     borderColor: colors.line,
@@ -256,11 +262,11 @@ export const styles = StyleSheet.create({
     padding: 14,
     gap: 6,
   },
-  eyebrow: { fontSize: 12, fontWeight: '600', letterSpacing: 1.2, textTransform: 'uppercase' },
-  title: { fontSize: 24, fontWeight: '800', color: colors.ink, letterSpacing: -0.3 },
-  body: { fontSize: 16, lineHeight: 23, color: colors.ink2 },
+  eyebrow: { fontFamily, fontSize: 12, fontWeight: '600', letterSpacing: 1.2, textTransform: 'uppercase' },
+  title: { fontFamily, fontSize: 24, fontWeight: '800', color: colors.ink, letterSpacing: -0.3 },
+  body: { fontFamily, fontSize: 16, lineHeight: 23, color: colors.ink2 },
   field: { gap: 6 },
-  fieldLabel: { fontSize: 13, fontWeight: '600', color: colors.ink2 },
+  fieldLabel: { fontFamily, fontSize: 13, fontWeight: '600', color: colors.ink2 },
   input: {
     minHeight: 48,
     borderRadius: 12,
@@ -268,16 +274,16 @@ export const styles = StyleSheet.create({
     borderColor: colors.line,
     backgroundColor: colors.surface,
     paddingHorizontal: 14,
-    fontSize: 16,
+    fontFamily, fontSize: 16,
     color: colors.ink,
   },
   banner: { borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 },
-  bannerText: { fontSize: 14, lineHeight: 20 },
+  bannerText: { fontFamily, fontSize: 14, lineHeight: 20 },
   tabHeader: { gap: 14 },
   tabHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  wordmark: { fontSize: 16, fontWeight: '800', letterSpacing: 4, color: colors.ink },
+  wordmark: { fontFamily, fontSize: 16, fontWeight: '800', letterSpacing: 4, color: colors.ink },
   pill: { borderRadius: 999, paddingVertical: 4, paddingHorizontal: 9, alignSelf: 'flex-start' },
-  pillText: { fontSize: 12, fontWeight: '600' },
+  pillText: { fontFamily, fontSize: 12, fontWeight: '600' },
   back: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' },
-  backText: { fontSize: 15, fontWeight: '600', color: colors.ink2 },
+  backText: { fontFamily, fontSize: 15, fontWeight: '600', color: colors.ink2 },
 });

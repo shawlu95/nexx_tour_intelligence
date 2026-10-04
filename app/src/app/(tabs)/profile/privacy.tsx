@@ -8,7 +8,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AppState, Linking, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { AI_CONSENT_COPY } from '../../../components/AiConsentSheet';
 import { WarningSheet } from '../../../components/WarningSheet';
-import { BackLink, colors, Screen, TabHeader } from '../../../components/ui';
+import { BackLink, colors, fontFamily, Screen, TabHeader } from '../../../components/ui';
 import { deleteAccount } from '../../../lib/api';
 import { signOut, useUserId } from '../../../lib/auth';
 import { setAiConsent, useAiConsent } from '../../../lib/consent';
@@ -237,9 +237,9 @@ const s = StyleSheet.create({
   screen: { gap: 14 },
   flex: { flex: 1 },
   heading: { gap: 8, marginTop: 4 },
-  eyebrow: { fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
-  title: { fontSize: 24, fontWeight: '800', color: colors.ink, letterSpacing: -0.3 },
-  lede: { fontSize: 14, lineHeight: 20, color: colors.ink2 },
+  eyebrow: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
+  title: { fontFamily, fontSize: 24, fontWeight: '800', color: colors.ink, letterSpacing: -0.3 },
+  lede: { fontFamily, fontSize: 14, lineHeight: 20, color: colors.ink2 },
   card: {
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -250,25 +250,25 @@ const s = StyleSheet.create({
     paddingBottom: 4,
   },
   cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-  cardTitle: { fontSize: 15, fontWeight: '700', color: colors.ink, marginBottom: 6 },
-  cardMeta: { fontSize: 12, color: colors.ink3 },
+  cardTitle: { fontFamily, fontSize: 15, fontWeight: '700', color: colors.ink, marginBottom: 6 },
+  cardMeta: { fontFamily, fontSize: 12, color: colors.ink3 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13 },
   divider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.line },
-  rowTitle: { fontSize: 15, fontWeight: '700', color: colors.ink },
-  rowState: { fontSize: 13, fontWeight: '600', color: colors.ink3 },
-  rowCopy: { fontSize: 13, lineHeight: 18, color: colors.ink2, marginTop: 3 },
+  rowTitle: { fontFamily, fontSize: 15, fontWeight: '700', color: colors.ink },
+  rowState: { fontFamily, fontSize: 13, fontWeight: '600', color: colors.ink3 },
+  rowCopy: { fontFamily, fontSize: 13, lineHeight: 18, color: colors.ink2, marginTop: 3 },
   aiNote: {
-    fontSize: 12,
+    fontFamily, fontSize: 12,
     lineHeight: 17,
     color: colors.ink3,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.line,
     paddingVertical: 12,
   },
-  aiError: { fontSize: 13, color: colors.bad, paddingBottom: 12 },
+  aiError: { fontFamily, fontSize: 13, color: colors.bad, paddingBottom: 12 },
   settings: { backgroundColor: colors.accentSoft, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12 },
-  settingsText: { fontSize: 14, fontWeight: '700', color: colors.accent },
+  settingsText: { fontFamily, fontSize: 14, fontWeight: '700', color: colors.accent },
   legalLinks: { flexDirection: 'row', justifyContent: 'center', gap: 24, marginTop: 4 },
-  legalLink: { fontSize: 14, fontWeight: '700', color: colors.accent, textDecorationLine: 'underline' },
-  footer: { fontSize: 12, color: colors.ink3, textAlign: 'center' },
+  legalLink: { fontFamily, fontSize: 14, fontWeight: '700', color: colors.accent, textDecorationLine: 'underline' },
+  footer: { fontFamily, fontSize: 12, color: colors.ink3, textAlign: 'center' },
 });

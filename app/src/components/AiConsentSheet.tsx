@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { setAiConsent } from '../lib/consent';
 import { LegalModal } from './Legal';
-import { colors } from './ui';
+import { colors, fontFamily } from './ui';
 
 export const AI_CONSENT_COPY =
   'NORA sends your note and the confirmed property address to its AI providers (AssemblyAI to transcribe, Anthropic to summarize and rank). Original audio is deleted after transcription.';
@@ -95,21 +95,21 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 4,
   },
-  iconText: { fontSize: 20, fontWeight: '800', color: colors.accent },
-  eyebrow: { fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
-  title: { fontSize: 22, fontWeight: '800', color: colors.ink, textAlign: 'center', letterSpacing: -0.3 },
-  copy: { fontSize: 14, lineHeight: 20, color: colors.ink2, textAlign: 'center', paddingHorizontal: 8 },
-  small: { fontSize: 12, lineHeight: 17, color: colors.ink3, textAlign: 'center' },
-  error: { fontSize: 13, color: colors.bad, textAlign: 'center' },
+  iconText: { fontFamily, fontSize: 20, fontWeight: '800', color: colors.accent },
+  eyebrow: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
+  title: { fontFamily, fontSize: 22, fontWeight: '800', color: colors.ink, textAlign: 'center', letterSpacing: -0.3 },
+  copy: { fontFamily, fontSize: 14, lineHeight: 20, color: colors.ink2, textAlign: 'center', paddingHorizontal: 8 },
+  small: { fontFamily, fontSize: 12, lineHeight: 17, color: colors.ink3, textAlign: 'center' },
+  error: { fontFamily, fontSize: 13, color: colors.bad, textAlign: 'center' },
   primary: {
     alignSelf: 'stretch',
     marginTop: 6,
-    backgroundColor: colors.accent,
+    backgroundColor: colors.accentFill,
     borderRadius: 14,
     paddingVertical: 15,
     alignItems: 'center',
   },
-  primaryText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
+  primaryText: { fontFamily, fontSize: 15, fontWeight: '700', color: colors.accentDark },
   secondary: {
     alignSelf: 'stretch',
     borderWidth: 1,
@@ -118,6 +118,6 @@ const s = StyleSheet.create({
     paddingVertical: 15,
     alignItems: 'center',
   },
-  secondaryText: { fontSize: 16, fontWeight: '700', color: colors.ink },
-  link: { fontSize: 14, fontWeight: '600', color: colors.accent, textDecorationLine: 'underline', marginTop: 4 },
+  secondaryText: { fontFamily, fontSize: 16, fontWeight: '700', color: colors.ink },
+  link: { fontFamily, fontSize: 14, fontWeight: '600', color: colors.accent, textDecorationLine: 'underline', marginTop: 4 },
 });

@@ -18,7 +18,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Linking, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AiConsentSheet } from '../../../components/AiConsentSheet';
-import { colors, TabHeader } from '../../../components/ui';
+import { colors, fontFamily, TabHeader } from '../../../components/ui';
 import type { AddressDraft } from '../../../lib/address';
 import { useUserId } from '../../../lib/auth';
 import { loadAiConsent } from '../../../lib/consent';
@@ -403,8 +403,8 @@ const s = StyleSheet.create({
   },
   backButtonSpacer: { width: 36 },
   place: { flex: 1, alignItems: 'center', gap: 2 },
-  placeTitle: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
-  placeSub: { fontSize: 13, color: colors.stage2 },
+  placeTitle: { fontFamily, fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
+  placeSub: { fontFamily, fontSize: 13, color: colors.stage2 },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -416,9 +416,9 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
   },
   redDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#F05252' },
-  pillStrong: { fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
+  pillStrong: { fontFamily, fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
   pillDivider: { width: StyleSheet.hairlineWidth, height: 12, backgroundColor: 'rgba(255,255,255,0.3)' },
-  pillSoft: { fontSize: 11, color: colors.stage2 },
+  pillSoft: { fontFamily, fontSize: 11, color: colors.stage2 },
   orbWrap: { width: 200, height: 200, alignItems: 'center', justifyContent: 'center', marginTop: 16 },
   halo: { position: 'absolute', borderRadius: 999 },
   haloOuter: { width: 200, height: 200, backgroundColor: 'rgba(49,100,244,0.08)' },
@@ -435,10 +435,10 @@ const s = StyleSheet.create({
     shadowRadius: 22,
     shadowOffset: { width: 0, height: 0 },
   },
-  timer: { fontSize: 40, fontWeight: '800', color: '#FFFFFF', letterSpacing: 1, fontVariant: ['tabular-nums'], marginTop: 6 },
-  voice: { fontSize: 12, fontWeight: '700', color: '#91A8FA', marginTop: 6, minHeight: 18 },
-  prompt: { fontSize: 23, fontWeight: '800', color: '#FFFFFF', marginTop: 28, textAlign: 'center' },
-  promptBody: { fontSize: 15, lineHeight: 22, color: colors.stage2, textAlign: 'center', marginTop: 10, paddingHorizontal: 6 },
+  timer: { fontFamily, fontSize: 40, fontWeight: '800', color: '#FFFFFF', letterSpacing: 1, fontVariant: ['tabular-nums'], marginTop: 6 },
+  voice: { fontFamily, fontSize: 12, fontWeight: '700', color: '#91A8FA', marginTop: 6, minHeight: 18 },
+  prompt: { fontFamily, fontSize: 23, fontWeight: '800', color: '#FFFFFF', marginTop: 28, textAlign: 'center' },
+  promptBody: { fontFamily, fontSize: 15, lineHeight: 22, color: colors.stage2, textAlign: 'center', marginTop: 10, paddingHorizontal: 6 },
   finish: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -450,18 +450,18 @@ const s = StyleSheet.create({
     paddingHorizontal: 26,
   },
   stopSquare: { width: 12, height: 12, borderRadius: 3, backgroundColor: '#E04848' },
-  finishText: { fontSize: 17, fontWeight: '700', color: colors.ink },
+  finishText: { fontFamily, fontSize: 17, fontWeight: '700', color: colors.ink },
   settingsLink: { marginTop: 14 },
-  settingsLinkText: { fontSize: 14, fontWeight: '600', color: '#91A8FA', textDecorationLine: 'underline' },
-  listening: { fontSize: 13, color: colors.stage2, marginTop: 16, textAlign: 'center' },
+  settingsLinkText: { fontFamily, fontSize: 14, fontWeight: '600', color: '#91A8FA', textDecorationLine: 'underline' },
+  listening: { fontFamily, fontSize: 13, color: colors.stage2, marginTop: 16, textAlign: 'center' },
   confirm: { marginTop: 24, alignItems: 'center', gap: 12 },
-  confirmText: { fontSize: 15, fontWeight: '600', color: '#FFFFFF' },
+  confirmText: { fontFamily, fontSize: 15, fontWeight: '600', color: '#FFFFFF' },
   confirmRow: { flexDirection: 'row', gap: 10 },
   smallButton: { borderRadius: 999, paddingVertical: 12, paddingHorizontal: 20 },
   smallLight: { backgroundColor: '#FFFFFF' },
-  smallLightText: { fontSize: 15, fontWeight: '700', color: colors.ink },
+  smallLightText: { fontFamily, fontSize: 15, fontWeight: '700', color: colors.ink },
   smallDanger: { backgroundColor: '#F05252' },
-  smallDangerText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
+  smallDangerText: { fontFamily, fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
   // "I'm not hearing anything." sheet
   backdrop: { flex: 1, backgroundColor: 'rgba(10,15,24,0.55)', justifyContent: 'flex-end' },
   sheet: {
@@ -485,20 +485,20 @@ const s = StyleSheet.create({
     gap: 5,
     marginBottom: 4,
   },
-  sheetCount: { fontSize: 18, fontWeight: '800', color: colors.accent },
+  sheetCount: { fontFamily, fontSize: 18, fontWeight: '800', color: colors.accent },
   sheetDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accent },
-  sheetTitle: { fontSize: 23, fontWeight: '800', color: colors.ink, textAlign: 'center', letterSpacing: -0.3 },
-  sheetCopy: { fontSize: 15, lineHeight: 22, color: colors.ink2, textAlign: 'center', paddingHorizontal: 16 },
+  sheetTitle: { fontFamily, fontSize: 23, fontWeight: '800', color: colors.ink, textAlign: 'center', letterSpacing: -0.3 },
+  sheetCopy: { fontFamily, fontSize: 15, lineHeight: 22, color: colors.ink2, textAlign: 'center', paddingHorizontal: 16 },
   sheetPrimary: {
     alignSelf: 'stretch',
     marginTop: 8,
-    backgroundColor: colors.accent,
+    backgroundColor: colors.accentFill,
     borderRadius: 14,
     minHeight: 52,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sheetPrimaryText: { fontSize: 17, fontWeight: '700', color: '#FFFFFF' },
+  sheetPrimaryText: { fontFamily, fontSize: 15, fontWeight: '700', color: colors.accentDark },
   sheetSecondary: {
     alignSelf: 'stretch',
     backgroundColor: '#FFFFFF',
@@ -509,5 +509,5 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sheetSecondaryText: { fontSize: 17, fontWeight: '700', color: colors.ink },
+  sheetSecondaryText: { fontFamily, fontSize: 17, fontWeight: '700', color: colors.ink },
 });

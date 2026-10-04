@@ -1,12 +1,12 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { initials } from '../lib/sharingPreview';
-import { colors } from './ui';
+import { colors, fontFamily } from './ui';
 
 /** Dark rounded square with initials, as in the mockup's account and sharing rows. */
 export function Avatar({ name, size = 40 }: { name: string; size?: number }) {
   return (
     <View style={[s.box, { width: size, height: size, borderRadius: Math.round(size * 0.3) }]} accessible={false}>
-      <Text style={[s.text, { fontSize: Math.round(size * 0.32) }]}>{initials(name)}</Text>
+      <Text style={[s.text, { fontFamily, fontSize: Math.round(size * 0.32) }]}>{initials(name)}</Text>
     </View>
   );
 }

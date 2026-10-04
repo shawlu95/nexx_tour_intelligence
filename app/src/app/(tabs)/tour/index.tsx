@@ -2,7 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
-import { Banner, Body, colors, Eyebrow, Screen, TabHeader } from '../../../components/ui';
+import { Banner, Body, colors, Eyebrow, fontFamily, Screen, TabHeader } from '../../../components/ui';
 import { TourSearchHeader } from '../../../components/TourSearchHeader';
 import { VisitRow } from '../../../components/VisitRow';
 import { fetchRecentVisits, fetchTourSummary, type TourSummary, type VisitSummary } from '../../../lib/api';
@@ -162,9 +162,9 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 6,
   },
-  heroEyebrow: { color: '#9DB4FF', fontSize: 12, fontWeight: '700', letterSpacing: 1.4 },
-  heroTitle: { color: '#FFFFFF', fontSize: 21, fontWeight: '800', textAlign: 'center' },
-  heroBody: { color: colors.stage2, fontSize: 15, lineHeight: 21, textAlign: 'center', paddingHorizontal: 8 },
+  heroEyebrow: { color: '#9DB4FF', fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4 },
+  heroTitle: { color: '#FFFFFF', fontFamily, fontSize: 21, fontWeight: '800', textAlign: 'center' },
+  heroBody: { color: colors.stage2, fontFamily, fontSize: 15, lineHeight: 21, textAlign: 'center', paddingHorizontal: 8 },
   heroButton: {
     alignSelf: 'stretch',
     marginTop: 8,
@@ -174,12 +174,12 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  heroButtonText: { color: colors.ink, fontSize: 16, fontWeight: '700' },
+  heroButtonText: { color: colors.ink, fontFamily, fontSize: 16, fontWeight: '700' },
   heroNote: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-  heroNoteText: { color: colors.stage2, fontSize: 12 },
+  heroNoteText: { color: colors.stage2, fontFamily, fontSize: 12 },
   // "Last recorded / See history".
   section: { gap: 10 },
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.ink },
-  seeHistory: { fontSize: 14, fontWeight: '700', color: colors.accent },
+  sectionTitle: { fontFamily, fontSize: 16, fontWeight: '700', color: colors.ink },
+  seeHistory: { fontFamily, fontSize: 14, fontWeight: '700', color: colors.accent },
 });

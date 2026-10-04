@@ -5,7 +5,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
 import { TourSearchHeader } from '../../../components/TourSearchHeader';
-import { Button, colors, Screen, TabHeader } from '../../../components/ui';
+import { Button, colors, fontFamily, Screen, TabHeader } from '../../../components/ui';
 import {
   aboutDistance,
   cityState,
@@ -259,15 +259,15 @@ const s = StyleSheet.create({
     shadowOffset: { width: 0, height: 10 },
   },
   dotCore: { width: 9, height: 9, borderRadius: 5, backgroundColor: '#FFFFFF' },
-  locEyebrow: { fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
-  locTitle: { fontSize: 21, fontWeight: '700', color: colors.ink, marginTop: 10 },
-  locBody: { fontSize: 14, color: colors.ink2, marginTop: 8 },
+  locEyebrow: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
+  locTitle: { fontFamily, fontSize: 21, fontWeight: '700', color: colors.ink, marginTop: 10 },
+  locBody: { fontFamily, fontSize: 14, color: colors.ink2, marginTop: 8 },
   // Confirm stage
   confirm: { gap: 12 },
   foundRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   foundPill: { backgroundColor: colors.goodSoft, borderRadius: 999, paddingVertical: 5, paddingHorizontal: 11 },
-  foundText: { fontSize: 13, fontWeight: '700', color: colors.good },
-  away: { fontSize: 13, color: colors.ink2 },
+  foundText: { fontFamily, fontSize: 13, fontWeight: '700', color: colors.good },
+  away: { fontFamily, fontSize: 13, color: colors.ink2 },
   card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: 20, overflow: 'hidden' },
   photo: { width: '100%', aspectRatio: 1.85, backgroundColor: colors.sunk },
   previewChip: {
@@ -279,11 +279,11 @@ const s = StyleSheet.create({
     paddingVertical: 5,
     paddingHorizontal: 10,
   },
-  previewText: { fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
+  previewText: { fontFamily, fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
   cardBody: { padding: 16, gap: 4 },
-  areYou: { fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
-  address: { fontSize: 23, fontWeight: '700', color: colors.ink, letterSpacing: -0.3, marginTop: 4 },
-  place: { fontSize: 14, color: colors.ink2 },
+  areYou: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
+  address: { fontFamily, fontSize: 23, fontWeight: '700', color: colors.ink, letterSpacing: -0.3, marginTop: 4 },
+  place: { fontFamily, fontSize: 14, color: colors.ink2 },
   facts: {
     flexDirection: 'row',
     marginTop: 12,
@@ -294,11 +294,11 @@ const s = StyleSheet.create({
   },
   fact: { flex: 1, alignItems: 'center', gap: 2 },
   factDivider: { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: colors.line },
-  factValue: { fontSize: 16, fontWeight: '700', color: colors.ink, fontVariant: ['tabular-nums'] },
-  factLabel: { fontSize: 13, color: colors.ink2 },
-  factsNote: { fontSize: 12, color: colors.ink3, marginTop: 10 },
+  factValue: { fontFamily, fontSize: 16, fontWeight: '700', color: colors.ink, fontVariant: ['tabular-nums'] },
+  factLabel: { fontFamily, fontSize: 13, color: colors.ink2 },
+  factsNote: { fontFamily, fontSize: 12, color: colors.ink3, marginTop: 10 },
   actions: { gap: 10, marginTop: 4 },
   startRow: { flexDirection: 'row', gap: 10 },
   flex: { flex: 1 },
-  correct: { fontSize: 12, color: colors.ink3, textAlign: 'center', marginTop: 2 },
+  correct: { fontFamily, fontSize: 12, color: colors.ink3, textAlign: 'center', marginTop: 2 },
 });

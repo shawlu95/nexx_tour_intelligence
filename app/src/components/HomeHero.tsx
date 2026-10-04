@@ -4,7 +4,7 @@ import { displayAddress } from '../lib/address';
 import { factTiles } from '../lib/format';
 import { useThumbnail } from '../lib/thumbnail';
 import type { Property } from '../lib/types';
-import { colors } from './ui';
+import { colors, fontFamily } from './ui';
 
 /**
  * Top of a home's page or a visit's note: a full-width street-level photo, the
@@ -84,12 +84,12 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  credit: { fontSize: 11, color: colors.ink3, marginTop: -12, alignSelf: 'flex-end' },
+  credit: { fontFamily, fontSize: 11, color: colors.ink3, marginTop: -12, alignSelf: 'flex-end' },
   heading: { gap: 4 },
-  eyebrow: { fontSize: 12, fontWeight: '600', letterSpacing: 1.2, textTransform: 'uppercase', color: colors.accent },
-  address: { fontSize: 26, fontWeight: '800', color: colors.ink, letterSpacing: -0.4, lineHeight: 31 },
-  place: { fontSize: 16, color: colors.ink3 },
-  link: { fontSize: 14, fontWeight: '600', color: colors.accent, marginTop: 6 },
+  eyebrow: { fontFamily, fontSize: 12, fontWeight: '600', letterSpacing: 1.2, textTransform: 'uppercase', color: colors.accent },
+  address: { fontFamily, fontSize: 26, fontWeight: '800', color: colors.ink, letterSpacing: -0.4, lineHeight: 31 },
+  place: { fontFamily, fontSize: 16, color: colors.ink3 },
+  link: { fontFamily, fontSize: 14, fontWeight: '600', color: colors.accent, marginTop: 6 },
   facts: {
     flexDirection: 'row',
     backgroundColor: colors.surface,
@@ -100,7 +100,7 @@ const s = StyleSheet.create({
   },
   tile: { flex: 1, alignItems: 'center', gap: 4, paddingHorizontal: 6 },
   tileDivider: { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: colors.line },
-  value: { fontSize: 22, fontWeight: '700', color: colors.ink, fontVariant: ['tabular-nums'] },
-  label: { fontSize: 12, fontWeight: '600', letterSpacing: 0.6, textTransform: 'uppercase', color: colors.ink3 },
-  pending: { fontSize: 14, color: colors.ink3 },
+  value: { fontFamily, fontSize: 22, fontWeight: '700', color: colors.ink, fontVariant: ['tabular-nums'] },
+  label: { fontFamily, fontSize: 12, fontWeight: '600', letterSpacing: 0.6, textTransform: 'uppercase', color: colors.ink3 },
+  pending: { fontFamily, fontSize: 14, color: colors.ink3 },
 });

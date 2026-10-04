@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Banner, colors, Eyebrow } from '../../components/ui';
+import { Banner, colors, Eyebrow, fontFamily } from '../../components/ui';
 import {
   fetchRankingState,
   sendRankingTurn,
@@ -245,15 +245,15 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
   },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  chipText: { fontSize: 14, color: colors.ink, fontWeight: '500' },
-  legend: { fontSize: 12, color: colors.ink3 },
+  chipText: { fontFamily, fontSize: 14, color: colors.ink, fontWeight: '500' },
+  legend: { fontFamily, fontSize: 12, color: colors.ink3 },
   thread: { gap: 12 },
   turn: { gap: 8 },
   bubble: { maxWidth: '88%', borderRadius: 18, paddingVertical: 12, paddingHorizontal: 15, gap: 8 },
   bubbleNora: { alignSelf: 'flex-start', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderBottomLeftRadius: 6 },
   bubbleMine: { alignSelf: 'flex-end', backgroundColor: colors.accent, borderBottomRightRadius: 6 },
-  bubbleText: { fontSize: 15, lineHeight: 22, color: colors.ink },
-  question: { fontSize: 15, lineHeight: 22, color: colors.accent, fontWeight: '600' },
+  bubbleText: { fontFamily, fontSize: 15, lineHeight: 22, color: colors.ink },
+  question: { fontFamily, fontSize: 15, lineHeight: 22, color: colors.accent, fontWeight: '600' },
   questionTap: { borderRadius: 10, paddingVertical: 6, paddingHorizontal: 10, marginHorizontal: -10, backgroundColor: colors.accentSoft },
   replies: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingLeft: 4 },
   reply: {
@@ -264,10 +264,10 @@ const s = StyleSheet.create({
     paddingVertical: 9,
     paddingHorizontal: 14,
   },
-  replyText: { fontSize: 15, fontWeight: '600', color: colors.accent },
-  marker: { alignSelf: 'center', fontSize: 12, color: colors.ink3, textAlign: 'center', paddingHorizontal: 20 },
+  replyText: { fontFamily, fontSize: 15, fontWeight: '600', color: colors.accent },
+  marker: { alignSelf: 'center', fontFamily, fontSize: 12, color: colors.ink3, textAlign: 'center', paddingHorizontal: 20 },
   typing: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  typingText: { fontSize: 14, color: colors.ink3 },
+  typingText: { fontFamily, fontSize: 14, color: colors.ink3 },
   bottom: {
     gap: 10,
     paddingHorizontal: 16,
@@ -289,9 +289,9 @@ const s = StyleSheet.create({
     paddingHorizontal: 15,
     paddingTop: 11,
     paddingBottom: 11,
-    fontSize: 15,
+    fontFamily, fontSize: 15,
     color: colors.ink,
   },
   send: { height: 42, paddingHorizontal: 16, borderRadius: 21, backgroundColor: colors.accent, justifyContent: 'center' },
-  sendText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
+  sendText: { color: '#FFFFFF', fontFamily, fontSize: 15, fontWeight: '700' },
 });

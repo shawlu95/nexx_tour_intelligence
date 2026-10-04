@@ -4,7 +4,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Banner, Body, colors, Screen, TabHeader } from '../../components/ui';
+import { Banner, Body, colors, fontFamily, Screen, TabHeader } from '../../components/ui';
 import { displayAddress } from '../../lib/address';
 import { fetchHistory, fetchTourSummary, type HistoryVisit, type TourSummary } from '../../lib/api';
 import { groupByDay, startOfWeek, timeOfDay, traitsLine } from '../../lib/format';
@@ -124,13 +124,13 @@ const s = StyleSheet.create({
   flex: { flex: 1, gap: 3 },
   header: { gap: 8, marginTop: 4 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  eyebrow: { fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
-  title: { fontSize: 26, fontWeight: '800', color: colors.ink, letterSpacing: -0.4 },
+  eyebrow: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
+  title: { fontFamily, fontSize: 26, fontWeight: '800', color: colors.ink, letterSpacing: -0.4 },
   chip: { backgroundColor: colors.sunk, borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 },
-  chipText: { fontSize: 13, fontWeight: '700', color: colors.ink2 },
-  subtitle: { fontSize: 15, lineHeight: 21, color: colors.ink2 },
+  chipText: { fontFamily, fontSize: 13, fontWeight: '700', color: colors.ink2 },
+  subtitle: { fontFamily, fontSize: 15, lineHeight: 21, color: colors.ink2 },
   section: { gap: 10 },
-  sectionTitle: { fontSize: 12, fontWeight: '700', letterSpacing: 1.2, color: colors.ink3 },
+  sectionTitle: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.2, color: colors.ink3 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -145,10 +145,10 @@ const s = StyleSheet.create({
   badge: { width: 36, height: 36, borderRadius: 10, backgroundColor: colors.sunk, alignItems: 'center', justifyContent: 'center' },
   badgeTop: { backgroundColor: colors.ink },
   badgeLatest: { backgroundColor: colors.accentSoft },
-  badgeText: { fontSize: 12, fontWeight: '700', color: colors.ink2, fontVariant: ['tabular-nums'] },
+  badgeText: { fontFamily, fontSize: 12, fontWeight: '700', color: colors.ink2, fontVariant: ['tabular-nums'] },
   badgeTextTop: { color: colors.surface },
   badgeTextLatest: { color: colors.accent },
-  address: { fontSize: 16, fontWeight: '700', color: colors.ink },
-  traits: { fontSize: 13, color: colors.ink3 },
-  time: { fontSize: 13, color: colors.ink3, fontVariant: ['tabular-nums'] },
+  address: { fontFamily, fontSize: 16, fontWeight: '700', color: colors.ink },
+  traits: { fontFamily, fontSize: 13, color: colors.ink3 },
+  time: { fontFamily, fontSize: 13, color: colors.ink3, fontVariant: ['tabular-nums'] },
 });

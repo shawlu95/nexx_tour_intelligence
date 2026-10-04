@@ -1,7 +1,7 @@
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Share, StyleSheet, Switch, Text, View } from 'react-native';
-import { Banner, Body, Button, Card, colors, Eyebrow, Loading, Screen } from '../../components/ui';
+import { Banner, Body, Button, Card, colors, Eyebrow, fontFamily, Loading, Screen } from '../../components/ui';
 import { displayAddress } from '../../lib/address';
 import { createShareLink, fetchVisit, listShareLinks, revokeShareLink } from '../../lib/api';
 import { SHARE_BASE_URL } from '../../lib/config';
@@ -120,10 +120,10 @@ export default function ShareScreen() {
 
 const s = StyleSheet.create({
   toggle: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  toggleTitle: { fontSize: 16, fontWeight: '600', color: colors.ink },
-  toggleHint: { fontSize: 13, color: colors.ink3 },
+  toggleTitle: { fontFamily, fontSize: 16, fontWeight: '600', color: colors.ink },
+  toggleHint: { fontFamily, fontSize: 13, color: colors.ink3 },
   links: { gap: 10 },
-  linkTitle: { fontSize: 15, fontWeight: '600', color: colors.ink },
-  linkMeta: { fontSize: 13, color: colors.ink3 },
+  linkTitle: { fontFamily, fontSize: 15, fontWeight: '600', color: colors.ink },
+  linkMeta: { fontFamily, fontSize: 13, color: colors.ink3 },
   linkActions: { flexDirection: 'row', gap: 10, marginTop: 6 },
 });

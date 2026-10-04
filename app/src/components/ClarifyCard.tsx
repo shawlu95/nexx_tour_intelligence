@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { answerClarify } from '../lib/api';
 import type { Clarify } from '../lib/types';
-import { colors } from './ui';
+import { colors, fontFamily } from './ui';
 
 const MARKS = ['🙂', '🤔', '✕'];
 
@@ -90,9 +90,9 @@ const s = StyleSheet.create({
     padding: 18,
     gap: 10,
   },
-  eyebrow: { fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
-  question: { fontSize: 20, fontWeight: '800', color: colors.ink, letterSpacing: -0.2 },
-  reason: { fontSize: 14, lineHeight: 20, color: colors.ink2 },
+  eyebrow: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
+  question: { fontFamily, fontSize: 20, fontWeight: '800', color: colors.ink, letterSpacing: -0.2 },
+  reason: { fontFamily, fontSize: 14, lineHeight: 20, color: colors.ink2 },
   options: { gap: 8, marginTop: 4 },
   option: {
     flexDirection: 'row',
@@ -104,11 +104,11 @@ const s = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
   },
-  mark: { fontSize: 20, width: 26, textAlign: 'center', color: colors.ink2 },
-  label: { fontSize: 15, fontWeight: '700', color: colors.ink },
-  detail: { fontSize: 13, color: colors.ink2, marginTop: 2 },
-  skip: { fontSize: 14, fontWeight: '600', color: colors.ink3, textAlign: 'center', marginTop: 4 },
+  mark: { fontFamily, fontSize: 20, width: 26, textAlign: 'center', color: colors.ink2 },
+  label: { fontFamily, fontSize: 15, fontWeight: '700', color: colors.ink },
+  detail: { fontFamily, fontSize: 13, color: colors.ink2, marginTop: 2 },
+  skip: { fontFamily, fontSize: 14, fontWeight: '600', color: colors.ink3, textAlign: 'center', marginTop: 4 },
   answered: { gap: 2, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line, paddingTop: 12 },
-  answeredQ: { fontSize: 13, color: colors.ink3 },
-  answeredA: { fontSize: 14, fontWeight: '600', color: colors.ink },
+  answeredQ: { fontFamily, fontSize: 13, color: colors.ink3 },
+  answeredA: { fontFamily, fontSize: 14, fontWeight: '600', color: colors.ink },
 });

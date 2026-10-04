@@ -4,7 +4,7 @@ import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-na
 import { sendEmailCode, signInWithApple, signInWithGoogle, verifyEmailCode } from '../lib/auth';
 import { FREE_SIGNING } from '../lib/config';
 import { LegalModal, type LegalDocName } from './Legal';
-import { Banner, Body, Button, colors, Field, Screen, Title } from './ui';
+import { Banner, Body, Button, colors, Field, fontFamily, Screen, Title } from './ui';
 
 type Step = 'choose' | 'email' | 'code';
 
@@ -137,10 +137,10 @@ export default function SignIn() {
 const s = StyleSheet.create({
   screen: { justifyContent: 'center', paddingTop: 60 },
   hero: { gap: 10, marginBottom: 12 },
-  logo: { fontSize: 15, fontWeight: '800', letterSpacing: 4, color: colors.ink },
-  headline: { fontSize: 32 },
+  logo: { fontFamily, fontSize: 15, fontWeight: '800', letterSpacing: 4, color: colors.ink },
+  headline: { fontFamily, fontSize: 32 },
   stack: { gap: 10 },
   apple: { height: 50, width: '100%' },
-  legal: { fontSize: 13, lineHeight: 19, color: colors.ink3, textAlign: 'center', marginTop: 12 },
+  legal: { fontFamily, fontSize: 13, lineHeight: 19, color: colors.ink3, textAlign: 'center', marginTop: 12 },
   legalLink: { color: colors.accent, fontWeight: '600', textDecorationLine: 'underline' },
 });

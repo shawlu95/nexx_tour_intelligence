@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { addItem, deleteItem, updateItemText } from '../lib/api';
 import { KIND_LABELS, type ItemKind, type NoteItem } from '../lib/types';
-import { colors } from './ui';
+import { colors, fontFamily } from './ui';
 
 const KIND_COLOR: Record<ItemKind, string> = { liked: colors.good, concern: colors.warn, question: colors.accent };
 const ADD_PLACEHOLDER: Record<ItemKind, string> = {
@@ -175,14 +175,14 @@ function AddRow({ placeholder, onAdd }: { placeholder: string; onAdd: (text: str
 const s = StyleSheet.create({
   sections: { gap: 20 },
   section: { gap: 10 },
-  heading: { fontSize: 12, fontWeight: '700', letterSpacing: 1.2 },
+  heading: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.2 },
   item: { gap: 6 },
   itemTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  itemText: { flex: 1, fontSize: 16, lineHeight: 22, color: colors.ink },
-  mine: { fontSize: 12, color: colors.ink3 },
+  itemText: { flex: 1, fontFamily, fontSize: 16, lineHeight: 22, color: colors.ink },
+  mine: { fontFamily, fontSize: 12, color: colors.ink3 },
   sourceButton: { borderWidth: 1, borderColor: colors.line, borderRadius: 8, paddingVertical: 3, paddingHorizontal: 8 },
-  sourceText: { fontSize: 12, color: colors.ink2, fontWeight: '600' },
-  quote: { fontSize: 14, lineHeight: 20, color: colors.ink2, fontStyle: 'italic', borderLeftWidth: 2, borderLeftColor: colors.line, paddingLeft: 10 },
+  sourceText: { fontFamily, fontSize: 12, color: colors.ink2, fontWeight: '600' },
+  quote: { fontFamily, fontSize: 14, lineHeight: 20, color: colors.ink2, fontStyle: 'italic', borderLeftWidth: 2, borderLeftColor: colors.line, paddingLeft: 10 },
   editRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   editInput: {
     flex: 1,
@@ -193,9 +193,9 @@ const s = StyleSheet.create({
     backgroundColor: colors.surface,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 15,
+    fontFamily, fontSize: 15,
     color: colors.ink,
   },
-  delete: { color: colors.bad, fontSize: 14, fontWeight: '600' },
-  add: { color: colors.accent, fontSize: 15, fontWeight: '700' },
+  delete: { color: colors.bad, fontFamily, fontSize: 14, fontWeight: '600' },
+  add: { color: colors.accent, fontFamily, fontSize: 15, fontWeight: '700' },
 });

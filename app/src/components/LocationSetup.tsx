@@ -7,7 +7,7 @@ import * as Location from 'expo-location';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
-import { Button, colors, Screen } from './ui';
+import { Button, colors, fontFamily, Screen } from './ui';
 
 export function LocationSetup({ onDone }: { onDone: () => void }) {
   const [busy, setBusy] = useState(false);
@@ -44,7 +44,7 @@ export function LocationSetup({ onDone }: { onDone: () => void }) {
 
 const s = StyleSheet.create({
   screen: { justifyContent: 'space-between', paddingTop: 70 },
-  logo: { fontSize: 15, fontWeight: '800', letterSpacing: 4, color: colors.ink },
+  logo: { fontFamily, fontSize: 15, fontWeight: '800', letterSpacing: 4, color: colors.ink },
   body: { gap: 12 },
   icon: {
     width: 56,
@@ -55,9 +55,9 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 8,
   },
-  eyebrow: { fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
-  title: { fontSize: 30, fontWeight: '800', color: colors.ink, letterSpacing: -0.5 },
-  copy: { fontSize: 16, lineHeight: 23, color: colors.ink2 },
+  eyebrow: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
+  title: { fontFamily, fontSize: 30, fontWeight: '800', color: colors.ink, letterSpacing: -0.5 },
+  copy: { fontFamily, fontSize: 16, lineHeight: 23, color: colors.ink2 },
   footer: { gap: 12 },
-  note: { fontSize: 13, lineHeight: 18, color: colors.ink3, textAlign: 'center' },
+  note: { fontFamily, fontSize: 13, lineHeight: 18, color: colors.ink3, textAlign: 'center' },
 });

@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import type { TourSummary } from '../lib/api';
-import { colors } from './ui';
+import { colors, fontFamily } from './ui';
 
 /** "YOUR HOME SEARCH / N homes toured" with the "this week" chip, as in the mockup's Tour screens. */
 export function TourSearchHeader({ summary }: { summary: TourSummary | null }) {
@@ -21,9 +21,9 @@ export function TourSearchHeader({ summary }: { summary: TourSummary | null }) {
 const s = StyleSheet.create({
   flex: { flex: 1 },
   search: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 4 },
-  eyebrow: { fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
-  title: { fontSize: 26, fontWeight: '800', color: colors.ink, letterSpacing: -0.4, marginTop: 4 },
+  eyebrow: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
+  title: { fontFamily, fontSize: 26, fontWeight: '800', color: colors.ink, letterSpacing: -0.4, marginTop: 4 },
   week: { backgroundColor: colors.sunk, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 12, alignItems: 'center' },
-  weekCount: { fontSize: 20, fontWeight: '800', color: colors.ink, fontVariant: ['tabular-nums'] },
-  weekLabel: { fontSize: 11, color: colors.ink3 },
+  weekCount: { fontFamily, fontSize: 20, fontWeight: '800', color: colors.ink, fontVariant: ['tabular-nums'] },
+  weekLabel: { fontFamily, fontSize: 11, color: colors.ink3 },
 });
