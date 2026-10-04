@@ -79,7 +79,6 @@ export default function InviteAgent() {
 }
 
 const s = StyleSheet.create({
-  flex: { flex: 1 },
   screen: { gap: 20 },
   heading: { gap: 8 },
   eyebrow: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },

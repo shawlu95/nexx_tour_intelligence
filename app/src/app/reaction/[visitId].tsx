@@ -7,6 +7,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 import { colors, fontFamily } from '../../components/ui';
 import { displayAddress } from '../../lib/address';
 import { editReaction, fetchVisit } from '../../lib/api';
+import { tapSuccess } from '../../lib/haptics';
 
 type Bubble = { kind: 'liked' | 'concern' | 'question'; text: string };
 
@@ -64,6 +65,7 @@ export default function EditReaction() {
     setError('');
     try {
       await editReaction(visitId, text, true);
+      tapSuccess();
       router.back();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't save your changes. Try again.");

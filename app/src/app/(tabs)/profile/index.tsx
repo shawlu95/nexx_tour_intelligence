@@ -4,10 +4,10 @@
 import { SymbolView, type SFSymbol } from 'expo-symbols';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Avatar } from '../../../components/Avatar';
-import { WarningSheet } from '../../../components/WarningSheet';
-import { Body, Button, colors, fontFamily, Screen, StatusPill, TabHeader } from '../../../components/ui';
+import { tapWarning } from '../../../lib/haptics';
+import { Button, colors, fontFamily, Screen, StatusPill, TabHeader } from '../../../components/ui';
 import { displayNameOf, signOut, useAuth } from '../../../lib/auth';
 import { listPending } from '../../../lib/localdb';
 import { setWorkspacePaused, useWorkspacePaused } from '../../../lib/sharingPreview';
@@ -16,9 +16,7 @@ export default function Profile() {
   const { session } = useAuth();
   const user = session?.user;
   const [unsent, setUnsent] = useState(0);
-  const [confirm, setConfirm] = useState<'signout' | null>(null);
   const paused = useWorkspacePaused(); // UI-only preview of deactivation
-  const [asking, setAsking] = useState(false);
   const [toast, setToast] = useState('');
 
   useEffect(() => {
@@ -30,6 +28,38 @@ export default function Profile() {
   useEffect(() => {
     if (user) listPending(user.id).then((p) => setUnsent(p.filter((v) => v.stage !== 'submitted').length));
   }, [user]);
+
+  function confirmSignOut() {
+    Alert.alert(
+      'Sign out?',
+      unsent > 0
+        ? `${unsent} recording${unsent === 1 ? " hasn't" : "s haven't"} uploaded yet and will be lost if you sign out now.`
+        : 'Your notes stay saved in your account.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign Out', style: unsent > 0 ? 'destructive' : 'default', onPress: () => void signOut() },
+      ],
+    );
+  }
+
+  function confirmDeactivate() {
+    Alert.alert(
+      'Deactivate your account?',
+      'Your workspace and agent access will pause. Your notes and account data are kept so you can reactivate later.',
+      [
+        { text: 'Keep Account Active', style: 'cancel' },
+        {
+          text: 'Deactivate',
+          style: 'destructive',
+          onPress: () => {
+            tapWarning();
+            setWorkspacePaused(true);
+            setToast('Account deactivated · agent access paused');
+          },
+        },
+      ],
+    );
+  }
 
   const name = displayNameOf(user);
   const provider = (user?.app_metadata?.provider as string | undefined) ?? 'email';
@@ -62,22 +92,7 @@ export default function Profile() {
 
       <LinkRow icon="person.badge.plus" label="Manage agent access" onPress={() => router.navigate('/sharing')} />
       <LinkRow icon="checkmark.shield" label="Privacy & data" onPress={() => router.push('/profile/privacy')} />
-      {confirm === 'signout' ? (
-        <View style={s.confirm}>
-          <Text style={s.confirmTitle}>Sign out?</Text>
-          <Body>
-            {unsent > 0
-              ? `${unsent} recording${unsent === 1 ? " hasn't" : "s haven't"} uploaded yet and will be lost if you sign out now.`
-              : 'Your notes stay saved in your account.'}
-          </Body>
-          <View style={s.row}>
-            <Button kind="secondary" title="Cancel" onPress={() => setConfirm(null)} style={s.flex} />
-            <Button kind={unsent > 0 ? 'danger' : 'primary'} title="Sign out" onPress={() => signOut()} style={s.flex} />
-          </View>
-        </View>
-      ) : (
-        <LinkRow icon="rectangle.portrait.and.arrow.right" label="Sign out" onPress={() => setConfirm('signout')} />
-      )}
+      <LinkRow icon="rectangle.portrait.and.arrow.right" label="Sign out" onPress={confirmSignOut} />
 
       <View style={s.status}>
         <Text style={s.cardTitle}>Account status</Text>
@@ -96,23 +111,10 @@ export default function Profile() {
             style={s.reactivate}
           />
         ) : (
-          <Button kind="danger" title="Deactivate account" onPress={() => setAsking(true)} />
+          <Button kind="danger" title="Deactivate account" onPress={confirmDeactivate} />
         )}
       </View>
 
-      <WarningSheet
-        visible={asking}
-        title="Deactivate your account?"
-        copy="Your workspace and agent access will pause. Your notes and account data are kept so you can reactivate later."
-        confirmLabel="Deactivate account"
-        cancelLabel="Keep account active"
-        onConfirm={() => {
-          setAsking(false);
-          setWorkspacePaused(true);
-          setToast('Account deactivated · agent access paused');
-        }}
-        onCancel={() => setAsking(false)}
-      />
       {toast ? (
         <View style={s.toast} pointerEvents="none" accessibilityLiveRegion="polite">
           <Text style={s.toastText}>{toast}</Text>
@@ -177,9 +179,6 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
   },
   linkText: { flex: 1, fontFamily, fontSize: 15, fontWeight: '700', color: colors.ink },
-  confirm: { gap: 10, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: 16, padding: 16 },
-  confirmTitle: { fontFamily, fontSize: 16, fontWeight: '700', color: colors.ink },
-  row: { flexDirection: 'row', gap: 10 },
   status: {
     gap: 10,
     backgroundColor: '#FDF4F4',

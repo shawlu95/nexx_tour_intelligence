@@ -5,9 +5,9 @@ import { getForegroundPermissionsAsync } from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useState } from 'react';
-import { AppState, Linking, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, AppState, Linking, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { AI_CONSENT_COPY } from '../../../components/AiConsentSheet';
-import { WarningSheet } from '../../../components/WarningSheet';
+import { tapWarning } from '../../../lib/haptics';
 import { colors, fontFamily, Screen } from '../../../components/ui';
 import { deleteAccount } from '../../../lib/api';
 import { signOut, useUserId } from '../../../lib/auth';
@@ -24,9 +24,7 @@ export default function PrivacyAndData() {
   const [location, setLocation] = useState<PermissionState | null>(null);
   const [microphone, setMicrophone] = useState<PermissionState | null>(null);
   const [unsent, setUnsent] = useState(0);
-  const [asking, setAsking] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState('');
   const aiConsent = useAiConsent();
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState('');
@@ -49,6 +47,34 @@ export default function PrivacyAndData() {
     const sub = AppState.addEventListener('change', (s) => s === 'active' && refresh());
     return () => sub.remove();
   }, [refresh]);
+
+  function confirmDelete() {
+    if (deleting) return;
+    tapWarning();
+    Alert.alert(
+      'Delete your account and data?',
+      `This permanently deletes your profile, tour notes, transcripts, summaries and rankings, and turns off every share link.${
+        unsent > 0 ? ` ${unsent} recording${unsent === 1 ? " that hasn't" : "s that haven't"} uploaded yet will be lost too.` : ''
+      } This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: async () => {
+            setDeleting(true);
+            try {
+              await deleteAccount();
+              await signOut();
+            } catch (e) {
+              setDeleting(false);
+              Alert.alert("Couldn't delete your account", e instanceof Error ? e.message : 'Try again.');
+            }
+          },
+        },
+      ],
+    );
+  }
 
   return (
     <Screen header style={s.screen}>
@@ -133,11 +159,11 @@ export default function PrivacyAndData() {
           onPress={() => router.navigate('/sharing')}
         />
         <DataRow
-          title="Delete account and data"
+          title={deleting ? 'Deleting your account…' : 'Delete account and data'}
           copy="Permanently remove your account, notes and rankings, and turn off every share link."
           danger
           last
-          onPress={() => setAsking(true)}
+          onPress={confirmDelete}
         />
       </View>
 
@@ -151,32 +177,6 @@ export default function PrivacyAndData() {
       </View>
       <Text style={s.footer}>NORA is designed without advertising or cross-app tracking.</Text>
 
-      <WarningSheet
-        visible={asking}
-        title="Delete your account and data?"
-        copy={`This permanently deletes your profile, tour notes, transcripts, summaries and rankings, and turns off every share link.${
-          unsent > 0 ? ` ${unsent} recording${unsent === 1 ? " that hasn't" : "s that haven't"} uploaded yet will be lost too.` : ''
-        } This cannot be undone.`}
-        confirmLabel="Delete account and data"
-        cancelLabel="Cancel"
-        busy={deleting}
-        error={deleteError}
-        onConfirm={async () => {
-          setDeleting(true);
-          setDeleteError('');
-          try {
-            await deleteAccount();
-            await signOut();
-          } catch (e) {
-            setDeleteError(e instanceof Error ? e.message : "Couldn't delete your account. Try again.");
-            setDeleting(false);
-          }
-        }}
-        onCancel={() => {
-          setAsking(false);
-          setDeleteError('');
-        }}
-      />
     </Screen>
   );
 }

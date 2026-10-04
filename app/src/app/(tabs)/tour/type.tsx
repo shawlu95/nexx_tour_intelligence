@@ -13,6 +13,7 @@ import { colors, fontFamily } from '../../../components/ui';
 import type { AddressDraft } from '../../../lib/address';
 import { useUserId } from '../../../lib/auth';
 import { loadAiConsent } from '../../../lib/consent';
+import { tapSuccess } from '../../../lib/haptics';
 import { addPending } from '../../../lib/localdb';
 import { runQueue } from '../../../lib/sync';
 
@@ -42,6 +43,7 @@ export default function TypeNote() {
       file_uri: '',
       typed_text: text.trim(),
     });
+    tapSuccess();
     void runQueue({ force: true });
     router.dismissTo('/tour');
     router.push(`/tour/note/${visitId}`);

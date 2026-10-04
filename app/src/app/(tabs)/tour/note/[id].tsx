@@ -12,6 +12,7 @@ import { displayAddress } from '../../../../lib/address';
 import { answerClarify, fetchVisit, retryVisit, type VisitDetail } from '../../../../lib/api';
 import { setAiConsent } from '../../../../lib/consent';
 import { homeType, listingPrice } from '../../../../lib/format';
+import { tapSelection, tapSuccess } from '../../../../lib/haptics';
 import { getPending, type PendingVisit } from '../../../../lib/localdb';
 import { fetchRankingState, latestRanking, type RankedHome } from '../../../../lib/ranking';
 import { onQueueChange, runQueue } from '../../../../lib/sync';
@@ -50,6 +51,12 @@ export default function NoteScreen() {
   useEffect(() => onQueueChange(() => void load()), [load]);
 
   const status = detail?.visit.status;
+  // A light success tap when a note this screen was waiting on becomes ready.
+  const [sawWaiting, setSawWaiting] = useState(false);
+  if (status && status !== 'ready' && !sawWaiting) setSawWaiting(true);
+  useEffect(() => {
+    if (status === 'ready' && sawWaiting) tapSuccess();
+  }, [status, sawWaiting]);
   const waiting = status === undefined ? !!pending : status === 'uploading' || status === 'processing';
   useEffect(() => {
     if (!waiting) return;
@@ -208,6 +215,7 @@ function Question({
   const [saving, setSaving] = useState<string | null>(null);
 
   async function choose(answer: string) {
+    tapSelection();
     setSaving(answer);
     try {
       await answerClarify(note.id, answer);

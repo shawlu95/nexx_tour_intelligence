@@ -15,7 +15,7 @@ import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Linking, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Animated, Easing, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { AiConsentSheet } from '../../../components/AiConsentSheet';
@@ -23,6 +23,7 @@ import { colors, fontFamily } from '../../../components/ui';
 import type { AddressDraft } from '../../../lib/address';
 import { useUserId } from '../../../lib/auth';
 import { loadAiConsent } from '../../../lib/consent';
+import { tapImpact, tapSuccess } from '../../../lib/haptics';
 import { addPending } from '../../../lib/localdb';
 import { recordingsDir, runQueue } from '../../../lib/sync';
 
@@ -84,6 +85,7 @@ export default function Record() {
     await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
     await recorder.prepareToRecordAsync();
     recorder.record();
+    tapImpact();
     await activateKeepAwakeAsync('nora-recording');
     setHeardVoice(false);
     lastVoiceMs.current = 0;
@@ -136,6 +138,7 @@ export default function Record() {
       file_uri: dest.uri,
       typed_text: null,
     });
+    tapSuccess();
     void runQueue({ force: true });
     router.dismissTo('/tour');
     router.push(`/tour/note/${visitId}`);
@@ -171,6 +174,36 @@ export default function Record() {
     setPhaseNow('starting');
     router.back();
   }
+
+  // The system alerts for the recording's three questions. Handlers go through a ref so
+  // an alert always calls the current version.
+  const handlers = useRef({ finish, keepRecording, discard, begin });
+  useEffect(() => {
+    handlers.current = { finish, keepRecording, discard, begin };
+  });
+  useEffect(() => {
+    if (phase === 'stillRecording') {
+      Alert.alert(
+        'Still recording?',
+        `I haven’t heard anything for ${SILENCE_SECONDS} seconds. Keep recording, or end this recording without saving a blank note.`,
+        [
+          { text: 'End Recording', onPress: () => void handlers.current.finish() },
+          { text: 'Keep Recording', style: 'cancel', onPress: () => handlers.current.keepRecording() },
+        ],
+        { cancelable: false },
+      );
+    } else if (phase === 'confirmDiscard') {
+      Alert.alert('Discard this recording?', 'Nothing will be saved for this home.', [
+        { text: 'Keep Recording', style: 'cancel', onPress: () => setPhaseNow('recording') },
+        { text: 'Discard', style: 'destructive', onPress: () => void handlers.current.discard() },
+      ]);
+    } else if (phase === 'noSound') {
+      Alert.alert('I’m not hearing anything.', 'No note has been created. Try again, or cancel without saving a blank home.', [
+        { text: 'Cancel', style: 'cancel', onPress: () => router.back() },
+        { text: 'Try Again', onPress: () => void handlers.current.begin() },
+      ]);
+    }
+  }, [phase]);
 
   // Start right away, as in the mockup (after asking for AI permission if it's off);
   // stop and throw away if the screen goes away mid-recording.
@@ -242,19 +275,7 @@ export default function Record() {
         <Text style={s.prompt}>Tell me what stood out.</Text>
         <Text style={s.promptBody}>Talk naturally about what you liked, disliked, and anything that could affect your decision.</Text>
 
-        {phase === 'confirmDiscard' ? (
-          <View style={s.confirm}>
-            <Text style={s.confirmText}>Discard this recording?</Text>
-            <View style={s.confirmRow}>
-              <Pressable style={[s.smallButton, s.smallLight]} onPress={() => setPhaseNow('recording')} accessibilityRole="button">
-                <Text style={s.smallLightText}>Keep recording</Text>
-              </Pressable>
-              <Pressable style={[s.smallButton, s.smallDanger]} onPress={discard} accessibilityRole="button">
-                <Text style={s.smallDangerText}>Discard</Text>
-              </Pressable>
-            </View>
-          </View>
-        ) : phase === 'tooShort' ? (
+        {phase === 'tooShort' ? (
           <Pressable style={s.finish} onPress={begin} accessibilityRole="button">
             <Text style={s.finishText}>Record again</Text>
           </Pressable>
@@ -299,61 +320,7 @@ export default function Record() {
           void begin();
         }}
       />
-      <StillRecordingDialog visible={phase === 'stillRecording'} onKeep={keepRecording} onEnd={() => void finish()} />
-      <NotHearingDialog visible={phase === 'noSound'} onTryAgain={() => void begin()} onCancel={() => router.back()} />
     </SafeAreaView>
-  );
-}
-
-/** The mockup's check-in after ten seconds of silence. Recording continues underneath. */
-function StillRecordingDialog({ visible, onKeep, onEnd }: { visible: boolean; onKeep: () => void; onEnd: () => void }) {
-  return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onKeep}>
-      <View style={s.backdrop}>
-        <View style={s.sheet} accessibilityViewIsModal>
-          <View style={s.sheetIcon}>
-            <Text style={s.sheetCount}>{SILENCE_SECONDS}</Text>
-          </View>
-          <Text style={s.sheetTitle} accessibilityRole="header">
-            Still recording?
-          </Text>
-          <Text style={s.sheetCopy}>I haven’t heard anything for {SILENCE_SECONDS} seconds. Keep recording, or end this recording without saving a blank note.</Text>
-          <Pressable style={({ pressed }) => [s.sheetPrimary, pressed && { opacity: 0.85 }]} onPress={onKeep} accessibilityRole="button">
-            <Text style={s.sheetPrimaryText}>Keep recording</Text>
-          </Pressable>
-          <Pressable style={({ pressed }) => [s.sheetSecondary, pressed && { opacity: 0.7 }]} onPress={onEnd} accessibilityRole="button">
-            <Text style={s.sheetSecondaryText}>End recording</Text>
-          </Pressable>
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
-/** Bottom sheet from the mockup, shown when the recording has no speech. Nothing is saved. */
-function NotHearingDialog({ visible, onTryAgain, onCancel }: { visible: boolean; onTryAgain: () => void; onCancel: () => void }) {
-  return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <View style={s.backdrop}>
-        <View style={s.sheet} accessibilityViewIsModal>
-          <View style={s.sheetIcon}>
-            <View style={s.sheetDot} />
-            <View style={s.sheetDot} />
-            <View style={s.sheetDot} />
-          </View>
-          <Text style={s.sheetTitle} accessibilityRole="header">
-            I’m not hearing anything.
-          </Text>
-          <Text style={s.sheetCopy}>No note has been created. Try again, or cancel without saving a blank home.</Text>
-          <Pressable style={({ pressed }) => [s.sheetPrimary, pressed && { opacity: 0.85 }]} onPress={onTryAgain} accessibilityRole="button">
-            <Text style={s.sheetPrimaryText}>Try again</Text>
-          </Pressable>
-          <Pressable style={({ pressed }) => [s.sheetSecondary, pressed && { opacity: 0.7 }]} onPress={onCancel} accessibilityRole="button">
-            <Text style={s.sheetSecondaryText}>Cancel</Text>
-          </Pressable>
-        </View>
-      </View>
-    </Modal>
   );
 }
 
@@ -451,60 +418,4 @@ const s = StyleSheet.create({
   settingsLink: { marginTop: 14 },
   settingsLinkText: { fontFamily, fontSize: 15, fontWeight: '600', color: '#91A8FA', textDecorationLine: 'underline' },
   listening: { fontFamily, fontSize: 13, color: colors.stage2, marginTop: 16, textAlign: 'center' },
-  confirm: { marginTop: 24, alignItems: 'center', gap: 12 },
-  confirmText: { fontFamily, fontSize: 15, fontWeight: '600', color: '#FFFFFF' },
-  confirmRow: { flexDirection: 'row', gap: 10 },
-  smallButton: { borderRadius: 999, paddingVertical: 12, paddingHorizontal: 20 },
-  smallLight: { backgroundColor: '#FFFFFF' },
-  smallLightText: { fontFamily, fontSize: 15, fontWeight: '700', color: colors.ink },
-  smallDanger: { backgroundColor: '#F05252' },
-  smallDangerText: { fontFamily, fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
-  // "I'm not hearing anything." sheet
-  backdrop: { flex: 1, backgroundColor: 'rgba(10,15,24,0.55)', justifyContent: 'flex-end' },
-  sheet: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingHorizontal: 20,
-    paddingTop: 22,
-    paddingBottom: 34,
-    alignItems: 'center',
-    gap: 12,
-  },
-  sheetIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
-    backgroundColor: colors.accentSoft,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    marginBottom: 4,
-  },
-  sheetCount: { fontFamily, fontSize: 17, fontWeight: '800', color: colors.accent },
-  sheetDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accent },
-  sheetTitle: { fontFamily, fontSize: 22, fontWeight: '800', color: colors.ink, textAlign: 'center', letterSpacing: -0.3 },
-  sheetCopy: { fontFamily, fontSize: 15, lineHeight: 22, color: colors.ink2, textAlign: 'center', paddingHorizontal: 16 },
-  sheetPrimary: {
-    alignSelf: 'stretch',
-    marginTop: 8,
-    backgroundColor: colors.accentFill,
-    borderRadius: 14,
-    minHeight: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sheetPrimaryText: { fontFamily, fontSize: 15, fontWeight: '700', color: colors.accentDark },
-  sheetSecondary: {
-    alignSelf: 'stretch',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.line,
-    minHeight: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sheetSecondaryText: { fontFamily, fontSize: 17, fontWeight: '700', color: colors.ink },
 });

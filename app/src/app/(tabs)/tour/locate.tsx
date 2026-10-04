@@ -4,7 +4,7 @@ import * as Location from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { SymbolView, type SFSymbol } from 'expo-symbols';
-import { Animated, Easing, Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Animated, Easing, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { FactsRow, PriceLine, PropertyDetails, SourceLine } from '../../../components/PropertyFacts';
 import { Button, colors, fontFamily, Screen } from '../../../components/ui';
 import {
@@ -17,6 +17,7 @@ import {
 import { fetchProperties, fetchProperty } from '../../../lib/api';
 import { geocodeAddress, nearbyAddresses } from '../../../lib/geo';
 import { setSuggested, takePicked, type HomeChoice } from '../../../lib/homeChoice';
+import { tapSelection } from '../../../lib/haptics';
 import { useThumbnail } from '../../../lib/thumbnail';
 import type { Property } from '../../../lib/types';
 
@@ -165,14 +166,17 @@ function Confirm({ found }: { found: Found }) {
   // A new home has no facts until its first note is processed.
   const facts = isSaved ? found.property : { facts_status: 'pending' as const };
   const [mode, setMode] = useState<'record' | 'type'>('record');
-  const [revisit, setRevisit] = useState<{ count: number; last: string | null } | null>(null);
   const [fade] = useState(() => new Animated.Value(0));
   useEffect(() => {
     Animated.timing(fade, { toValue: 1, duration: 220, useNativeDriver: true }).start();
   }, [fade]);
 
+  function pick(next: 'record' | 'type') {
+    if (next !== mode) tapSelection();
+    setMode(next);
+  }
+
   function go() {
-    setRevisit(null);
     const pathname = mode === 'record' ? '/tour/record' : '/tour/type';
     if (found.kind === 'existing') {
       router.push({ pathname, params: { propertyId: found.property.id, label: displayAddress(found.property), place } });
@@ -188,7 +192,16 @@ function Confirm({ found }: { found: Found }) {
       const { data } = await fetchProperty(found.property.id);
       const visits = data.visits.filter((v) => v.status !== 'failed');
       if (visits.length === 0) return go();
-      setRevisit({ count: visits.length, last: visits[0]?.recorded_at ?? null });
+      const count = visits.length;
+      const last = visits[0]?.recorded_at;
+      Alert.alert(
+        'Revisiting this home?',
+        `${address}\n${count} ${count === 1 ? 'visit' : 'visits'} saved${last ? ` · Last visit ${longWhen(last)}` : ''}\n\nThis will be visit ${count + 1}. NORA will combine your new reaction with your earlier notes. Each visit stays saved.`,
+        [
+          { text: 'Different Home or Unit', onPress: () => router.push('/tour/pick') },
+          { text: 'Yes, Add a Visit', style: 'cancel', onPress: go },
+        ],
+      );
     } catch {
       go();
     }
@@ -225,8 +238,8 @@ function Confirm({ found }: { found: Found }) {
 
       <View style={s.actions}>
         <View style={s.capture} accessibilityRole="radiogroup">
-          <CaptureOption icon="mic" label="Voice" selected={mode === 'record'} onPress={() => setMode('record')} />
-          <CaptureOption icon="keyboard" label="Type" selected={mode === 'type'} onPress={() => setMode('type')} />
+          <CaptureOption icon="mic" label="Voice" selected={mode === 'record'} onPress={() => pick('record')} />
+          <CaptureOption icon="keyboard" label="Type" selected={mode === 'type'} onPress={() => pick('type')} />
         </View>
         <Button title="Start note" onPress={() => void startNote()} style={s.startNote} />
         <Pressable accessibilityRole="button" onPress={() => router.push('/tour/pick')} style={s.change}>
@@ -235,17 +248,6 @@ function Confirm({ found }: { found: Found }) {
         {isSaved ? <Text style={s.together}>One home. All your reactions, together.</Text> : null}
       </View>
 
-      <RevisitSheet
-        visible={revisit !== null}
-        address={address}
-        count={revisit?.count ?? 0}
-        last={revisit?.last ?? null}
-        onYes={go}
-        onDifferent={() => {
-          setRevisit(null);
-          router.push('/tour/pick');
-        }}
-      />
     </Animated.View>
   );
 }
@@ -270,50 +272,6 @@ function longWhen(iso: string): string {
   const date = d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   return `${date}, ${time}`;
-}
-
-/** "Welcome back / Revisiting this home?" from the mockup, before adding another visit. */
-function RevisitSheet({
-  visible,
-  address,
-  count,
-  last,
-  onYes,
-  onDifferent,
-}: {
-  visible: boolean;
-  address: string;
-  count: number;
-  last: string | null;
-  onYes: () => void;
-  onDifferent: () => void;
-}) {
-  return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onDifferent}>
-      <View style={s.backdrop}>
-        <View style={s.dialog} accessibilityViewIsModal>
-          <View style={s.dialogIcon}>
-            <SymbolView name="arrow.counterclockwise" tintColor={colors.accent} size={17} type="monochrome" />
-          </View>
-          <Text style={s.dialogEyebrow}>WELCOME BACK</Text>
-          <Text style={s.dialogTitle} accessibilityRole="header">
-            Revisiting this home?
-          </Text>
-          <Text style={s.dialogAddress}>{address}</Text>
-          <Text style={s.dialogMeta}>
-            {count} {count === 1 ? 'visit' : 'visits'} saved{last ? ` · Last visit ${longWhen(last)}` : ''}
-          </Text>
-          <Text style={s.dialogCopy}>
-            This will be visit {count + 1}. NORA will combine your new reaction with your earlier notes. Each visit stays saved.
-          </Text>
-          <Button title="Yes, add a visit" onPress={onYes} style={s.dialogButton} />
-          <Pressable accessibilityRole="button" onPress={onDifferent} hitSlop={8}>
-            <Text style={s.changeText}>Different home or unit</Text>
-          </Pressable>
-        </View>
-      </View>
-    </Modal>
-  );
 }
 
 const s = StyleSheet.create({
@@ -383,31 +341,4 @@ const s = StyleSheet.create({
   change: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   changeText: { fontFamily, fontSize: 15, fontWeight: '700', color: colors.accent, textAlign: 'center' },
   together: { fontFamily, fontSize: 12, color: colors.ink3, textAlign: 'center' },
-  // Revisit dialog
-  backdrop: { flex: 1, backgroundColor: 'rgba(17,28,49,0.45)', alignItems: 'center', justifyContent: 'center', padding: 24 },
-  dialog: {
-    width: '100%',
-    maxWidth: 360,
-    backgroundColor: colors.surface,
-    borderRadius: 22,
-    paddingVertical: 22,
-    paddingHorizontal: 18,
-    alignItems: 'center',
-    gap: 6,
-  },
-  dialogIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: colors.accentSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  dialogEyebrow: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
-  dialogTitle: { fontFamily, fontSize: 20, fontWeight: '700', color: '#000000', letterSpacing: -0.4 },
-  dialogAddress: { fontFamily, fontSize: 13, fontWeight: '700', color: colors.ink, marginTop: 6 },
-  dialogMeta: { fontFamily, fontSize: 12, color: colors.ink3 },
-  dialogCopy: { fontFamily, fontSize: 13, lineHeight: 20, color: colors.ink2, textAlign: 'center', marginTop: 8, marginBottom: 12 },
-  dialogButton: { alignSelf: 'stretch', minHeight: 40, marginBottom: 6 },
 });

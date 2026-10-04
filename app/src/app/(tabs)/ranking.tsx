@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { HomeThumb } from '../../components/HomeThumb';
 import { Banner, Body, Button, colors, fontFamily, TabHeader } from '../../components/ui';
 import { displayAddress } from '../../lib/address';
+import { ImpactFeedbackStyle, tapImpact } from '../../lib/haptics';
 import type { PropertyCard } from '../../lib/api';
 import {
   applyOverride,
@@ -238,7 +239,11 @@ function RankRow({
   onToggle: () => void;
 }) {
   // Drag from the grip (a short hold), or with a long press anywhere on the row.
-  const drag = useReorderableDrag();
+  const startDrag = useReorderableDrag();
+  const drag = () => {
+    tapImpact(ImpactFeedbackStyle.Medium);
+    startDrag();
+  };
   const score = formatScore(item);
   const scored = score !== null;
   const label = scored ? `${shortLabel(item)}${justAdded ? ' · just added' : ''}` : 'New home · not yet scored';

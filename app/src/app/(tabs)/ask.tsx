@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, fontFamily } from '../../components/ui';
+import { tapImpact } from '../../lib/haptics';
 import { fetchRankingState, sendRankingTurn, type RankingMessage, type RankingState } from '../../lib/ranking';
 
 const STARTERS = ['Compare my top homes', 'What do I keep liking?', 'What should I ask my agent?'];
@@ -53,6 +54,7 @@ export default function AskNora() {
   async function send(text: string) {
     const message = text.trim();
     if (!message || busy) return;
+    tapImpact();
     setBusy(true);
     setError('');
     setSending(message);

@@ -4,6 +4,7 @@ import { SymbolView, type SFSymbol } from 'expo-symbols';
 import { Pressable, StyleSheet, Text, View, type ColorValue, type GestureResponderEvent } from 'react-native';
 import Tabs from 'expo-router/js-tabs';
 import { colors, fontFamily } from '../../components/ui';
+import { tapSelection } from '../../lib/haptics';
 
 function TabIcon({ name, color }: { name: SFSymbol; color: ColorValue }) {
   return <SymbolView name={name} tintColor={color} size={21} type="monochrome" />;
@@ -31,6 +32,7 @@ export default function TabsLayout() {
   return (
     <Tabs
       backBehavior="history"
+      screenListeners={{ tabPress: () => tapSelection() }}
       screenOptions={{
         headerShown: false,
         tabBarHideOnKeyboard: true,

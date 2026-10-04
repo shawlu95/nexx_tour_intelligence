@@ -4,9 +4,9 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { DetailsGrid, FactsRow, PriceLine, SourceLine } from '../../../../components/PropertyFacts';
-import { WarningSheet } from '../../../../components/WarningSheet';
+import { tapWarning } from '../../../../lib/haptics';
 import { Banner, colors, fontFamily, Screen } from '../../../../components/ui';
 import { cityState, displayAddress } from '../../../../lib/address';
 import { deleteProperty, fetchHome, type HomeVisit } from '../../../../lib/api';
@@ -48,8 +48,6 @@ export default function HomePage() {
   const [offline, setOffline] = useState(false);
   const [error, setError] = useState('');
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [asking, setAsking] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -82,6 +80,25 @@ export default function HomePage() {
   const liked = bubbles(ready, 'liked');
   const concerns = bubbles(ready, 'concern');
   const score = typeof fit?.score === 'number' ? fit.score : null;
+
+  function confirmDelete() {
+    tapWarning();
+    Alert.alert('Delete this home?', 'Every visit, transcript and note for this home is deleted for good, and its share links stop working.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete Home',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteProperty(home!.id);
+            router.dismissTo('/tour');
+          } catch {
+            Alert.alert("Couldn't delete this home", 'Check your connection and try again.');
+          }
+        },
+      },
+    ]);
+  }
 
   return (
     <Screen header style={s.screen}>
@@ -203,29 +220,9 @@ export default function HomePage() {
         </Pressable>
       </View>
 
-      <Pressable accessibilityRole="button" onPress={() => setAsking(true)} style={s.delete} hitSlop={8}>
+      <Pressable accessibilityRole="button" onPress={confirmDelete} style={s.delete} hitSlop={8}>
         <Text style={s.deleteText}>Delete this home</Text>
       </Pressable>
-      <WarningSheet
-        visible={asking}
-        title="Delete this home?"
-        copy="Every visit, transcript and note for this home is deleted for good, and its share links stop working."
-        confirmLabel="Delete home"
-        cancelLabel="Cancel"
-        busy={deleting}
-        onConfirm={async () => {
-          setDeleting(true);
-          try {
-            await deleteProperty(home.id);
-            router.dismissTo('/tour');
-          } catch {
-            setError('That did not work. Try again.');
-          }
-          setDeleting(false);
-          setAsking(false);
-        }}
-        onCancel={() => setAsking(false)}
-      />
     </Screen>
   );
 }
