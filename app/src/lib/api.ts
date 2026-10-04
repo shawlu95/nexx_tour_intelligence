@@ -18,6 +18,11 @@ export type PropertyCard = Pick<
   | 'price_kind'
   | 'price_date'
   | 'listing_status'
+  | 'property_type'
+  | 'year_built'
+  | 'lot_sqft'
+  | 'parking'
+  | 'hoa_fee'
 >;
 
 export interface VisitSummary extends Visit {
@@ -51,7 +56,8 @@ async function withCache<T>(key: string, load: () => Promise<T>): Promise<Cached
   }
 }
 
-const PROPERTY_CARD = 'id, address_line, unit, city, latitude, longitude, beds, baths, sqft, price, price_kind, price_date, listing_status';
+const PROPERTY_CARD =
+  'id, address_line, unit, city, latitude, longitude, beds, baths, sqft, price, price_kind, price_date, listing_status, property_type, year_built, lot_sqft, parking, hoa_fee';
 const VISIT_SUMMARY = `id, property_id, recorded_at, duration_seconds, audio_path, status, error, properties(${PROPERTY_CARD}), notes(overall)`;
 
 export function fetchProperties(): Promise<Cached<Property[]>> {

@@ -38,6 +38,11 @@ export interface HomeFacts {
   price_kind?: 'list' | 'last_sale' | null;
   price_date?: string | null;
   listing_status?: string | null;
+  property_type?: string | null;
+  year_built?: number | null;
+  lot_sqft?: number | null;
+  parking?: string | null;
+  hoa_fee?: number | null;
 }
 
 /** "3 bd · 2 ba · 1,742 sq ft", leaving out what's unknown. Empty string when nothing is known. */
@@ -74,6 +79,49 @@ export function formatPrice(f: HomeFacts): string {
 /** Facts and price on one line, for list rows. */
 export function formatHomeLine(f: HomeFacts): string {
   return [formatFacts(f), formatPrice(f)].filter(Boolean).join(' · ');
+}
+
+/** "$1,849,000". */
+export function fullMoney(n: number): string {
+  return `$${Math.round(n).toLocaleString('en-US')}`;
+}
+
+/** The price as the confirm card and home page show it, or "Price unavailable". */
+export function listingPrice(f: HomeFacts): string {
+  if (f.price == null) return 'Price unavailable';
+  const money = fullMoney(Number(f.price));
+  const year = f.price_date?.slice(0, 4);
+  if (f.price_kind === 'last_sale') return `Sold ${money}${year ? ` (${year})` : ''}`;
+  if (f.listing_status && f.listing_status.toLowerCase() !== 'active') return `Last listed ${money}${year ? ` (${year})` : ''}`;
+  return money;
+}
+
+const TYPE_LABELS: Record<string, string> = {
+  'single family': 'Single-family home',
+  'multi-family': 'Multi-family home',
+  'multi family': 'Multi-family home',
+  condo: 'Condo',
+  townhouse: 'Townhouse',
+  manufactured: 'Manufactured home',
+  apartment: 'Apartment',
+  land: 'Land',
+};
+
+/** RentCast's property type as the mockup words it ("Single-family home"), or "Type unavailable". */
+export function homeType(f: HomeFacts): string {
+  const t = f.property_type?.trim();
+  if (!t) return 'Type unavailable';
+  return TYPE_LABELS[t.toLowerCase()] ?? t;
+}
+
+/** Year built, lot size, parking and HOA, with "—" for anything unknown. */
+export function detailRows(f: HomeFacts): FactTile[] {
+  return [
+    { label: 'Year built', value: f.year_built != null ? String(f.year_built) : '—' },
+    { label: 'Lot size', value: f.lot_sqft != null ? `${Number(f.lot_sqft).toLocaleString('en-US')} sq ft` : '—' },
+    { label: 'Parking', value: f.parking ?? '—' },
+    { label: 'HOA', value: f.hoa_fee != null ? `${fullMoney(Number(f.hoa_fee))}/mo` : '—' },
+  ];
 }
 
 function trimNumber(n: number): string {

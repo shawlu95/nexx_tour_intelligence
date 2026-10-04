@@ -7,6 +7,7 @@ import {
   hasFacts,
   isAreaQuery,
   mergeFacts,
+  parkingText,
   pickMatch,
   type PropertyRow,
 } from './facts.ts';
@@ -77,7 +78,26 @@ describe('parsing RentCast responses', () => {
       price_kind: 'list',
       price_date: '2026-09-25',
       listing_status: 'Active',
+      property_type: null,
+      year_built: null,
+      lot_sqft: null,
+      parking: null,
+      hoa_fee: null,
     });
+  });
+
+  it('reads type, year built, lot, parking and HOA', () => {
+    const f = factsFromRecord({
+      propertyType: 'Single Family',
+      yearBuilt: 1968,
+      lotSize: 6000,
+      hoa: { fee: 0 },
+      features: { garage: true, garageSpaces: 2 },
+    });
+    expect(f).toMatchObject({ property_type: 'Single Family', year_built: 1968, lot_sqft: 6000, parking: '2-car garage', hoa_fee: null });
+    expect(parkingText({ garage: true })).toBe('Garage');
+    expect(parkingText(undefined)).toBeNull();
+    expect(factsFromListing({ hoa: { fee: 350 } }).hoa_fee).toBe(350);
   });
 
   it('reads a public record with a last sale', () => {
@@ -87,7 +107,20 @@ describe('parsing RentCast responses', () => {
 
   it('ignores missing and malformed values', () => {
     const f = factsFromRecord({ bedrooms: undefined, squareFootage: Number.NaN, lastSaleDate: 'soon' } as never);
-    expect(f).toEqual({ beds: null, baths: null, sqft: null, price: null, price_kind: null, price_date: null, listing_status: null });
+    expect(f).toEqual({
+      beds: null,
+      baths: null,
+      sqft: null,
+      price: null,
+      price_kind: null,
+      price_date: null,
+      listing_status: null,
+      property_type: null,
+      year_built: null,
+      lot_sqft: null,
+      parking: null,
+      hoa_fee: null,
+    });
     expect(hasFacts(f)).toBe(false);
   });
 

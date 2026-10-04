@@ -25,7 +25,7 @@ import {
   shortLabel,
   type RankingMessage,
 } from './rankingLogic';
-import { cueIndex, dayHeading, factTiles, formatClock, formatFacts, groupByDay, startOfWeek, timeOfDay, traitsLine, formatHomeLine, formatMoney, formatPrice, formatWhen } from './format';
+import { cueIndex, dayHeading, detailRows, factTiles, fullMoney, homeType, listingPrice, formatClock, formatFacts, groupByDay, startOfWeek, timeOfDay, traitsLine, formatHomeLine, formatMoney, formatPrice, formatWhen } from './format';
 
 describe('normalizedKey', () => {
   it('treats spelling variants of the same address as equal', () => {
@@ -334,5 +334,29 @@ describe('history helpers', () => {
     ).toBe('Open layout · Small backyard');
     expect(traitsLine([{ kind: 'liked', text: 'Walkable' }, { kind: 'liked', text: 'Quiet' }])).toBe('Walkable · Quiet');
     expect(traitsLine([{ kind: 'liked', text: 'Gone', deleted: true }])).toBe('');
+  });
+});
+
+describe('confirm card and home page facts', () => {
+  it('writes the price in full, or says it is unavailable', () => {
+    expect(fullMoney(1849000)).toBe('$1,849,000');
+    expect(listingPrice({ price: 1849000, price_kind: 'list', listing_status: 'Active' })).toBe('$1,849,000');
+    expect(listingPrice({ price: 1200000, price_kind: 'last_sale', price_date: '2019-05-02' })).toBe('Sold $1,200,000 (2019)');
+    expect(listingPrice({ price: null })).toBe('Price unavailable');
+  });
+
+  it('names the home type the way the mockup does', () => {
+    expect(homeType({ property_type: 'Single Family' })).toBe('Single-family home');
+    expect(homeType({ property_type: 'Co-op' })).toBe('Co-op');
+    expect(homeType({})).toBe('Type unavailable');
+  });
+
+  it('lists the details with dashes for unknowns', () => {
+    expect(detailRows({ year_built: 1968, lot_sqft: 6000, parking: '2-car garage', hoa_fee: null })).toEqual([
+      { label: 'Year built', value: '1968' },
+      { label: 'Lot size', value: '6,000 sq ft' },
+      { label: 'Parking', value: '2-car garage' },
+      { label: 'HOA', value: '—' },
+    ]);
   });
 });

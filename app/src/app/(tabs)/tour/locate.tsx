@@ -3,7 +3,9 @@
 import * as Location from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
+import { SymbolView, type SFSymbol } from 'expo-symbols';
+import { Animated, Easing, Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FactsRow, PriceLine, PropertyDetails, SourceLine } from '../../../components/PropertyFacts';
 import { TourSearchHeader } from '../../../components/TourSearchHeader';
 import { Button, colors, fontFamily, Screen, TabHeader } from '../../../components/ui';
 import {
@@ -13,7 +15,7 @@ import {
   distanceMeters,
   normalizedKey,
 } from '../../../lib/address';
-import { fetchProperties, fetchTourSummary, type TourSummary } from '../../../lib/api';
+import { fetchProperties, fetchProperty, fetchTourSummary, type TourSummary } from '../../../lib/api';
 import { startOfWeek } from '../../../lib/format';
 import { geocodeAddress, nearbyAddresses } from '../../../lib/geo';
 import { setSuggested, takePicked, type HomeChoice } from '../../../lib/homeChoice';
@@ -170,19 +172,35 @@ function Confirm({ found }: { found: Found }) {
   const photo = useThumbnail(home, 'hero');
   const address = isSaved ? displayAddress(found.property) : found.draft.addressLine;
   const place = isSaved ? cityState(found.property.city, found.property.region) : cityState(found.draft.city, found.draft.region);
-  const facts = isSaved ? found.property : null;
-  const hasFacts = !!facts && (facts.beds != null || facts.baths != null || facts.sqft != null);
+  // A new home has no facts until its first note is processed.
+  const facts = isSaved ? found.property : { facts_status: 'pending' as const };
+  const [mode, setMode] = useState<'record' | 'type'>('record');
+  const [revisit, setRevisit] = useState<{ count: number; last: string | null } | null>(null);
   const [fade] = useState(() => new Animated.Value(0));
   useEffect(() => {
     Animated.timing(fade, { toValue: 1, duration: 220, useNativeDriver: true }).start();
   }, [fade]);
 
-  function start(how: 'record' | 'type') {
-    const pathname = how === 'record' ? '/tour/record' : '/tour/type';
+  function go() {
+    setRevisit(null);
+    const pathname = mode === 'record' ? '/tour/record' : '/tour/type';
     if (found.kind === 'existing') {
-      router.push({ pathname, params: { propertyId: found.property.id, label: displayAddress(found.property) } });
+      router.push({ pathname, params: { propertyId: found.property.id, label: displayAddress(found.property), place } });
     } else {
-      router.push({ pathname, params: { draft: JSON.stringify(found.draft), label: found.draft.addressLine } });
+      router.push({ pathname, params: { draft: JSON.stringify(found.draft), label: found.draft.addressLine, place } });
+    }
+  }
+
+  async function startNote() {
+    if (found.kind !== 'existing') return go();
+    // A home you've toured before: say so before adding another visit.
+    try {
+      const { data } = await fetchProperty(found.property.id);
+      const visits = data.visits.filter((v) => v.status !== 'failed');
+      if (visits.length === 0) return go();
+      setRevisit({ count: visits.length, last: visits[0]?.recorded_at ?? null });
+    } catch {
+      go();
     }
   }
 
@@ -208,35 +226,103 @@ function Confirm({ found }: { found: Found }) {
             {address}
           </Text>
           {place ? <Text style={s.place}>{place}</Text> : null}
-          <View style={s.facts}>
-            <Fact value={facts?.beds} label="beds" />
-            <Fact value={facts?.baths} label="baths" divider />
-            <Fact value={facts?.sqft} label="sq ft" divider thousands />
-          </View>
-          <Text style={s.factsNote}>{hasFacts ? 'Property facts · public record' : 'Property facts appear after your first note.'}</Text>
+          <PriceLine home={facts} />
+          <FactsRow home={facts} />
+          <PropertyDetails home={facts} />
+          <SourceLine home={facts} />
         </View>
       </View>
 
       <View style={s.actions}>
-        <View style={s.startRow}>
-          <Button title="Start with voice" onPress={() => start('record')} style={s.flex} />
-          <Button kind="secondary" title="Type instead" onPress={() => start('type')} style={s.flex} />
+        <View style={s.capture} accessibilityRole="radiogroup">
+          <CaptureOption icon="mic" label="Voice" selected={mode === 'record'} onPress={() => setMode('record')} />
+          <CaptureOption icon="keyboard" label="Type" selected={mode === 'type'} onPress={() => setMode('type')} />
         </View>
-        <Text style={s.correct}>Choose voice or typing for this note.</Text>
-        <Button kind="ghost" title="Change location" onPress={() => router.push('/tour/pick')} />
-        <Text style={s.correct}>You can correct property details later.</Text>
+        <Button title="Start note" onPress={() => void startNote()} style={s.startNote} />
+        <Pressable accessibilityRole="button" onPress={() => router.push('/tour/pick')} style={s.change}>
+          <Text style={s.changeText}>Change location</Text>
+        </Pressable>
+        {isSaved ? <Text style={s.together}>One home. All your reactions, together.</Text> : null}
       </View>
+
+      <RevisitSheet
+        visible={revisit !== null}
+        address={address}
+        count={revisit?.count ?? 0}
+        last={revisit?.last ?? null}
+        onYes={go}
+        onDifferent={() => {
+          setRevisit(null);
+          router.push('/tour/pick');
+        }}
+      />
     </Animated.View>
   );
 }
 
-function Fact({ value, label, divider, thousands }: { value?: number | null; label: string; divider?: boolean; thousands?: boolean }) {
-  const text = value == null ? '—' : thousands ? Number(value).toLocaleString('en-US') : String(Number(value));
+/** One half of the Voice / Type switch; the selected half is the white "slider". */
+function CaptureOption({ icon, label, selected, onPress }: { icon: SFSymbol; label: string; selected: boolean; onPress: () => void }) {
   return (
-    <View style={[s.fact, divider && s.factDivider]}>
-      <Text style={s.factValue}>{text}</Text>
-      <Text style={s.factLabel}>{label}</Text>
-    </View>
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={[s.captureOption, selected && s.captureSelected]}
+    >
+      <SymbolView name={icon} tintColor={selected ? colors.accent : '#6A778C'} size={16} type="monochrome" />
+      <Text style={[s.captureText, { color: selected ? colors.accent : '#6A778C' }]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function longWhen(iso: string): string {
+  const d = new Date(iso);
+  const date = d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  return `${date}, ${time}`;
+}
+
+/** "Welcome back / Revisiting this home?" from the mockup, before adding another visit. */
+function RevisitSheet({
+  visible,
+  address,
+  count,
+  last,
+  onYes,
+  onDifferent,
+}: {
+  visible: boolean;
+  address: string;
+  count: number;
+  last: string | null;
+  onYes: () => void;
+  onDifferent: () => void;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onDifferent}>
+      <View style={s.backdrop}>
+        <View style={s.dialog} accessibilityViewIsModal>
+          <View style={s.dialogIcon}>
+            <SymbolView name="arrow.counterclockwise" tintColor={colors.accent} size={17} type="monochrome" />
+          </View>
+          <Text style={s.dialogEyebrow}>WELCOME BACK</Text>
+          <Text style={s.dialogTitle} accessibilityRole="header">
+            Revisiting this home?
+          </Text>
+          <Text style={s.dialogAddress}>{address}</Text>
+          <Text style={s.dialogMeta}>
+            {count} {count === 1 ? 'visit' : 'visits'} saved{last ? ` · Last visit ${longWhen(last)}` : ''}
+          </Text>
+          <Text style={s.dialogCopy}>
+            This will be visit {count + 1}. NORA will combine your new reaction with your earlier notes. Each visit stays saved.
+          </Text>
+          <Button title="Yes, add a visit" onPress={onYes} style={s.dialogButton} />
+          <Pressable accessibilityRole="button" onPress={onDifferent} hitSlop={8}>
+            <Text style={s.changeText}>Different home or unit</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -263,42 +349,75 @@ const s = StyleSheet.create({
   locTitle: { fontFamily, fontSize: 21, fontWeight: '700', color: colors.ink, marginTop: 10 },
   locBody: { fontFamily, fontSize: 14, color: colors.ink2, marginTop: 8 },
   // Confirm stage
-  confirm: { gap: 12 },
-  foundRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  foundPill: { backgroundColor: colors.goodSoft, borderRadius: 999, paddingVertical: 5, paddingHorizontal: 11 },
-  foundText: { fontFamily, fontSize: 13, fontWeight: '700', color: colors.good },
-  away: { fontFamily, fontSize: 13, color: colors.ink2 },
-  card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: 20, overflow: 'hidden' },
-  photo: { width: '100%', aspectRatio: 1.85, backgroundColor: colors.sunk },
+  confirm: { gap: 0 },
+  foundRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7 },
+  foundPill: { backgroundColor: colors.goodSoft, borderRadius: 16, paddingVertical: 5, paddingHorizontal: 9 },
+  foundText: { fontFamily, fontSize: 12, fontWeight: '700', color: colors.good },
+  away: { fontFamily, fontSize: 11.5, color: colors.ink3 },
+  card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line, borderRadius: 16, overflow: 'hidden' },
+  photo: { width: '100%', height: 141, backgroundColor: '#E8EDF5' },
   previewChip: {
     position: 'absolute',
-    left: 12,
-    bottom: 12,
-    backgroundColor: 'rgba(24,32,46,0.82)',
-    borderRadius: 999,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
+    left: 8,
+    bottom: 8,
+    backgroundColor: 'rgba(17,28,49,0.76)',
+    borderRadius: 15,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
   },
-  previewText: { fontFamily, fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
-  cardBody: { padding: 16, gap: 4 },
-  areYou: { fontFamily, fontSize: 12, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
-  address: { fontFamily, fontSize: 23, fontWeight: '700', color: colors.ink, letterSpacing: -0.3, marginTop: 4 },
-  place: { fontFamily, fontSize: 14, color: colors.ink2 },
-  facts: {
+  previewText: { fontFamily, fontSize: 12, fontWeight: '700', lineHeight: 15.6, color: '#FFFFFF' },
+  cardBody: { paddingVertical: 10, paddingHorizontal: 12 },
+  areYou: { fontFamily, fontSize: 12, fontWeight: '700', lineHeight: 15.6, letterSpacing: 1.56, color: colors.accent, marginBottom: 4 },
+  address: { fontFamily, fontSize: 18.4, fontWeight: '700', lineHeight: 22, color: colors.ink },
+  place: { fontFamily, fontSize: 12, lineHeight: 16.8, color: colors.ink3, marginTop: 3, marginBottom: 6 },
+  actions: { paddingTop: 9, gap: 6 },
+  capture: {
     flexDirection: 'row',
-    marginTop: 12,
-    paddingVertical: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.line,
+    gap: 4,
+    padding: 4,
+    backgroundColor: '#E8EDF5',
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: '#DCE3ED',
   },
-  fact: { flex: 1, alignItems: 'center', gap: 2 },
-  factDivider: { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: colors.line },
-  factValue: { fontFamily, fontSize: 16, fontWeight: '700', color: colors.ink, fontVariant: ['tabular-nums'] },
-  factLabel: { fontFamily, fontSize: 13, color: colors.ink2 },
-  factsNote: { fontFamily, fontSize: 12, color: colors.ink3, marginTop: 10 },
-  actions: { gap: 10, marginTop: 4 },
-  startRow: { flexDirection: 'row', gap: 10 },
-  flex: { flex: 1 },
-  correct: { fontFamily, fontSize: 12, color: colors.ink3, textAlign: 'center', marginTop: 2 },
+  captureOption: { flex: 1, height: 44, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 },
+  captureSelected: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: 'rgb(24,44,75)',
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  captureText: { fontFamily, fontSize: 14, fontWeight: '600' },
+  startNote: { minHeight: 44 },
+  change: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  changeText: { fontFamily, fontSize: 14, fontWeight: '700', color: colors.accent, textAlign: 'center' },
+  together: { fontFamily, fontSize: 12, color: colors.ink3, textAlign: 'center' },
+  // Revisit dialog
+  backdrop: { flex: 1, backgroundColor: 'rgba(17,28,49,0.45)', alignItems: 'center', justifyContent: 'center', padding: 24 },
+  dialog: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: colors.surface,
+    borderRadius: 22,
+    paddingVertical: 22,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    gap: 6,
+  },
+  dialogIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  dialogEyebrow: { fontFamily, fontSize: 11, fontWeight: '700', letterSpacing: 1.4, color: colors.accent },
+  dialogTitle: { fontFamily, fontSize: 20, fontWeight: '700', color: '#000000', letterSpacing: -0.4 },
+  dialogAddress: { fontFamily, fontSize: 13.5, fontWeight: '700', color: colors.ink, marginTop: 6 },
+  dialogMeta: { fontFamily, fontSize: 11, color: colors.ink3 },
+  dialogCopy: { fontFamily, fontSize: 13.5, lineHeight: 20, color: colors.ink2, textAlign: 'center', marginTop: 8, marginBottom: 12 },
+  dialogButton: { alignSelf: 'stretch', minHeight: 40, marginBottom: 6 },
 });

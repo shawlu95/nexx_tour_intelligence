@@ -23,6 +23,11 @@ export interface Property {
   price_kind: 'list' | 'last_sale' | null;
   price_date: string | null;
   listing_status: string | null;
+  property_type: string | null;
+  year_built: number | null;
+  lot_sqft: number | null;
+  parking: string | null;
+  hoa_fee: number | null;
   facts_status: 'pending' | 'found' | 'not_found' | 'error';
 }
 

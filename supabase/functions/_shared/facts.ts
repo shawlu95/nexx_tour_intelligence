@@ -18,6 +18,14 @@ export interface Facts {
   price_kind: 'list' | 'last_sale' | null;
   price_date: string | null; // YYYY-MM-DD
   listing_status: string | null;
+  /** "Single Family", "Condo", "Townhouse", … as RentCast names it. */
+  property_type: string | null;
+  year_built: number | null;
+  lot_sqft: number | null;
+  /** e.g. "2-car garage", from the public record's features. */
+  parking: string | null;
+  /** Monthly HOA fee in dollars, when RentCast has one. */
+  hoa_fee: number | null;
 }
 
 /** Query parameters for a RentCast lookup, or null if the property can't be looked up. */
@@ -86,8 +94,16 @@ function day(v: unknown): string | null {
   return typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v) ? v.slice(0, 10) : null;
 }
 
+interface RentcastDetails {
+  propertyType?: string;
+  yearBuilt?: number;
+  lotSize?: number;
+  hoa?: { fee?: number };
+  features?: { garage?: boolean; garageSpaces?: number; garageType?: string };
+}
+
 /** A sale listing from GET /v1/listings/sale. */
-export interface RentcastListing extends Addressed {
+export interface RentcastListing extends Addressed, RentcastDetails {
   price?: number;
   bedrooms?: number;
   bathrooms?: number;
@@ -97,7 +113,7 @@ export interface RentcastListing extends Addressed {
 }
 
 /** A public record from GET /v1/properties. */
-export interface RentcastRecord extends Addressed {
+export interface RentcastRecord extends Addressed, RentcastDetails {
   bedrooms?: number;
   bathrooms?: number;
   squareFootage?: number;
@@ -112,6 +128,28 @@ export function asArray<T>(json: unknown): T[] {
   return [];
 }
 
+function text(v: unknown): string | null {
+  return typeof v === 'string' && v.trim() ? v.trim() : null;
+}
+
+/** "2-car garage", "Garage", or null. */
+export function parkingText(features: RentcastDetails['features']): string | null {
+  const spaces = int(features?.garageSpaces);
+  if (spaces && spaces > 0) return `${spaces}-car garage`;
+  return features?.garage ? 'Garage' : null;
+}
+
+function details(d: RentcastDetails) {
+  const fee = num(d.hoa?.fee);
+  return {
+    property_type: text(d.propertyType),
+    year_built: int(d.yearBuilt),
+    lot_sqft: int(d.lotSize),
+    parking: parkingText(d.features),
+    hoa_fee: fee !== null && fee > 0 ? fee : null,
+  };
+}
+
 export function factsFromListing(l: RentcastListing): Facts {
   return {
     beds: num(l.bedrooms),
@@ -121,6 +159,7 @@ export function factsFromListing(l: RentcastListing): Facts {
     price_kind: int(l.price) !== null ? 'list' : null,
     price_date: day(l.listedDate),
     listing_status: typeof l.status === 'string' ? l.status : null,
+    ...details(l),
   };
 }
 
@@ -133,6 +172,7 @@ export function factsFromRecord(r: RentcastRecord): Facts {
     price_kind: int(r.lastSalePrice) !== null ? 'last_sale' : null,
     price_date: day(r.lastSaleDate),
     listing_status: null,
+    ...details(r),
   };
 }
 
@@ -157,5 +197,10 @@ export function mergeFacts(listing: Facts | null, record: Facts | null): Facts |
     price_kind: listing.price !== null ? listing.price_kind : record.price_kind,
     price_date: listing.price !== null ? listing.price_date : record.price_date,
     listing_status: listing.listing_status,
+    property_type: listing.property_type ?? record.property_type,
+    year_built: listing.year_built ?? record.year_built,
+    lot_sqft: listing.lot_sqft ?? record.lot_sqft,
+    parking: listing.parking ?? record.parking,
+    hoa_fee: listing.hoa_fee ?? record.hoa_fee,
   };
 }

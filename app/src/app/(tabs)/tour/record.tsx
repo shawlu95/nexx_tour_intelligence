@@ -55,7 +55,7 @@ function clock(seconds: number) {
 
 export default function Record() {
   const userId = useUserId();
-  const params = useLocalSearchParams<{ propertyId?: string; draft?: string; label?: string }>();
+  const params = useLocalSearchParams<{ propertyId?: string; draft?: string; label?: string; place?: string }>();
   const draft = params.draft ? (JSON.parse(params.draft) as AddressDraft) : null;
   const recorder = useAudioRecorder(OPTIONS);
   const recState = useAudioRecorderState(recorder, 150);
@@ -189,8 +189,7 @@ export default function Record() {
   }, [begin, recorder]);
 
   const recording = isRecording(phase);
-  const place = draft?.city || '';
-  const cityLine = `${place ? `${place} · ` : ''}location confirmed`;
+  const cityLine = `${params.place || 'Address entered'} · address confirmed`;
 
   return (
     <SafeAreaView style={s.root} edges={['top', 'left', 'right']}>
@@ -319,7 +318,7 @@ function StillRecordingDialog({ visible, onKeep, onEnd }: { visible: boolean; on
           <Text style={s.sheetTitle} accessibilityRole="header">
             Still recording?
           </Text>
-          <Text style={s.sheetCopy}>I haven’t heard anything for {SILENCE_SECONDS} seconds. Keep recording, or end this recording.</Text>
+          <Text style={s.sheetCopy}>I haven’t heard anything for {SILENCE_SECONDS} seconds. Keep recording, or end this recording without saving a blank note.</Text>
           <Pressable style={({ pressed }) => [s.sheetPrimary, pressed && { opacity: 0.85 }]} onPress={onKeep} accessibilityRole="button">
             <Text style={s.sheetPrimaryText}>Keep recording</Text>
           </Pressable>
