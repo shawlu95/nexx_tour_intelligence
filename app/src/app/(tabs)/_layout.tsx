@@ -1,6 +1,5 @@
 // Bottom navigation from the mockup: Tour · Ranking · Ask NORA · Sharing · Profile.
 // Ask NORA sits in the middle as a raised orb to give it emphasis.
-import { LinearGradient } from 'expo-linear-gradient';
 import { SymbolView, type SFSymbol } from 'expo-symbols';
 import { Pressable, StyleSheet, Text, View, type ColorValue, type GestureResponderEvent } from 'react-native';
 import Tabs from 'expo-router/js-tabs';
@@ -22,15 +21,11 @@ function AskButton({ onPress, focused }: { onPress?: (e: GestureResponderEvent) 
       style={s.askButton}
     >
       <View style={s.orb}>
-        {/* The mockup's --blue-gradient: see-through blue, so what's behind shows faintly. */}
-        <LinearGradient
-          colors={['rgba(33,150,255,0.38)', 'rgba(76,185,255,0.24)']}
-          start={{ x: 0.21, y: 0.09 }}
-          end={{ x: 0.79, y: 0.91 }}
-          style={s.orbFill}
-        >
+        {/* The mockup's --blue-gradient: see-through blue, so what's behind shows faintly.
+            Drawn by React Native itself, so it needs no native module. */}
+        <View style={s.orbFill}>
           <SymbolView name="sparkle" tintColor={colors.accentDark} size={22} type="monochrome" />
-        </LinearGradient>
+        </View>
       </View>
       <Text style={s.askLabel}>Ask NORA</Text>
     </Pressable>
@@ -113,6 +108,12 @@ const s = StyleSheet.create({
     shadowRadius: 9,
     shadowOffset: { width: 0, height: 5 },
   },
-  orbFill: { flex: 1, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  orbFill: {
+    flex: 1,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    experimental_backgroundImage: 'linear-gradient(145deg, rgba(33,150,255,0.38), rgba(76,185,255,0.24))',
+  },
   askLabel: { fontFamily, fontSize: 10, fontWeight: '600', color: colors.accent },
 });
