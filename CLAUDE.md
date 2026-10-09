@@ -1,4 +1,4 @@
-# NORA (nexx-tour-intelligence)
+# NORA (repository `nora`)
 
 Voice note-taking app for home buyers. After leaving an open house, the buyer records a **40–60 second spoken reaction**. NORA transcribes it (AssemblyAI; English, Chinese, or a mix, detected automatically), turns it into a note with Claude (overall impression, plus **Liked**, **Concerns**, **Questions for my agent**, each with a verbatim source quote), files it under the property, and lets the buyer share it with their agent as a private link.
 

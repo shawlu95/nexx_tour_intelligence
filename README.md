@@ -438,10 +438,10 @@ This section is the setup checklist, in the order to do it. Every step marked **
 ### 6.4 GitHub: company organization
 
 1. **Owner:** create a GitHub **organization** (the Free plan is enough) with the company admin email, for example `github.com/<company>`. Turn on "Require two-factor authentication" for members.
-2. **Developer:** transfer the repository: `shawlu95/nexx_tour_intelligence` → Settings → Danger Zone → **Transfer ownership** → the company organization. History, issues and branches move with it, and GitHub redirects the old URL. (The developer must be allowed to create repositories in the organization for the transfer; the owner can grant this temporarily.)
+2. **Developer:** transfer the repository: `shawlu95/nora` → Settings → Danger Zone → **Transfer ownership** → the company organization. History, issues and branches move with it, and GitHub redirects the old URL. (The developer must be allowed to create repositories in the organization for the transfer; the owner can grant this temporarily.)
 3. **Owner:** add the developer as an organization **Member** (not Owner), and give them **Write** (or **Maintain**) access to the repository. The developer shows up as a contributor through their commit history.
 4. **Owner:** protect `main` (Settings → Branches): require pull requests and block force pushes.
-5. **Developer:** update the local clone: `git remote set-url origin https://github.com/<company>/nexx_tour_intelligence.git`.
+5. **Developer:** update the local clone: `git remote set-url origin https://github.com/<company>/nora.git`.
 
 ### 6.5 Expo / EAS: company organization
 
