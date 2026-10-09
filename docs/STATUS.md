@@ -1,6 +1,6 @@
 # Status
 
-Last updated: 2026-10-03. Update this file at the end of each work session: move finished items to "Done", and keep "Next steps" ordered.
+Last updated: 2026-10-09. Update this file at the end of each work session: move finished items to "Done", and keep "Next steps" ordered.
 
 ## History so far
 
@@ -52,6 +52,8 @@ Last updated: 2026-10-03. Update this file at the end of each work session: move
 
 29. **Launch page, You're ready, location setup (2026-10-04),** following the mockup. Sign-in (`components/SignIn.tsx`): "NORA·" wordmark and "Remember every home." in Manrope (loaded at runtime with `useFonts`, no rebuild), the words rising in one by one (0.12 / 0.28 / 0.44 s), a blue line drawn under them, then Continue with Google / Apple / email rising in (0.72 / 0.82 / 0.92 s), on the mockup's glow-on-gradient background (`experimental_backgroundImage`). Email and code steps share the style. After sign-in: "You're ready, <first name>." (`components/Ready.tsx`, once per sign-in on this phone), then the redesigned one-time location setup if location hasn't been asked. Apple sign-in shows a message in free-signing builds. Shared pieces in `components/Onboarding.tsx`.
 
+30. **Agent mockup reviewed and the agent app designed (2026-10-09).** Walked every screen of the agent mockup (nexx-agent-intelligence.franksun0707.chatgpt.site): invitation, sign-in with the invited email, accept with the representation checkbox, Buyers, a buyer's Ranking / Preferences / Access, a home's page, answering concerns, agent notes with price range and offer due date, Updates, Profile and Privacy & data. The design is README §8: one Expo app with an agent role, `agent_connections` (at most two agents per buyer), `agent_notes`, `concern_answers` (which keep a copy of the concern, because regeneration and Edit reaction replace note items), versions, `buyer_activity`, and read-only database functions for agents. No code yet.
+
 ## Done and verified
 
 | Area | Verified how |
@@ -88,6 +90,14 @@ These are written and type-checked but have not been exercised end to end. Expec
 5. **Running on the user's iPhone 15 with a free Apple ID (done 2026-10-01).** Built with `NORA_FREE_SIGNING=1` and the Personal Team "Xiao Lu (Personal Team)", team ID `K7U2974RH8`, via `xcodebuild ... -allowProvisioningUpdates DEVELOPMENT_TEAM=K7U2974RH8`, installed with `xcrun devicectl device install app`. iPhone UDID `00008120-000045A01A63601E`. Metro runs with `NORA_FREE_SIGNING=1`; the phone loads JS from `http://10.0.0.216:8081`. The local `ios/` folder is currently generated in free-signing mode. The install expires after 7 days. The first sign-in attempt found the 8-digit code mismatch, now fixed; the end-to-end recording test is in progress.
 6. **Auth providers:** Google (OAuth client from Google Cloud) and Apple (client id `com.nexx.tour.intelligence`; needs the paid Apple Developer Program).
 7. **Note quality evaluation:** 30–50 sample reactions, scored for missed and invented points. Compare `claude-opus-5` with `claude-sonnet-5` (README §4).
+8. **Agent app (README §8).** Needs the sending domain (step 1) first. Settle the open questions in §8.9 with the user (questions vs concerns, the representation wording, agent context in rankings, shared priorities). Then build in the order of §8.10:
+   1. Migration: agent tables, `is_connected_agent`, the `agent_*` read functions and RLS, with tests that removed agents and paused buyers read nothing.
+   2. `invite-agent` and `respond-invitation`, the invite link page, and the buyer's Sharing tab and Deactivate on real data (retires `lib/sharingPreview.ts`).
+   3. Agent tabs: Buyers, Invites, Profile, Updates.
+   4. A buyer's workspace and a home's page for agents.
+   5. Agent notes and concern answers with versions and withdraw; shown on the buyer's home page.
+   6. `buyer_activity` and pushes both ways.
+   7. `delete-account` and both exports cover the new tables; a demo agent account for App Review.
 
 ## Mockup screens (2026-10-01)
 
@@ -96,7 +106,7 @@ These are written and type-checked but have not been exercised end to end. Expec
 
 ## Built as UI only (not functional yet)
 
-- **Sharing tab** (invite an agent, invitation sent, who has access): no invitations are sent or stored. The real version needs an `agent_invitations` table, an invite email through Resend, an agent sign-in, and read access for agents to the buyer's notes (README §1, "Agent workspace").
+- **Sharing tab** (invite an agent, invitation sent, who has access): no invitations are sent or stored. The real version (README §8, next step 8) needs `agent_connections`, an invitation email through Resend, agent sign-in, and read access for connected agents.
 - **Deactivate account** on Profile: the mockup's confirmation sheet, then a paused state held in memory (`setWorkspacePaused` in `lib/sharingPreview.ts`). The header pill reads "Paused", and the Sharing tab shows the paused copy, disables inviting ("Reactivate to invite") and marks access as paused. Nothing changes on the server, and it resets when the app restarts.
 
 ## Deliberately left out of the MVP

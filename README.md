@@ -11,6 +11,7 @@ This document covers:
 5. [Build plan](#5-build-plan)
 6. [Beta test](#6-beta-test): moving NORA to company-owned accounts and inviting testers
 7. [Risks and open questions](#7-risks-and-open-questions)
+8. [Agent app](#8-agent-app): the agent's side, how it connects to the buyer app, data model and access rules
 
 To run or deploy the code, see [SETUP.md](SETUP.md). App Store review requirements and what's still open: [docs/APP_STORE.md](docs/APP_STORE.md).
 
@@ -38,7 +39,7 @@ The full product vision draws on the front-end mockup (nexx-tour-intelligence.fr
 These come from the mockup and the review, and are planned for later phases:
 
 - **A reminder to record**, sent when the buyer leaves an open house without recording (geofence), so no visit is forgotten.
-- **Agent workspace:** an agent account with ongoing access to the buyer's tours, where the agent can add professional notes alongside the buyer's.
+- **Agent workspace:** an agent account with ongoing access to the buyer's tours, where the agent can add professional notes alongside the buyer's. Designed in [§8](#8-agent-app).
 - **Listing photos and more property detail** from a licensed listing data provider, plus the buyer's own photos attached to a visit.
 - **Buyer priorities** (budget, commute, schools, must-haves) used to check notes and explain scores.
 - **Co-buyers** recording reactions to the same home and comparing them.
@@ -76,7 +77,7 @@ Something belongs in the MVP only if leaving it out would break that job. Everyt
 | Feature | Why it's left out | When |
 |---|---|---|
 | Reminder to record when leaving a home | Needs background location permission, which many buyers decline and app review scrutinizes. | Phase 2 |
-| Agent accounts, invitations, agent notes | A second user type, permissions, and onboarding. A share link covers the core need with none of that. | Phase 3 |
+| Agent accounts, invitations, agent notes | A second user type, permissions, and onboarding. A share link covers the core need with none of that. Design in [§8](#8-agent-app). | Phase 3 |
 | Listing photos | Copyrighted and only available through licensed MLS feeds. The MVP shows a street-level thumbnail made on the phone instead (see feature 11). | Phase 3 |
 | Photos in notes | Valuable, but it adds storage, upload, and interface work. Buyers already have photos in their camera roll. | Phase 2 |
 | Co-buyers and shared searches | Sharing between two buyers is a larger permissions problem. | Phase 3 |
@@ -561,3 +562,137 @@ Do these once the company accounts work, before inviting testers:
 1. **Business model:** will buyers pay, or agents and brokerages? This decides whether agent features move up from Phase 3.
 2. **Agent pilot:** is there an agent or brokerage partner who can recruit beta buyers and give feedback on the share page?
 3. **Branding and domain** for share links.
+
+---
+
+## 8. Agent app
+
+This section designs the agent side of NORA from the agent mockup (nexx-agent-intelligence.franksun0707.chatgpt.site, reviewed 2026-10-09). The buyer app already has the buyer's half of it as UI only: the Sharing tab, the invite form with the representation checkbox, and the "Agent notes" card on a home's page.
+
+### 8.1 What the agent does
+
+The agent sees only what a buyer chooses to share, and adds professional context beside it. **The agent never changes the buyer's reactions or ranking.**
+
+| Step | What happens |
+|---|---|
+| **Invited** | The buyer invites the agent by name and email from Sharing. The agent gets an email: "Priya invited you to their home search." |
+| **Signs in** | The agent opens the invitation and signs in **with the invited email** (emailed code, Google or Apple). A new agent enters full name and brokerage ("A little about you"). The profile alone gives no access to any buyer. |
+| **Accepts** | The invitation lists what the agent will be able to do (view reactions and rankings, read concerns and answer them, add property notes). Accept stays blocked until the agent ticks "We already have a signed representation agreement." The agent can also decline. Connecting in NORA does not create representation. |
+| **Reads** | Buyers list → a buyer's workspace with **Ranking** (buyer's order or NORA's order, scores, labels, pro/con tags), **Preferences** (patterns across the buyer's reactions) and **Access** (who's connected). A home's page shows facts, the buyer's current reaction, Liked and Concerns, the original words, and every visit. |
+| **Answers concerns** | Tapping a concern shows the buyer's quote and an answer box. The answer appears in the buyer's property note under that concern. |
+| **Adds notes** | An agent note on a home: text, an optional offer price range (estimate) and an optional offer due date and time. Drafts stay on the agent's phone until shared. |
+| **Follows along** | Updates (the bell) lists buyer activity: a new reaction or revisit, a ranking change, a new connection. |
+
+**Tabs:** Buyers · Invites · Profile, with Updates behind the bell in the header.
+
+**Rules the mockup sets**
+
+- A buyer can connect **at most two agents**; pending invitations count toward the limit. Only the buyer invites or removes agents. An agent can't grant anyone else access.
+- An agent's contributions are labeled with their name and kept apart from the buyer's own content. Agents can edit or withdraw their own contributions; edits keep earlier versions, and a withdrawal shows as withdrawn instead of disappearing.
+- If the buyer removes the agent, access ends and a new invitation is needed. If the buyer deactivates, the agent sees "Buyer deactivated · Shared content unavailable". If the agent deactivates, every workspace is paused for them until they reactivate.
+- Never shared: the buyer's account credentials, raw location, and their Ask NORA conversation.
+- Profile: name, brokerage and an optional license number, labeled self-reported (NORA doesn't verify licenses). Privacy & data has a "Buyer activity" switch, Download my contributions, Deactivate account, and Delete account and data.
+- Legal copy: NORA scores describe preference fit, not value or condition, and agents verify facts, prices and deadlines before relying on them.
+
+### 8.2 How it connects to the buyer app
+
+| Buyer app | Agent app |
+|---|---|
+| Sharing → Invite an agent (name, email, representation checkbox) | Invitation email → Invites tab → Accept or Decline |
+| Sharing → who has access: cancel a pending invite, remove an agent | The buyer disappears from Buyers; Access tab updates |
+| Profile → Deactivate | "Buyer deactivated", workspace locked |
+| Records a reaction or revisits a home | Updates: "New reaction" / "Revisited Pastoria"; the home's page shows all visits |
+| Drags homes into their own order; NORA re-ranks | Ranking picker: Buyer's order / NORA order (scores unchanged by the buyer's order) |
+| Liked, Concerns and original words on each note | Read-only on the home's page; Preferences counts the patterns |
+| Home page → Agent notes card (placeholder today) | Agent notes and concern answers, shown there with the agent's name and date |
+
+### 8.3 Platform
+
+**One Expo app, one Supabase project.** Agents install the same NORA app. An account becomes an agent account when it signs up through an invitation (or picks "I'm an agent" on sign-up later), and agent accounts get the agent tab layout instead of the buyer's. Reasons:
+
+- One App Store listing, one review, one codebase; most components (home facts, thumbnails, reaction cards, dialogs, sign-in) are shared.
+- The agent side makes no AI calls and needs no microphone or location, so it adds no new permissions.
+- An account is either a buyer or an agent. An agent who is also buying uses a second account (a different email). This keeps row-level security simple; it can be relaxed later.
+
+A web version for agents at a desk is possible later with Expo's web build. The share page (`share-web/`) stays as it is for agents who aren't on NORA.
+
+### 8.4 Data model
+
+New and changed tables, all in Postgres with row-level security:
+
+| Table | Key contents |
+|---|---|
+| **profiles** (changed) | `role` (`buyer` or `agent`), `brokerage`, `license_number`, `deactivated_at` (makes Deactivate real for both roles), `activity_alerts` (the agent's "Buyer activity" switch) |
+| **agent_connections** | `buyer_id`, `invited_name`, `invited_email` (lower-cased), `agent_id` (set on accept), `status` (`pending`, `active`, `declined`, `cancelled`, `removed`), `token_hash` for the email link, `buyer_confirmed_representation_at`, `agent_confirmed_representation_at`, `created_at`, `accepted_at`, `ended_at`, `updates_seen_at` (the agent's unread marker). A trigger refuses a third pending-or-active connection per buyer, and a unique index stops two open invitations to the same email. |
+| **agent_notes** | `connection_id`, `buyer_id`, `property_id`, `agent_id`, `body`, `price_range` (text, labeled an estimate), `offer_due_at`, `offer_due_confirmed` (shows "unconfirmed" until the agent confirms it with the listing agent), `withdrawn_at`, `created_at`, `updated_at` |
+| **concern_answers** | `connection_id`, `buyer_id`, `property_id`, `agent_id`, `note_item_id` (nullable, `on delete set null`), `concern_text` and `concern_quote` (copies taken when answering), `body`, `withdrawn_at`, timestamps |
+| **contribution_versions** | `kind` (note or answer), `contribution_id`, `body`, `price_range`, `offer_due_at`, `saved_at`: one row per edit, so earlier versions are kept |
+| **buyer_activity** | `buyer_id`, `property_id`, `kind` (`reaction`, `revisit`, `ranking`, `connected`), `title`, `detail`, `created_at`. Written by the server, read by connected agents. |
+
+**Why answers copy the concern.** A buyer's concerns are note items, and they change: regeneration replaces AI items the buyer hasn't touched (`planRegeneration`), and Edit reaction deletes and rewrites a note's items. An answer keeps its own copy of the concern and quote, and links to the item only while it exists. When the item goes away, the answer still shows on the home's page under "Earlier concern". Matching a rewritten concern back to an old answer (same quote) can come later.
+
+**Drafts** stay on the agent's phone (local storage), as in the mockup. Nothing unshared reaches the server.
+
+### 8.5 Access rules
+
+- `is_connected_agent(buyer)`: a security-definer function that is true when the caller has an **active** connection to that buyer, and neither the buyer nor the agent is deactivated.
+- **Agents read through database functions, not tables.** Like `get_shared_note`, each function returns only the fields the agent may see, so columns such as the home's coordinates, the Ask NORA conversation, push tokens and the AI consent date never leave the buyer's rows:
+  - `agent_buyers()`: Buyers list (name, home count, top-ranked home, latest activity, status)
+  - `agent_workspace(buyer)`: homes with facts, scores, labels, pros/cons, the buyer's order and NORA's order, and the Preferences counts
+  - `agent_home(buyer, property)`: one home's facts, current reaction, liked and concern items with quotes, every visit's words, agent notes and answers from every connected agent
+  - `agent_invitations()`: pending invitations whose email matches the signed-in agent's verified email
+- Agents **write** `agent_notes`, `concern_answers` and their versions directly, with RLS: insert only where `is_connected_agent(buyer_id)`, update and withdraw only their own rows. No delete; withdraw instead.
+- Buyers read agent notes and answers on their own homes with RLS (`buyer_id = auth.uid()`). They can't edit them.
+- Existing buyer tables keep their owner-only rules unchanged.
+
+### 8.6 Back end
+
+| Function | Triggered by | What it does |
+|---|---|---|
+| `invite-agent` (new) | Buyer app, Sharing → Send invitation | Checks the two-agent limit and that the representation box was ticked, creates the connection, sends the invitation email through the Resend API with a link `https://share.<domain>/invite/<token>`. The link opens NORA if installed, otherwise the App Store. Cancel and remove are updates to the connection. |
+| `respond-invitation` (new) | Agent app, Accept or Decline | Requires a signed-in agent whose verified email equals the invited email, and the representation confirmation on accept. Sets `agent_id`, `status`, timestamps, and writes a `connected` activity row. |
+| `process-visit`, `rank-homes` (changed) | Existing triggers | Write `buyer_activity` rows (new reaction, revisit, ranking change) and send a push to connected agents who have Buyer activity on. A database trigger on `ranking_overrides` records the buyer's own reordering. |
+| Push to the buyer (new) | Insert on `agent_notes` or `concern_answers` | "Francis answered your HOA question about 1122 Kifer Road." |
+| `delete-account` (changed) | App | **Buyer:** connections, agent notes and answers on their homes go too (cascade). **Agent:** their connections end and their notes, answers and versions are deleted; the buyer's home page shows nothing in their place. This is real deletion, as App Review requires. |
+| Export (changed) | Privacy & data | The buyer's export includes agent notes and answers on their homes. The agent's "Download my contributions" exports their own notes, answers and versions. |
+
+**No AI on the agent side in the first version.** Agent notes and answers are not sent to Claude, so the agent never needs to give AI consent. Whether NORA's ranking should take agent notes into account is an open question (§8.9).
+
+**Cost:** no new paid services. Invitation emails go through Resend (free up to 3,000 a month), and pushes through Expo Push (free).
+
+### 8.7 Changes to the buyer app
+
+- **Sharing** becomes real: `lib/sharingPreview.ts` is replaced by queries on `agent_connections` and calls to `invite-agent`. The "Invite pending" badge reads the real status. Remove "Built as UI only" from STATUS.md.
+- **Deactivate** becomes real: `profiles.deactivated_at`, set and cleared by the buyer.
+- **A home's page**: the Agent notes card lists each agent's notes (with price range, offer due date and its confirmation state) and withdrawn markers. Each concern shows the agent's answer under it.
+- **Concerns are what agents answer.** The note writer still produces "Questions for my agent", which the buyer app hides since the second redesign. Decide before building (§8.9).
+
+### 8.8 App Store
+
+- Agent sign-in uses the same Sign in with Apple, Google and email code as the buyer, so no new review rules apply.
+- Account deletion is real for agents (§8.6), and Deactivate is a real server state, not UI only.
+- The review notes need a demo agent account that already has an accepted connection to a demo buyer, so the reviewer can see a filled workspace.
+- No new permissions. Push notifications are asked for in context the first time an agent turns on Buyer activity.
+
+### 8.9 Open questions
+
+1. **Questions vs concerns.** Agents answer concerns. Should the note writer stop producing "Questions for my agent", or should questions also show on the agent side as answerable items?
+2. **Representation agreement.** Both apps ask for the "signed representation agreement" checkbox. Confirm the wording and whether it's needed with the brokerage or a lawyer.
+3. **Agent context in rankings.** Should NORA read agent notes and answers when it re-ranks or in Ask NORA? That would send agent text to Anthropic and needs the agent's AI consent.
+4. **Learned priorities.** The Preferences tab shows only patterns from reactions, with budget and timeline "Not shared". Should the buyer be able to share Ask NORA's learned priorities?
+5. **Who can see whose notes.** With two agents connected, each sees the other's notes and answers (the mockup shows both on Access). Confirm that's wanted.
+6. **One role per account.** Agents who are also buying need a second account. Fine for the beta?
+
+### 8.10 Build plan
+
+Depends on the verified sending domain (§6.9), since invitations go to any agent's email.
+
+| Step | Done when |
+|---|---|
+| 1. Schema and access | Migration with the tables, `is_connected_agent`, the read functions and RLS. Tests that an unconnected agent, a removed agent and a deactivated buyer all read nothing. |
+| 2. Invitations | `invite-agent`, `respond-invitation`, the invite link page, the buyer's Sharing tab on real data. |
+| 3. Agent app shell | Role on sign-up via an invitation, agent tabs (Buyers, Invites, Profile, Updates), agent profile and Privacy & data. |
+| 4. Workspace and home pages | Ranking, Preferences, Access, a home's page, using shared components from the buyer app. |
+| 5. Contributions | Agent notes, concern answers, edit with versions, withdraw, on-device drafts; shown on the buyer's home page. |
+| 6. Activity and push | `buyer_activity`, Updates, unread count, pushes both ways. |
+| 7. Deletion and export | `delete-account` and both exports cover the new tables; a demo agent account for App Review. |
