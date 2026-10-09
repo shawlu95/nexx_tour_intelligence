@@ -608,13 +608,26 @@ The agent sees only what a buyer chooses to share, and adds professional context
 
 ### 8.3 Platform
 
-**One Expo app, one Supabase project.** Agents install the same NORA app. An account becomes an agent account when it signs up through an invitation (or picks "I'm an agent" on sign-up later), and agent accounts get the agent tab layout instead of the buyer's. Reasons:
+The agent mockup is built as its own site with its own "NORA · Agent" sign-in, so the designer treats the agent side as a separate product surface. That doesn't settle whether it ships as one iPhone app or two.
 
-- One App Store listing, one review, one codebase; most components (home facts, thumbnails, reaction cards, dialogs, sign-in) are shared.
-- The agent side makes no AI calls and needs no microphone or location, so it adds no new permissions.
-- An account is either a buyer or an agent. An agent who is also buying uses a second account (a different email). This keeps row-level security simple; it can be relaxed later.
+**For now: one Expo app and one Supabase project.** Agents install the same NORA app the buyer uses and get the agent tabs. Reasons:
 
-A web version for agents at a desk is possible later with Expo's web build. The share page (`share-web/`) stays as it is for agents who aren't on NORA.
+- **Half the release work.** One App Store listing, review, TestFlight build, set of privacy labels and screenshots. A second app doubles all of that, plus a second bundle ID and EAS project, while agents only arrive by buyer invitation.
+- **Shared screens.** Home facts, thumbnails, reaction cards, `DesignSheet`, sign-in and the legal and privacy pages are the same on both sides. Two apps would first need them moved into a shared package.
+- **The data is shared either way.** Two apps would still use the same Supabase project and sign-in, so a second app adds packaging, not separation.
+- **Simple start for agents.** The invitation link opens NORA. A new agent installs it, signs in with the invited email and lands on the invitation.
+- **No new permissions.** The agent side makes no AI calls and doesn't use the microphone or location.
+
+**Keep the agent code separate so it can be split out.** Agent screens live in their own route group (`app/src/app/(agent)/`), and agent logic in `lib/agent/`. Neither imports buyer-only screens; anything both sides use goes in `components/` or `lib/`. Moving the agent side into a second app later is then mostly moving files.
+
+**When a second app would be worth it:** if agents or brokerages become the paying customers (§7, open question 1). They would then need their own App Store page, screenshots and pitch, the way Uber has a separate Driver app; a listing written for buyers ("Remember every home") doesn't sell to agents.
+
+**Open: how the app knows someone is an agent.** Decide before the first migration (§8.9, question 6):
+
+- **A role on the account** (`profiles.role`, `buyer` or `agent`, set when someone signs up through an invitation). Simplest app logic. An agent who is also buying needs a second account with a different email.
+- **No role; access comes from connections.** Anyone can have their own homes, and anyone with an active connection is that buyer's agent. The app shows the agent tabs once someone has a connection, with a switch for people who are both. The access rules already work this way (`is_connected_agent` checks the connection, not a role); the extra cost is the switch and deciding what an agent with no homes sees first.
+
+Adding a `role` column and dropping it later is a migration plus app changes, so pick one up front. A web version for agents at a desk is possible later with Expo's web build. The share page (`share-web/`) stays for agents who aren't on NORA.
 
 ### 8.4 Data model
 
@@ -622,7 +635,7 @@ New and changed tables, all in Postgres with row-level security:
 
 | Table | Key contents |
 |---|---|
-| **profiles** (changed) | `role` (`buyer` or `agent`), `brokerage`, `license_number`, `deactivated_at` (makes Deactivate real for both roles), `activity_alerts` (the agent's "Buyer activity" switch) |
+| **profiles** (changed) | `role` (`buyer` or `agent`; only if the role model is chosen, §8.3), `brokerage`, `license_number`, `deactivated_at` (makes Deactivate real for both roles), `activity_alerts` (the agent's "Buyer activity" switch) |
 | **agent_connections** | `buyer_id`, `invited_name`, `invited_email` (lower-cased), `agent_id` (set on accept), `status` (`pending`, `active`, `declined`, `cancelled`, `removed`), `token_hash` for the email link, `buyer_confirmed_representation_at`, `agent_confirmed_representation_at`, `created_at`, `accepted_at`, `ended_at`, `updates_seen_at` (the agent's unread marker). A trigger refuses a third pending-or-active connection per buyer, and a unique index stops two open invitations to the same email. |
 | **agent_notes** | `connection_id`, `buyer_id`, `property_id`, `agent_id`, `body`, `price_range` (text, labeled an estimate), `offer_due_at`, `offer_due_confirmed` (shows "unconfirmed" until the agent confirms it with the listing agent), `withdrawn_at`, `created_at`, `updated_at` |
 | **concern_answers** | `connection_id`, `buyer_id`, `property_id`, `agent_id`, `note_item_id` (nullable, `on delete set null`), `concern_text` and `concern_quote` (copies taken when answering), `body`, `withdrawn_at`, timestamps |
@@ -681,7 +694,8 @@ New and changed tables, all in Postgres with row-level security:
 3. **Agent context in rankings.** Should NORA read agent notes and answers when it re-ranks or in Ask NORA? That would send agent text to Anthropic and needs the agent's AI consent.
 4. **Learned priorities.** The Preferences tab shows only patterns from reactions, with budget and timeline "Not shared". Should the buyer be able to share Ask NORA's learned priorities?
 5. **Who can see whose notes.** With two agents connected, each sees the other's notes and answers (the mockup shows both on Access). Confirm that's wanted.
-6. **One role per account.** Agents who are also buying need a second account. Fine for the beta?
+6. **Role model** (§8.3). A role on each account (agents who are also buying need a second account), or access from connections alone with a switch for people who are both?
+7. **One app or two.** The mockup is its own site. Confirm with the designer that agents in the same app (§8.3) is acceptable for the beta.
 
 ### 8.10 Build plan
 
@@ -691,7 +705,7 @@ Depends on the verified sending domain (§6.9), since invitations go to any agen
 |---|---|
 | 1. Schema and access | Migration with the tables, `is_connected_agent`, the read functions and RLS. Tests that an unconnected agent, a removed agent and a deactivated buyer all read nothing. |
 | 2. Invitations | `invite-agent`, `respond-invitation`, the invite link page, the buyer's Sharing tab on real data. |
-| 3. Agent app shell | Role on sign-up via an invitation, agent tabs (Buyers, Invites, Profile, Updates), agent profile and Privacy & data. |
+| 3. Agent app shell | The `(agent)` route group, the role model chosen in §8.3, agent tabs (Buyers, Invites, Profile, Updates), agent profile and Privacy & data. |
 | 4. Workspace and home pages | Ranking, Preferences, Access, a home's page, using shared components from the buyer app. |
 | 5. Contributions | Agent notes, concern answers, edit with versions, withdraw, on-device drafts; shown on the buyer's home page. |
 | 6. Activity and push | `buyer_activity`, Updates, unread count, pushes both ways. |
